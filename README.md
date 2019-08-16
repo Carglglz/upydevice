@@ -1,6 +1,6 @@
 # uPydevice
 
-###Python lib to interface with micropython devices through WebREPL protocol.
+Python library to interface with Micropython devices through WebREPL protocol.
 
 #### Example usage:
 ### Setup and configurate a device :
