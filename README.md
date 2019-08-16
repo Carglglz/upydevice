@@ -2,6 +2,9 @@
 
 Python library to interface with Micropython devices through WebREPL protocol.
 
+### Install
+`pip install upydevice`
+
 #### Example usage:
 ### Setup and configurate a device :
     from upydevice import UPYDEVICE
