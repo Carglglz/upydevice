@@ -36,6 +36,9 @@ class UPYDEVICE:
     def __init__(self, ip_target, password):
         self.password = password
         self.ip = ip_target
+        self.response = None
+        self.output = None
+        self.long_output = []
 
     def _send_recv_cmd2(self, cmd):
         resp_recv = False
@@ -124,7 +127,7 @@ class UPYDEVICE:
             else:
                 return output
 
-    def cmd(self, command):
+    def cmd(self, command, capture_output=False):
         cmd_str = 'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
             command, self.ip, self.password)
         # print(group_cmd_str)
@@ -140,8 +143,16 @@ class UPYDEVICE:
                 if len(resp) > 0:
                     if resp[0] == '>':
                         print(resp[4:])
+                        self.response = resp[4:]
+                        self.get_output()
+                        if capture_output:
+                            self.long_output.append(resp[4:])
                     else:
                         print(resp)
+                        self.response = resp
+                        self.get_output()
+                        if capture_output:
+                            self.long_output.append(resp)
                 else:
                     print(resp)
         except KeyboardInterrupt:
@@ -176,3 +187,9 @@ class UPYDEVICE:
             result = proc.stdout.readlines()
             for message in result:
                 print(message[:-1].decode())
+
+    def get_output(self):
+        try:
+            self.output = ast.literal_eval(self.response)
+        except Exception as e:
+            pass
