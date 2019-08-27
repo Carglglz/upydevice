@@ -14,10 +14,10 @@ def readme():
 
 setup(name='upydevice',
       version='0.0.1',
-      description='Basic python library to interact with wireless Micropython devices',
+      description='Python library to interface with wireless/serial Micropython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
-      url='http://github.com/Carglglz/upydev',
+      url='http://github.com/Carglglz/upydevice',
       author='Carlos Gil Gonzalez',
       author_email='carlosgilglez@gmail.com',
       classifiers=[

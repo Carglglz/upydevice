@@ -369,7 +369,7 @@ class PYBOARD:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         # self.serial.close()
 
-    def cmd(self, command, capture_output=False, timeout=None):
+    def cmd(self, command, out_print=True, capture_output=False, timeout=None):
         self.long_output = []
         self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
@@ -387,14 +387,16 @@ class PYBOARD:
                 resp = proc.stdout.readline()[:-1].decode()
                 if len(resp) > 0:
                     if resp[0] == '>':
-                        print(resp[4:])
+                        if out_print:
+                            print(resp[4:])
                         self.response = resp[4:]
                         self.get_output()
                         if capture_output:
                             self.long_output.append(resp[4:])
                     else:
                         if resp != '{}\r'.format(command):
-                            print(resp)
+                            if out_print:
+                                print(resp)
                         self.response = resp
                         self.get_output()
                         if capture_output:
