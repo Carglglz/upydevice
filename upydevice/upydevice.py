@@ -346,8 +346,7 @@ class PYBOARD:
         self.returncode = None
         self.timeout = timeout
         self.baudrate = baudrate
-        self.picocom_cmd = shlex.split(
-            'picocom -port {} -qcx {} -b{}'.format(self.serial_port, self.timeout, self.baudrate))
+        self.picocom_cmd = None
         self.response = None
         self.response_object = None
         self.output = None
@@ -356,6 +355,8 @@ class PYBOARD:
         self.reset(output=False)
         self.reset(output=False)
         # self.serial.close()
+        for i in range(3):
+            self.enter_cmd()
 
     def get_output(self):
         try:
@@ -380,7 +381,7 @@ class PYBOARD:
             proc = subprocess.Popen(
                 self.picocom_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
-            time.sleep(0.2)
+            time.sleep(0.05)
             for i in range(2):
                 self.enter_cmd()
             while proc.poll() is None:
