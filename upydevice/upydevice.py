@@ -2,7 +2,7 @@
 # @Author: carlosgilgonzalez
 # @Date:   2019-07-11T23:33:30+01:00
 # @Last modified by:   carlosgilgonzalez
-# @Last modified time: 2019-08-16T01:16:26+01:00
+# @Last modified time: 2019-09-14T04:11:09+01:00
 
 import ast
 import subprocess
@@ -173,8 +173,8 @@ class W_UPYDEVICE:
             else:
                 return output
 
-    def cmd(self, command, capture_output=False):  # best method
-        cmd_str = 'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
+    def cmd(self, command, capture_output=False, silent=False, bundle_dir=''):  # best method
+        cmd_str = bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
             command, self.ip, self.password)
         # print(group_cmd_str)
         self.long_output = []
@@ -189,19 +189,22 @@ class W_UPYDEVICE:
                 resp = proc.stdout.readline()[:-1].decode()
                 if len(resp) > 0:
                     if resp[0] == '>':
-                        print(resp[4:])
+                        if not silent:
+                            print(resp[4:])
                         self.response = resp[4:]
                         self.get_output()
                         if capture_output:
                             self.long_output.append(resp[4:])
                     else:
-                        print(resp)
+                        if not silent:
+                            print(resp)
                         self.response = resp
                         self.get_output()
                         if capture_output:
                             self.long_output.append(resp)
                 else:
-                    print(resp)
+                    if not silent:
+                        print(resp)
         except KeyboardInterrupt:
             time.sleep(1)
             result = proc.stdout.readlines()
@@ -273,7 +276,7 @@ class S_UPYDEVICE:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         self.serial.close()
 
-    def cmd(self, command, capture_output=False, timeout=None):
+    def cmd(self, command, capture_output=False, timeout=None, silent=False):
         self.long_output = []
         self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
@@ -291,20 +294,23 @@ class S_UPYDEVICE:
                 resp = proc.stdout.readline()[:-1].decode()
                 if len(resp) > 0:
                     if resp[0] == '>':
-                        print(resp[4:])
+                        if not silent:
+                            print(resp[4:])
                         self.response = resp[4:]
                         self.get_output()
                         if capture_output:
                             self.long_output.append(resp[4:])
                     else:
                         if resp != '{}\r'.format(command):
-                            print(resp)
+                            if not silent:
+                                print(resp)
                         self.response = resp
                         self.get_output()
                         if capture_output:
                             self.long_output.append(resp)
                 else:
-                    print(resp)
+                    if not silent:
+                        print(resp)
 
         except KeyboardInterrupt:
             time.sleep(1)
@@ -381,7 +387,7 @@ class PYBOARD:
             proc = subprocess.Popen(
                 self.picocom_cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
-            time.sleep(0.05)
+            time.sleep(0.05) ## KEY FINE TUNNING
             for i in range(2):
                 self.enter_cmd()
             while proc.poll() is None:
