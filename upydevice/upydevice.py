@@ -211,8 +211,8 @@ class W_UPYDEVICE:
             for message in result:
                 print(message[:-1].decode())
 
-    def reset(self):
-        reset_cmd_str = 'web_repl_cmd_r -c "{}" -t {} -p {}'.format('D',
+    def reset(self, bundle_dir=''):
+        reset_cmd_str = bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format('D',
                                                                     self.ip, self.password)
         reset_cmd = shlex.split(reset_cmd_str)
         print('Rebooting device...')
@@ -276,12 +276,12 @@ class S_UPYDEVICE:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         self.serial.close()
 
-    def cmd(self, command, capture_output=False, timeout=None, silent=False):
+    def cmd(self, command, capture_output=False, timeout=None, silent=False, bundle_dir=''):
         self.long_output = []
-        self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
+        self.picocom_cmd = shlex.split(bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
         if timeout is not None:
-            self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
+            self.picocom_cmd = shlex.split(bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
                 shlex.quote(command), timeout, self.baudrate, self.serial_port))
         try:
             proc = subprocess.Popen(
@@ -376,12 +376,13 @@ class PYBOARD:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         # self.serial.close()
 
-    def cmd(self, command, out_print=True, capture_output=False, timeout=None):
+    def cmd(self, command, out_print=True, capture_output=False, silent=False, timeout=None, bundle_dir=''):
+        out_print = not silent
         self.long_output = []
-        self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
+        self.picocom_cmd = shlex.split(bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
         if timeout is not None:
-            self.picocom_cmd = shlex.split('picocom -t {} -qx {} -b{} {}'.format(
+            self.picocom_cmd = shlex.split(bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
                 shlex.quote(command), timeout, self.baudrate, self.serial_port))
         try:
             proc = subprocess.Popen(
