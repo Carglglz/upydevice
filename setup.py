@@ -2,7 +2,7 @@
 # @Author: carlosgilgonzalez
 # @Date:   2019-07-11T23:29:40+01:00
 # @Last modified by:   carlosgilgonzalez
-# @Last modified time: 2019-09-24T00:15:07+01:00
+# @Last modified time: 2019-10-21T00:53:34+01:00
 
 from setuptools import setup
 
@@ -13,7 +13,7 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.0.4',
+      version='0.0.5',
       description='Python library to interface with wireless/serial Micropython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -39,4 +39,4 @@ setup(name='upydevice',
       packages=['upydevice'],
       zip_safe=False,
       include_package_data=True,
-      install_requires=['upydev'])
+      install_requires=['upydev', 'pyserial'])

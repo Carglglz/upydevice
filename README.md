@@ -94,3 +94,67 @@ Python library to interface with Micropython devices through WebREPL protocol or
         >>> pyboard.reset()
         Rebooting pyboard...
         Done!
+
+### GROUP (to send commands to several devices at a time)
+
+```
+# Setup and configurate the devices :
+    >>> from upydevice import W_UPYDEVICE, PYBOARD, GROUP
+# PYBOARD
+    >>> pyboard = PYBOARD('/dev/tty.usbmodem387E386731342')
+# ESP32
+    >>> esp32_A = W_UPYDEVICE('192.168.1.53', 'keyespw')
+    >>> esp32_B = W_UPYDEVICE('192.168.1.40', 'keyespw')
+
+# Setup and configurate the group:
+    >>> my_group = GROUP([esp32_A, esp32_B, pyboard])
+
+# Each upydevice has a name attribute that can be set at creation momment or after
+# pyboard = PYBOARD('/dev/tty.usbmodem387E386731342', name='my_pyboard_1'); or pyboard.name = 'my_pyboard_1')
+# If not set an automatic name will be set as 'upydev_class'+'ip or serial port'
+
+# Send command:
+    >>> my_group.cmd('import machine;import  ubinascii;ubinascii.hexlify(machine.unique_id())')
+    Sending command to wupydev_53
+    b'30aea4233564'
+
+    Sending command to wupydev_40
+    b'807d3a809b30'
+
+    Sending command to pyboard_tty.usbmodem387E386731342
+    b'33004e000351343134383038'
+
+# There is an option to silent the group messages with group_silent = True, and or each device ouput with device_silent=True
+
+# Output is stored in group output attribute:
+    >>> my_group.output
+    {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
+
+# Send command parallel mode **: (experimental mode, may not work 100% of the times, depends on the connection quality (for wireless devices))
+    >>> my_group.cmd_p('6*12')
+    Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
+    72
+
+
+    72
+
+    72
+
+    Done!
+# To see which ouput corresponds to which device use 'id=True' parameter:
+
+    >>> my_group.cmd_p('ubinascii.hexlify(machine.unique_id())', id=True)
+    Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
+    pyboard_tty.usbmodem387E386731342:b'33004e000351343134383038'
+    pyboard_tty.usbmodem387E386731342:
+    pyboard_tty.usbmodem387E386731342:
+    wupydev_40:b'807d3a809b30'
+    wupydev_53:b'30aea4233564'
+    wupydev_40:
+    wupydev_53:
+    Done!
+    >>>
+    >>> my_group.output
+    {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
+```
+
