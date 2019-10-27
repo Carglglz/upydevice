@@ -13,7 +13,7 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.0.5',
+      version='0.0.6',
       description='Python library to interface with wireless/serial Micropython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -39,4 +39,4 @@ setup(name='upydevice',
       packages=['upydevice'],
       zip_safe=False,
       include_package_data=True,
-      install_requires=['upydev', 'pyserial'])
+      install_requires=['upydev', 'pyserial', 'dill'])

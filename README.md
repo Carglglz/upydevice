@@ -14,6 +14,10 @@ Python library to interface with Micropython devices through WebREPL protocol or
 ### Install
 `pip install upydevice`
 
+#### Documentation:
+
+See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md)
+
 #### Example usage:
 
 ### WIRELESS DEVICE (WebREPL Protocol)
@@ -77,7 +81,7 @@ Python library to interface with Micropython devices through WebREPL protocol or
         pyboard = PYBOARD('/dev/tty.usbmodem3370377430372') # defaults (serial_port, timeout=1000, baudrate=9600)
     
     # Send command:
-        >>> pyboard.cmd('pyb.LED(1).toggle()',100)
+        >>> pyboard.cmd('pyb.LED(1).toggle()', timeout=100)
     
         >>> pyboard.cmd("import uos;uos.listdir('/flash')")
         ['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', '.Trashes'] # this output is stored in [upydevice].output

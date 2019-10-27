@@ -53,7 +53,7 @@ PYBOARD (Picocom, Pyserial)
 # Setup and configurate a device :
     pyboard = PYBOARD('/dev/tty.usbmodem3370377430372') # defaults (serial_port, timeout=1000, baudrate=9600)
 # Send command:
-    >>> pyboard.cmd('pyb.LED(1).toggle()',100)
+    >>> pyboard.cmd('pyb.LED(1).toggle()',timeout=100)
     >>> pyboard.cmd("import uos;uos.listdir('/flash')")
     ['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', '.Trashes'] # this output is stored in [upydevice].output
     >>> pyboard.output
@@ -72,8 +72,8 @@ GROUP (to send commands to several devices at a time)
 # PYBOARD
     >>> pyboard = PYBOARD('/dev/tty.usbmodem387E386731342')
 # ESP32
-    >>> esp32_A = W_UPYDEVICE('192.168.1.53', 'keyespw')
-    >>> esp32_B = W_UPYDEVICE('192.168.1.40', 'keyespw')
+    >>> esp32_A = W_UPYDEVICE('192.168.1.53', 'mypass')
+    >>> esp32_B = W_UPYDEVICE('192.168.1.40', 'mypass')
 
 # Setup and configurate the group:
     >>> my_group = GROUP([esp32_A, esp32_B, pyboard])

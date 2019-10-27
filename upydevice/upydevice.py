@@ -11,9 +11,12 @@ import time
 import serial
 import struct
 import multiprocessing
-
+from dill.source import getsource
+import functools
 
 name = 'upydevice'
+
+# TODO: kbi, uparser (for/while loops, function defs) DOCS (cmd blocking and non-blocking)
 
 
 class W_UPYDEVICE:
@@ -24,10 +27,12 @@ class W_UPYDEVICE:
         self.output = None
         self.bundle_dir = bundle_dir
         self.long_output = []
+        self.process_raw = None
         self.name = name
         self.dev_class = 'WIRELESS'
         if name is None:
             self.name = 'wupydev_{}'.format(self.ip.split('.')[-1])
+        self.output_queue = multiprocessing.Queue(maxsize=1)
 
     def _send_recv_cmd2(self, cmd):  # test method
         resp_recv = False
@@ -63,7 +68,7 @@ class W_UPYDEVICE:
     def _cmd(self, cmd):  # test method
         command = 'web_repl_cmd -c "{}" -p {} -t {}'.format(
             cmd, self.password, self.ip)
-        resp = self.send_recv_cmd2(command)
+        resp = self._send_recv_cmd2(command)
         return resp[0]
 
     def _run_command_rl(self, command):  # test method
@@ -116,7 +121,7 @@ class W_UPYDEVICE:
             else:
                 return output
 
-    def cmd(self, command, silent=False, p_queue=None, capture_output=False, bundle_dir=''):  # best method
+    def cmd(self, command, silent=False, p_queue=None, bundle_dir='', capture_output=False):  # best method
         cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
             command, self.ip, self.password)
         if bundle_dir is not '':
@@ -168,7 +173,7 @@ class W_UPYDEVICE:
             for message in result:
                 print(message[:-1].decode())
 
-    def cmd_p(self, command, silent=False, p_queue=None, capture_output=False, bundle_dir=''):  # best method
+    def cmd_p(self, command, silent=False, p_queue=None, bundle_dir='', capture_output=False):  # best method
         cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
             command, self.ip, self.password)
         if bundle_dir is not '':
@@ -219,6 +224,44 @@ class W_UPYDEVICE:
             for message in result:
                 print(message[:-1].decode())
 
+    def _cmd_nb(self, command, silent=False, time_out=2, bundle_dir=''):  # non blocking device method
+        cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
+            command, self.ip, self.password)
+        if bundle_dir is not '':
+            cmd_str = bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(
+                command, self.ip, self.password)
+        # print(group_cmd_str)
+        self.long_output = []
+        cmd = shlex.split(cmd_str)
+        try:
+            proc = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            for i in range(6):
+                proc.stdout.readline()
+            time.sleep(time_out)
+            proc.terminate()
+
+        except KeyboardInterrupt:
+            time.sleep(1)
+            result = proc.stdout.readlines()
+            for message in result:
+                print(message[:-1].decode())
+
+    def cmd_nb(self, command, silent=False, time_out=2, block_dev=True):
+        if not block_dev:
+            self.dev_process_raw = multiprocessing.Process(target=self._cmd_nb, args=(command, silent, time_out, self.bundle_dir))
+            self.dev_process_raw.start()
+        else:
+            self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+            self.dev_process_raw.start()
+
+    def get_opt(self):
+        try:
+            self.output = self.output_queue.get(block=False)
+        except Exception:
+            pass
+
     def reset(self, bundle_dir='', output=True):
         reset_cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format('D',
                                                                                     self.ip, self.password)
@@ -260,6 +303,41 @@ class W_UPYDEVICE:
         except Exception as e:
             pass
 
+    def kbi(self, bundle_dir='', output=True):
+        reset_cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(hex(3),
+                                                                                    self.ip, self.password)
+        if bundle_dir is not '':
+            reset_cmd_str = bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(hex(3),
+                                                                                   self.ip, self.password)
+        reset_cmd = shlex.split(reset_cmd_str)
+        if output:
+            print('KeyboardInterrupt sent!')
+        try:
+            proc = subprocess.Popen(
+                reset_cmd, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            for i in range(6):
+                proc.stdout.readline()
+            while proc.poll() is None:
+                resp = proc.stdout.readline()[:-1].decode()
+                if len(resp) > 0:
+                    if resp[0] == '>':
+                        if output:
+                            print(resp[4:])
+                    else:
+                        if output:
+                            print(resp)
+                else:
+                    if output:
+                        print(resp)
+            if output:
+                print('Done!')
+        except KeyboardInterrupt:
+            time.sleep(1)
+            result = proc.stdout.readlines()
+            for message in result:
+                print(message[:-1].decode())
+
 
 # S_UPYDEVICE
 
@@ -270,10 +348,12 @@ class S_UPYDEVICE:
         self.timeout = timeout
         self.baudrate = baudrate
         self.name = name
+        self.process_raw = None
         self.dev_class = 'SERIAL'
         self.bundle_dir = bundle_dir
         if name is None:
             self.name = 'supydev_{}'.format(self.serial_port.split('/')[-1])
+        self.output_queue = multiprocessing.Queue(maxsize=1)
         self.picocom_cmd = shlex.split(
             'picocom -port {} -qcx {} -b{}'.format(self.serial_port, self.timeout, self.baudrate))
         self.response = None
@@ -297,7 +377,7 @@ class S_UPYDEVICE:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         self.serial.close()
 
-    def cmd(self, command, silent=False, p_queue=None, capture_output=False, timeout=None, bundle_dir=''):
+    def cmd(self, command, silent=False, p_queue=None, bundle_dir='', capture_output=False, timeout=None):
         self.long_output = []
         self.picocom_cmd = shlex.split(self.bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
@@ -355,7 +435,7 @@ class S_UPYDEVICE:
             for message in result:
                 print(message[:-1].decode())
 
-    def cmd_p(self, command, silent=False, p_queue=None, capture_output=False, timeout=None, bundle_dir=''):
+    def cmd_p(self, command, silent=False, p_queue=None, bundle_dir='', capture_output=False, timeout=None):
         self.long_output = []
         self.picocom_cmd = shlex.split(self.bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
             shlex.quote(command), self.timeout, self.baudrate, self.serial_port))
@@ -413,6 +493,16 @@ class S_UPYDEVICE:
             for message in result:
                 print(message[:-1].decode())
 
+    def cmd_nb(self, command, silent=False):
+        self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+        self.dev_process_raw.start()
+
+    def get_opt(self):
+        try:
+            self.output = self.output_queue.get(block=False)
+        except Exception:
+            pass
+
     def reset(self, output=True):
         if output:
             print('Rebooting upydevice...')
@@ -425,6 +515,30 @@ class S_UPYDEVICE:
         # time.sleep(1)
         self.serial.write(struct.pack('i', 0x0d))
         self.serial.write(struct.pack('i', 0x04))  # EOT
+        self.serial.write(struct.pack('i', 0x0d))  # CR
+        self.serial.flush()
+        # print(self.serial.inWaiting())
+        while self.serial.inWaiting() > 0:
+            self.serial.read()
+        # print(self.serial.inWaiting())
+        self.serial.write(struct.pack('i', 0x0d))
+        # time.sleep(1)
+        self.serial.close()
+        if output:
+            print('Done!')
+
+    def kbi(self, output=True):
+        if output:
+            print('KeyboardInterrupt sent!')
+        if not self.serial.is_open:
+            self.serial.open()
+        # time.sleep(1)
+        while self.serial.inWaiting() > 0:
+            self.serial.read()
+        # print(self.serial.inWaiting())
+        # time.sleep(1)
+        self.serial.write(struct.pack('i', 0x0d))
+        self.serial.write(struct.pack('i', 0x03))  # EOT
         self.serial.write(struct.pack('i', 0x0d))  # CR
         self.serial.flush()
         # print(self.serial.inWaiting())
@@ -455,7 +569,9 @@ class PYBOARD:
         self.bundle_dir = bundle_dir
         if name is None:
             self.name = 'pyboard_{}'.format(self.serial_port.split('/')[-1])
+        self.output_queue = multiprocessing.Queue(maxsize=1)
         self.output = None
+        self.process_raw = None
         self.long_output = []
         self.serial = serial.Serial(self.serial_port, self.baudrate)
         self.reset(output=False)
@@ -476,7 +592,7 @@ class PYBOARD:
         self.serial.write(struct.pack('i', 0x0d))  # CR
         # self.serial.close()
 
-    def cmd(self, command, out_print=True, p_queue=None, capture_output=False, silent=False, timeout=None, bundle_dir=''):
+    def cmd(self, command, silent=False, p_queue=None, bundle_dir='', out_print=True, capture_output=False, timeout=None):
         out_print = not silent
         self.long_output = []
         self.picocom_cmd = shlex.split(self.bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
@@ -537,7 +653,7 @@ class PYBOARD:
             for message in result:
                 print(message[:-1].decode())
 
-    def cmd_p(self, command, out_print=True, p_queue=None, capture_output=False, silent=False, timeout=None, bundle_dir=''):
+    def cmd_p(self, command, silent=False, p_queue=None, bundle_dir='', out_print=True, capture_output=False, timeout=None):
         out_print = not silent
         self.long_output = []
         self.picocom_cmd = shlex.split(self.bundle_dir+'picocom -t {} -qx {} -b{} {}'.format(
@@ -598,6 +714,16 @@ class PYBOARD:
             for message in result:
                 print(message[:-1].decode())
 
+    def cmd_nb(self, command, silent=False):
+        self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+        self.dev_process_raw.start()
+
+    def get_opt(self):
+        try:
+            self.output = self.output_queue.get(block=False)
+        except Exception:
+            pass
+
     def reset(self, output=True):
         if output:
             print('Rebooting pyboard...')
@@ -622,6 +748,30 @@ class PYBOARD:
         if output:
             print('Done!')
 
+    def kbi(self, output=True):
+        if output:
+            print('KeyboardInterrupt sent!')
+        if not self.serial.is_open:
+            self.serial.open()
+        # time.sleep(1)
+        while self.serial.inWaiting() > 0:
+            self.serial.read()
+        # print(self.serial.inWaiting())
+        # time.sleep(1)
+        self.serial.write(struct.pack('i', 0x0d))
+        self.serial.write(struct.pack('i', 0x03))  # ETX
+        self.serial.write(struct.pack('i', 0x0d))  # CR
+        self.serial.flush()
+        # print(self.serial.inWaiting())
+        while self.serial.inWaiting() > 0:
+            self.serial.read()
+        # print(self.serial.inWaiting())
+        self.serial.write(struct.pack('i', 0x0d))
+        # time.sleep(1)
+        # self.serial.close()
+        if output:
+            print('Done!')
+
 
 class GROUP:
     def __init__(self, devs=[None], name=None):
@@ -634,11 +784,12 @@ class GROUP:
     def cmd(self, command, group_silent=False, dev_silent=False, ignore=[], include=[]):
         if len(include) == 0:
             include = [dev for dev in self.devs.keys()]
+        for dev in ignore:
+            include.remove(dev)
         for dev in include:
-            if dev not in ignore:
-                if not group_silent:
-                    print('Sending command to {}'.format(dev))
-                self.devs[dev].cmd(command, silent=dev_silent)
+            if not group_silent:
+                print('Sending command to {}'.format(dev))
+            self.devs[dev].cmd(command, silent=dev_silent)
         self.output = {dev: self.devs[dev].output for dev in include}
 
     def cmd_p(self, command, group_silent=False, dev_silent=False, ignore=[], include=[], blocking=True, id=False):
@@ -667,7 +818,10 @@ class GROUP:
             except Exception as e:
                 pass
             for dev in include:
-                self.devs[dev].output = self.output[dev]
+                try:
+                    self.devs[dev].output = self.output[dev]
+                except Exception as e:
+                    pass
         else:
             self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].cmd_p, args=(command, dev_silent, self.output_queue[dev])) for dev in self.devs.keys()}
             if len(include) == 0:
@@ -693,13 +847,78 @@ class GROUP:
             except Exception as e:
                 pass
             for dev in include:
+                try:
+                    self.devs[dev].output = self.output[dev]
+                except Exception as e:
+                    pass
+
+    def get_opt(self):
+        try:
+            self.output = {dev: self.output_queue[dev].get(timeout=2) for dev in self.devs.keys()}
+        except Exception as e:
+            pass
+        for dev in self.devs.keys():
+            try:
                 self.devs[dev].output = self.output[dev]
+            except Exception as e:
+                pass
 
     def reset(self, group_silent=False, output_dev=True, ignore=[], include=[]):
         if len(include) == 0:
             include = [dev for dev in self.devs.keys()]
+        for dev in ignore:
+            include.remove(dev)
         for dev in include:
-            if dev not in ignore:
-                if not group_silent:
-                    print('Rebooting {}'.format(dev))
-                self.devs[dev].reset(output=output_dev)
+            if not group_silent:
+                print('Rebooting {}'.format(dev))
+            self.devs[dev].reset(output=output_dev)
+
+
+# def uparser(long_command):
+#     return "{}\r".format(long_command.replace('\n', '\r').replace('\t', '')[1:])
+#
+#
+# def uparser_2(long_command):
+#     return "{}\r".format('\r'.join([line.strip() for line in long_command.split('\n')]))
+
+
+def uparser_dec(long_command):
+    lines_cmd = []
+    space_count = [0]
+    for line in long_command.split('\n')[1:]:
+        line_befoure = space_count[-1]
+        line_now = line.count('   ')
+        # print(line_now)
+        space_count.append(line_now)
+        if line_befoure > line_now:
+            if line_now > 0:
+                lines_cmd.append(''.join(['\b' for i in range(int((line_befoure/line_now)/2))]+[line.strip()]))
+                # print('This line must be backspaced {} times: '.format((line_befoure/line_now)/2), line)
+            # else:
+            #     if len(line.strip()) > 0:
+            #         lines_cmd.append(''.join(['\b' for i in range(1)]+[line.strip()]))
+
+        else:
+            lines_cmd.append('\r'.join([line.strip()]))
+    return "{}\r\r".format('\r'.join(lines_cmd))
+
+
+def upy_code(func):  # TODO: ACCEPT DEVICE ARG
+    def wrapper_get_str_func(*args, **kwargs):
+        print(getsource(func))
+        return uparser_dec(getsource(func))
+    return wrapper_get_str_func
+
+
+def upy_cmd(device):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            args_repr = [repr(a) for a in args]                      # 1
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]  # 2
+            signature = ", ".join(args_repr + kwargs_repr)           # 3
+            cmd = f"{func.__name__}({signature})"
+            device.cmd(cmd)
+            return device.output
+        return wrapper_cmd
+    return decorator_cmd_str
