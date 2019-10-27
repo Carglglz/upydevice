@@ -6,7 +6,7 @@
 * [COMMANDS](#COMMANDS)
 * [GROUP](#GROUP)
 * [PARSER AND DECORATORS](#PARSER-AND-DECORATORS)
-* [ APP BUNDLE (PYINSTALLER)](#APP-BUNDLE-(PYINSTALLER))
+* [APP BUNDLE](#APP-BUNDLE)
 
 ------
 
@@ -650,7 +650,7 @@ These complex commands include:
 
 ------
 
-### APP BUNDLE (PYINSTALLER)
+### APP BUNDLE
 
 #### Making an stand alone app
 
