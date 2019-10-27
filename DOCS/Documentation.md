@@ -695,13 +695,13 @@ To make a 'stand alone app' from a python script that use uPydevice some necessa
 
      **Clone the repository and put the binaries needed in the same folder as the 'python_app.py' script*
 
-     Example: app that use a W_UPYDEVICE:
+     Example: app that uses a W_UPYDEVICE:
 
 ```bash
 $ pyinstaller my_python_app.py -w --add-data "web_repl_cmd_r:." -y -n my_python_app
 ```
 
-​			Example: app that use a S_UPYDEVICE:
+​			Example: app that uses a S_UPYDEVICE:
 
 ```bash
 $ pyinstaller my_python_app.py -w --add-data "picocom:." -y -n my_python_app
