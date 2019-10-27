@@ -652,7 +652,7 @@ These complex commands include:
 
 ### APP BUNDLE 
 
-#### Making an stand alone app (with Pyinstaller)
+#### Making a stand alone app (with Pyinstaller)
 
 To make a 'stand alone app' from a python script that use uPydevice some necessary steps must be done:
 
