@@ -608,7 +608,7 @@ These complex commands include:
     [1, 2, 3]
     ```
 
-- #### Python functions that are call in the device (where are previously defined)
+- #### Python functions that are called in the device (where they were previously defined)
 
   - #### @upy_cmd(device=)
 
