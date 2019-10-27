@@ -11,6 +11,17 @@ Python library to interface with Micropython devices through WebREPL protocol or
 
 *to install picocom do:*  `brew install picocom`
 
+### Tested on
+
+- OS: 
+  - MacOS Mojave 10.14.6
+- BOARDS:
+  - Esp32 (Adafruit feather Huzzah)
+  - Esp8266 (Adafruit feather Huzzah)
+  - Pyboard Little
+  - Pyboard v1.1
+  - CircuitPlayground Express
+
 ### Install
 `pip install upydevice`
 
