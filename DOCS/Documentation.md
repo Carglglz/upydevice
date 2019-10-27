@@ -654,7 +654,7 @@ These complex commands include:
 
 #### Making a stand alone app (with Pyinstaller)
 
-To make a 'stand alone app' from a python script that use uPydevice some necessary steps must be done:
+To make a 'stand alone app' from a python script that uses uPydevice, some necessary steps must be done:
 
 1. ##### Get the path of the 'bundle directory':
 
