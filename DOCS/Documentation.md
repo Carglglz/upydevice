@@ -39,7 +39,7 @@ There are three python classes that define three different MicroPython devices:
     * ip_targe: the IP of the device
     * password: the WebREPL password of the device
     * name: (optional) to give a name to the device (useful when use within a GROUP), if not set it can be set after with `esp32.name = 'esp32' `. * If not set at initialization moment, an automatic name will be set as `'upydev_class'+'ip or serial port'`, in this case would be `wupydev_62`
-    * bundle_dir: to indicate the path where the binary 'web_repl_cmd_r' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP BUNDLE (PYINSTALLER)))
+    * bundle_dir: to indicate the path where the binary 'web_repl_cmd_r' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP-BUNDLE-(PYINSTALLER)))
 
   
 
@@ -70,7 +70,7 @@ There are three python classes that define three different MicroPython devices:
     * timeout: the amount of time in ms that Picocom waits to receive a command output
     * baudrate: the baudrate of the serial communication
     * name: (optional) to give a name to the device (useful when use within a GROUP), if not set it can be set after with `esp32_s.name = 'esp32_s' `. * If not set at initialization moment, an automatic name will be set as `'upydev_class'+'ip or serial port'`, in this case would be `supydev_tty.SLAB_USBtoUART`
-    * bundle_dir: to indicate the path where the binary 'picocom' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP BUNDLE (PYINSTALLER)))
+    * bundle_dir: to indicate the path where the binary 'picocom' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP-BUNDLE-(PYINSTALLER)))
 
   
 
@@ -101,7 +101,7 @@ There are three python classes that define three different MicroPython devices:
     * timeout: the amount of time in ms that Picocom waits to receive a command output
     * baudrate: the baudrate of the serial communication
     * name: (optional) to give a name to the device (useful when use within a GROUP), if not set it can be set after with `pyboard.name = 'pyboard' `. * If not set at initialization moment, an automatic name will be set as `'upydev_class'+'ip or serial port'`, in this case would be `pyboard_tty.usbmodem3370377430372`
-    * bundle_dir: to indicate the path where the binary 'picocom' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP BUNDLE (PYINSTALLER)))
+    * bundle_dir: to indicate the path where the binary 'picocom' can be found. (This is useful when making an app bundle and this is explained further in [ APP BUNDLE (PYINSTALLER)](#APP-BUNDLE-(PYINSTALLER)))
 
 
 
