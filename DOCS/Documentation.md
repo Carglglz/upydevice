@@ -659,10 +659,13 @@ These complex commands include:
     This allows to define a 'phantom' class in python whose methods will call the methods of a defined class in MicroPython, see the next example with an IMU sensor and its library: (LSM9DS1)
 
     * *Set debug to True if the function has print() statements or you want to catch an error*
-* *Set rtn to False if the function that is being called returns None*
+    * *Set rtn to False if the function that is being called returns None*
+
+
 
 ***IN MICROPYTHON:***
     
+
 ```python
 >>> from lsm9ds1 import LSM9DS1
 >>> from machine import I2C
