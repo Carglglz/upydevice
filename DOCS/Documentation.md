@@ -752,17 +752,17 @@ imu.read_magnet()
 
       ```python
       class UOS:
-      def __init__(self, name):
-      """Phantom UOS class"""
-      self.name=name
-      @upy_cmd_c(esp32)
-      def listdir(self, directory):
-      return self.name
+      		def __init__(self, name):
+          	"""Phantom UOS class"""
+          	self.name=name
+          @upy_cmd_c(esp32)
+          def listdir(self, directory):
+          	return self.name
       
       
-      @upy_cmd_c_raw(esp32)
-      def uname(self):
-      return self.name
+          @upy_cmd_c_raw(esp32)
+          def uname(self):
+            return self.name
       
       uos = UOS('uos')
       
