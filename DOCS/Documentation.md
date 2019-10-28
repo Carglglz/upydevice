@@ -752,12 +752,13 @@ imu.read_magnet()
 
       ```python
       class UOS:
-      		def __init__(self, name):
-          	"""Phantom UOS class"""
-          	self.name=name
+          def __init__(self, name):
+            """Phantom UOS class"""
+            self.name=name
+         
           @upy_cmd_c(esp32)
           def listdir(self, directory):
-          	return self.name
+            return self.name
       
       
           @upy_cmd_c_raw(esp32)
@@ -773,11 +774,11 @@ imu.read_magnet()
       uos.uname()
       (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
       
-      ```
+```
+      
+  - #### Now we can do a custom ESP32 class that implements all these classes altogether:
 
-    - #### Now we can do a custom ESP32 class that implements all these classes altogether:
-  
-- ```python
+  - ```python
     class ESP32:
         def __init__(self, dev=esp32, sensor=imu, upy=uos):
             self.uos = upy
@@ -795,8 +796,8 @@ imu.read_magnet()
     my_esp32.uos.uname()
     (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
     ```
-  
-  
+
+    
 
 ------
 
