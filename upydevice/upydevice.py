@@ -996,3 +996,46 @@ def upy_cmd_c_raw(device):
             return None
         return wrapper_cmd
     return decorator_cmd_str
+
+
+def upy_cmd_c_r(debug=False, rtn=True):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            dev_dict = func(*args, **kwargs)
+            cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            if debug:
+                dev_dict['dev'].cmd(cmd)
+            else:
+                dev_dict['dev'].cmd(cmd, silent=True)
+            if rtn:
+                return dev_dict['dev'].output
+            else:
+                return None
+        return wrapper_cmd
+    return decorator_cmd_str
+
+
+def upy_cmd_c_raw_r():
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            dev_dict = func(*args, **kwargs)
+            cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            dev_dict['dev'].cmd(cmd, capture_output=True)
+            try:
+                dev_dict['dev'].output = dev_dict['dev'].long_output[0].strip()
+            except Exception as e:
+                print(e)
+                pass
+            return None
+        return wrapper_cmd
+    return decorator_cmd_str

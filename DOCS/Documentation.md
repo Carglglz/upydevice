@@ -802,6 +802,61 @@ imu.read_magnet()
 
 ​    
 
+
+
+- #### What about a reusable class ?
+
+  Use **@upy_cmd_c_r**, **@upy_cmd_c_raw_r**
+
+  - #### @upy_cmd_c_r(debug=False, rtn=True)
+
+  - #### @upy_cmd_c_raw_r()
+
+    Define a class like in the following example:
+
+    ```python
+    class UOS:
+        def __init__(self, device):
+            """Phantom UOS class"""
+            self.name='uos'
+            self.dev_dict = {'name':self.name, 'dev':device}
+        @upy_cmd_c_r()
+        def listdir(self, directory):
+            return self.dev_dict
+        
+        
+        @upy_cmd_c_raw_r()
+        def uname(self):
+            return self.dev_dict
+    
+    # Now it can be used with sereval devices:
+    
+    esp32_uos = UOS(esp32)
+    
+    esp32_uos.listdir('/')
+    ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
+    
+    pyb_uos = UOS(pyboard)
+    
+    pyb_uos.listdir('/flash')
+    ['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', 'udummy.py']
+    
+    ## And now the custom esp32 class would look like this:
+    
+    class ESP32:
+        def __init__(self, dev=esp32):
+            self.d= dev
+            self.uos = UOS(self.d)
+    
+    
+    my_esp32_custom = ESP32()
+    
+    my_esp32_custom.uos.listdir('/')
+    ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
+    ```
+
+    
+
 ------
 
 
