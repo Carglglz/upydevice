@@ -660,7 +660,6 @@ These complex commands include:
 
     * *Set debug to True if the function has print() statements or you want to catch an error*
 * *Set rtn to False if the function that is being called returns None*
-  
 
 ***IN MICROPYTHON:***
     
@@ -752,9 +751,9 @@ imu.read_magnet()
 
       ```python
       class UOS:
-          def __init__(self, name):
+          def __init__(self):
             """Phantom UOS class"""
-            self.name=name
+            self.name='uos'
          
           @upy_cmd_c(esp32)
           def listdir(self, directory):
@@ -765,7 +764,7 @@ imu.read_magnet()
           def uname(self):
             return self.name
       
-      uos = UOS('uos')
+      uos = UOS()
       
       
       uos.listdir('/')
@@ -774,11 +773,12 @@ imu.read_magnet()
       uos.uname()
       (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
       
-```
-      
+      ```
+    
   - #### Now we can do a custom ESP32 class that implements all these classes altogether:
 
-  - ```python
+```python
+
     class ESP32:
         def __init__(self, dev=esp32, sensor=imu, upy=uos):
             self.uos = upy
@@ -795,11 +795,13 @@ imu.read_magnet()
     
     my_esp32.uos.uname()
     (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
-    ```
+```
 
-    
+​    
 
 ------
+
+
 
 ### APP BUNDLE 
 
@@ -857,8 +859,3 @@ $ pyinstaller my_python_app.py -w --add-data "web_repl_cmd_r:." -y -n my_python_
 ```bash
 $ pyinstaller my_python_app.py -w --add-data "picocom:." -y -n my_python_app
 ```
-
-
-~~~
-
-~~~
