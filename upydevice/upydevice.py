@@ -935,7 +935,7 @@ def upy_code(func):  # TODO: ACCEPT DEVICE ARG
     return wrapper_get_str_func
 
 
-def upy_cmd(device, debug=False):
+def upy_cmd(device, debug=False, rtn=True):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
@@ -947,12 +947,15 @@ def upy_cmd(device, debug=False):
                 device.cmd(cmd)
             else:
                 device.cmd(cmd, silent=True)
-            return device.output
+            if rtn:
+                return device.output
+            else:
+                return None
         return wrapper_cmd
     return decorator_cmd_str
 
 
-def upy_cmd_c(device, debug=False):
+def upy_cmd_c(device, debug=False, rtn=True):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
@@ -966,7 +969,10 @@ def upy_cmd_c(device, debug=False):
                 device.cmd(cmd)
             else:
                 device.cmd(cmd, silent=True)
-            return device.output
+            if rtn:
+                return device.output
+            else:
+                return None
         return wrapper_cmd
     return decorator_cmd_str
 

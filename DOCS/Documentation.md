@@ -610,10 +610,13 @@ These complex commands include:
 
 - #### Python functions that are called in the device (where they were previously defined)
 
-  - #### @upy_cmd(device, debug=False)
+  - #### @upy_cmd(device, debug=False, rtn=True)
 
-  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function. *Set debug to True if the function has print() statements or you want to catch an error*
+  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function. 
 
+  * *Set debug to True if the function has print() statements or you want to catch an error*
+  * *Set rtn to False if the function that is being called returns None* 
+  
   ```python
   # A simple way to do this would be:
   def led_toggle(n_times, wait):
@@ -645,21 +648,21 @@ These complex commands include:
   >>> result = test_f(10)
   >>> result
   [1, 10, 3]
-```
-  
+  ```
 
 
 
 - #### A Python 'Phantom' Class of a Class defined in MicroPython:
 
-  - #### @upy_cmd_c(device, debug=False)
+  - #### @upy_cmd_c(device, debug=False, rtn=True)
 
     This allows to define a 'phantom' class in python whose methods will call the methods of a defined class in MicroPython, see the next example with an IMU sensor and its library: (LSM9DS1)
 
-    *Set debug to True if the function has print() statements or you want to catch an error*
-
-    ***IN MICROPYTHON:***
-
+    * *Set debug to True if the function has print() statements or you want to catch an error*
+* *Set rtn to False if the function that is being called returns None*
+    
+***IN MICROPYTHON:***
+    
     ```python
     >>> from lsm9ds1 import LSM9DS1
     >>> from machine import I2C
@@ -673,9 +676,9 @@ These complex commands include:
     >>> imu.read_magnet()
     (0.4556885, 0.2744141, -0.03625488)
     ```
-
+    
     ***IN PYTHON3***:
-
+    
     ```python
     # DEFINE THE DEVICE
     from upydevice import W_UPYDEVICE, upy_cmd_c
@@ -710,40 +713,65 @@ These complex commands include:
     
     imu.read_magnet()
     (0.456665, 0.2738037, -0.04858398)
-    
     ```
+  
+- Pyboard example:
 
-  - Another example, implement some uos Micropython methods
-
-    #### @upy_cmd_c_raw(device) 
-
-    *Use this if the ouput of the function is not evaluable python object*
-
-    ```python
-    class UOS:
-        def __init__(self, name):
-            """Phantom UOS class"""
-            self.name=name
-        @upy_cmd_c(esp32)
-        def listdir(self, directory):
-            return self.name
+  - ```python
+    # In MicroPython do:
+    from pyb import LED
+    
+    # In Python3 do:
+    from upydevice import PYBOARD, upy_cmd_c
+    pyboard = PYBOARD('/dev/tty.usbmodem3370377430372')
+    
+    class LED:
+        def __init__(self, number):
+            """Phantom pyb.LED class"""
+            self.name="{}({})".format('LED', number)
         
-        
-        @upy_cmd_c_raw(esp32)
-        def uname(self):
+        @upy_cmd_c(pyboard, rtn=False)
+        def toggle(self):
             return self.name
     
-    uos = UOS('uos')
-    
-    
-    uos.listdir('/')
-    ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
-    
-    uos.uname()
-    (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
-    
+    green_led = LED(2)
+    green_led.toggle()
     ```
 
+    
+
+- Another example, implement some uos Micropython methods
+
+    - #### @upy_cmd_c_raw(device) 
+
+      *Use this if the ouput of the function is not evaluable python object*
+
+      ```python
+      class UOS:
+      def __init__(self, name):
+      """Phantom UOS class"""
+      self.name=name
+      @upy_cmd_c(esp32)
+      def listdir(self, directory):
+      return self.name
+      
+      
+      @upy_cmd_c_raw(esp32)
+      def uname(self):
+      return self.name
+      
+      uos = UOS('uos')
+      
+      
+      uos.listdir('/')
+      ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
+      
+      uos.uname()
+      (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
+      
+      ```
+
+      
   - #### Now we can do a custom ESP32 class that implements all these classes altogether:
 
   - ```python
@@ -826,3 +854,7 @@ $ pyinstaller my_python_app.py -w --add-data "web_repl_cmd_r:." -y -n my_python_
 $ pyinstaller my_python_app.py -w --add-data "picocom:." -y -n my_python_app
 ```
 
+
+~~~
+
+~~~
