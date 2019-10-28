@@ -610,9 +610,9 @@ These complex commands include:
 
 - #### Python functions that are called in the device (where they were previously defined)
 
-  - #### @upy_cmd(device=)
+  - #### @upy_cmd(device, debug=False)
 
-  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function
+  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function. *Set debug to True if the function has print() statements or you want to catch an error*
 
   ```python
   # A simple way to do this would be:
@@ -640,13 +640,132 @@ These complex commands include:
   ... def test_f(n):
   ...     pass
   ...
-  >>> result=test_f(10) ## by default prints its output
+  >>> test_f(10)
   [1, 10, 3]
+  >>> result = test_f(10)
   >>> result
   [1, 10, 3]
-  ```
-
+```
   
+
+
+
+- #### A Python 'Phantom' Class of a Class defined in MicroPython:
+
+  - #### @upy_cmd_c(device, debug=False)
+
+    This allows to define a 'phantom' class in python whose methods will call the methods of a defined class in MicroPython, see the next example with an IMU sensor and its library: (LSM9DS1)
+
+    *Set debug to True if the function has print() statements or you want to catch an error*
+
+    ***IN MICROPYTHON:***
+
+    ```python
+    >>> from lsm9ds1 import LSM9DS1
+    >>> from machine import I2C
+    >>> from machine import Pin
+    >>> i2c = I2C(scl=Pin(22), sda=Pin(23))
+    >>> imu = LSM9DS1(i2c)
+    >>> imu.read_accel()
+    (-0.03057861, -1.010193, 0.08703613)
+    >>> imu.read_gyro()
+    (-0.231781, 0.7177735, -0.3215027)
+    >>> imu.read_magnet()
+    (0.4556885, 0.2744141, -0.03625488)
+    ```
+
+    ***IN PYTHON3***:
+
+    ```python
+    # DEFINE THE DEVICE
+    from upydevice import W_UPYDEVICE, upy_cmd_c
+    esp32 = W_UPYDEVICE('192.168.1.53', 'mypass')
+    
+    # DEFINE THE 'PHANTOM' CLASS
+    
+    class LSM9DS1:
+        def __init__(self, name): # must accept a name as a parameter
+            """Phantom LSM9DS1 class"""
+            self.name = name
+            
+        @upy_cmd_c(esp32)
+        def read_gyro(self):
+            return self.name # every method must return self.name
+        @upy_cmd_c(esp32)
+        def read_accel(self):
+            return self.name
+        @upy_cmd_c(esp32)
+        def read_magnet(self):
+            return self.name
+    
+    imu = LSM9DS1(name='imu') # pass the name of the variable defined in MicroPython
+    
+    # NOW CALLING THE METHODS, JUST CALLS THEM ON THE DEVICE
+    
+    imu.read_accel()
+    (-0.0145874, -1.00061, 0.1412964)
+    
+    imu.read_gyro()
+    (-0.4710389, 0.7925416, -0.3065491)
+    
+    imu.read_magnet()
+    (0.456665, 0.2738037, -0.04858398)
+    
+    ```
+
+  - Another example, implement some uos Micropython methods
+
+    #### @upy_cmd_c_raw(device) 
+
+    *Use this if the ouput of the function is not evaluable python object*
+
+    ```python
+    class UOS:
+        def __init__(self, name):
+            """Phantom UOS class"""
+            self.name=name
+        @upy_cmd_c(esp32)
+        def listdir(self, directory):
+            return self.name
+        
+        
+        @upy_cmd_c_raw(esp32)
+        def uname(self):
+            return self.name
+    
+    uos = UOS('uos')
+    
+    
+    uos.listdir('/')
+    ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
+    
+    uos.uname()
+    (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
+    
+    ```
+
+  - #### Now we can do a custom ESP32 class that implements all these classes altogether:
+
+  - ```python
+    class ESP32:
+        def __init__(self, dev=esp32, sensor=imu, upy=uos):
+            self.uos = upy
+            self.d = dev
+            self.imu = sensor
+    
+    my_esp32 = ESP32()
+    
+    my_esp32.imu.read_gyro()
+    (-0.3663635, 0.814972, -0.4411316)
+    
+    my_esp32.uos.listdir('/')
+    ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
+    
+    my_esp32.uos.uname()
+    (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
+    ```
+
+    
 
 ------
 

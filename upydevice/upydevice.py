@@ -148,7 +148,8 @@ class W_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -160,7 +161,8 @@ class W_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -200,7 +202,8 @@ class W_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -212,7 +215,8 @@ class W_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -250,10 +254,12 @@ class W_UPYDEVICE:
 
     def cmd_nb(self, command, silent=False, time_out=2, block_dev=True):
         if not block_dev:
-            self.dev_process_raw = multiprocessing.Process(target=self._cmd_nb, args=(command, silent, time_out, self.bundle_dir))
+            self.dev_process_raw = multiprocessing.Process(
+                target=self._cmd_nb, args=(command, silent, time_out, self.bundle_dir))
             self.dev_process_raw.start()
         else:
-            self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+            self.dev_process_raw = multiprocessing.Process(
+                target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
             self.dev_process_raw.start()
 
     def get_opt(self):
@@ -409,7 +415,8 @@ class S_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -422,7 +429,8 @@ class S_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -467,7 +475,8 @@ class S_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -480,7 +489,8 @@ class S_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -494,7 +504,8 @@ class S_UPYDEVICE:
                 print(message[:-1].decode())
 
     def cmd_nb(self, command, silent=False):
-        self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+        self.dev_process_raw = multiprocessing.Process(
+            target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
         self.dev_process_raw.start()
 
     def get_opt(self):
@@ -625,7 +636,8 @@ class PYBOARD:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -638,7 +650,8 @@ class PYBOARD:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -686,7 +699,8 @@ class PYBOARD:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp[4:]), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp[4:]), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -699,7 +713,8 @@ class PYBOARD:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(resp), block=False)
+                                p_queue.put(ast.literal_eval(
+                                    resp), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -715,7 +730,8 @@ class PYBOARD:
                 print(message[:-1].decode())
 
     def cmd_nb(self, command, silent=False):
-        self.dev_process_raw = multiprocessing.Process(target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
+        self.dev_process_raw = multiprocessing.Process(
+            target=self.cmd, args=(command, silent, self.output_queue, self.bundle_dir))
         self.dev_process_raw.start()
 
     def get_opt(self):
@@ -779,7 +795,8 @@ class GROUP:
         self.devs = {dev.name: dev for dev in devs}
         self.dev_process_raw_dict = None
         self.output = None
-        self.output_queue = {dev.name: multiprocessing.Queue(maxsize=1) for dev in devs}
+        self.output_queue = {
+            dev.name: multiprocessing.Queue(maxsize=1) for dev in devs}
 
     def cmd(self, command, group_silent=False, dev_silent=False, ignore=[], include=[]):
         if len(include) == 0:
@@ -794,7 +811,8 @@ class GROUP:
 
     def cmd_p(self, command, group_silent=False, dev_silent=False, ignore=[], include=[], blocking=True, id=False):
         if not id:
-            self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].cmd, args=(command, dev_silent, self.output_queue[dev])) for dev in self.devs.keys()}
+            self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].cmd, args=(
+                command, dev_silent, self.output_queue[dev])) for dev in self.devs.keys()}
             if len(include) == 0:
                 include = [dev for dev in self.devs.keys()]
             for dev in ignore:
@@ -806,7 +824,8 @@ class GROUP:
                 self.dev_process_raw_dict[dev].start()
 
             while blocking:
-                dev_proc_state = [self.dev_process_raw_dict[dev].is_alive() for dev in self.dev_process_raw_dict.keys()]
+                dev_proc_state = [self.dev_process_raw_dict[dev].is_alive(
+                ) for dev in self.dev_process_raw_dict.keys()]
                 if all(state is False for state in dev_proc_state):
                     time.sleep(0.1)
                     if not group_silent:
@@ -814,7 +833,8 @@ class GROUP:
                     break
 
             try:
-                self.output = {dev: self.output_queue[dev].get(timeout=2) for dev in include}
+                self.output = {dev: self.output_queue[dev].get(
+                    timeout=2) for dev in include}
             except Exception as e:
                 pass
             for dev in include:
@@ -823,7 +843,8 @@ class GROUP:
                 except Exception as e:
                     pass
         else:
-            self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].cmd_p, args=(command, dev_silent, self.output_queue[dev])) for dev in self.devs.keys()}
+            self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].cmd_p, args=(
+                command, dev_silent, self.output_queue[dev])) for dev in self.devs.keys()}
             if len(include) == 0:
                 include = [dev for dev in self.devs.keys()]
             for dev in ignore:
@@ -835,7 +856,8 @@ class GROUP:
                 self.dev_process_raw_dict[dev].start()
 
             while blocking:
-                dev_proc_state = [self.dev_process_raw_dict[dev].is_alive() for dev in self.dev_process_raw_dict.keys()]
+                dev_proc_state = [self.dev_process_raw_dict[dev].is_alive(
+                ) for dev in self.dev_process_raw_dict.keys()]
                 if all(state is False for state in dev_proc_state):
                     time.sleep(0.1)
                     if not group_silent:
@@ -843,7 +865,8 @@ class GROUP:
                     break
 
             try:
-                self.output = {dev: self.output_queue[dev].get(timeout=2) for dev in include}
+                self.output = {dev: self.output_queue[dev].get(
+                    timeout=2) for dev in include}
             except Exception as e:
                 pass
             for dev in include:
@@ -854,7 +877,8 @@ class GROUP:
 
     def get_opt(self):
         try:
-            self.output = {dev: self.output_queue[dev].get(timeout=2) for dev in self.devs.keys()}
+            self.output = {dev: self.output_queue[dev].get(
+                timeout=2) for dev in self.devs.keys()}
         except Exception as e:
             pass
         for dev in self.devs.keys():
@@ -892,7 +916,8 @@ def uparser_dec(long_command):
         space_count.append(line_now)
         if line_befoure > line_now:
             if line_now > 0:
-                lines_cmd.append(''.join(['\b' for i in range(int((line_befoure/line_now)/2))]+[line.strip()]))
+                lines_cmd.append(
+                    ''.join(['\b' for i in range(int((line_befoure/line_now)/2))]+[line.strip()]))
                 # print('This line must be backspaced {} times: '.format((line_befoure/line_now)/2), line)
             # else:
             #     if len(line.strip()) > 0:
@@ -910,15 +935,58 @@ def upy_code(func):  # TODO: ACCEPT DEVICE ARG
     return wrapper_get_str_func
 
 
-def upy_cmd(device):
+def upy_cmd(device, debug=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
-            args_repr = [repr(a) for a in args]                      # 1
-            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]  # 2
-            signature = ", ".join(args_repr + kwargs_repr)           # 3
+            args_repr = [repr(a) for a in args]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
             cmd = f"{func.__name__}({signature})"
-            device.cmd(cmd)
+            if debug:
+                device.cmd(cmd)
+            else:
+                device.cmd(cmd, silent=True)
             return device.output
+        return wrapper_cmd
+    return decorator_cmd_str
+
+
+def upy_cmd_c(device, debug=False):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            name = func(*args, **kwargs)
+            cmd = "{}.{}".format(name, cmd_)
+            if debug:
+                device.cmd(cmd)
+            else:
+                device.cmd(cmd, silent=True)
+            return device.output
+        return wrapper_cmd
+    return decorator_cmd_str
+
+
+def upy_cmd_c_raw(device):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            name = func(*args, **kwargs)
+            cmd = "{}.{}".format(name, cmd_)
+            device.cmd(cmd, capture_output=True)
+            try:
+                device.output = device.long_output[0].strip()
+            except Exception as e:
+                print(e)
+                pass
+            return None
         return wrapper_cmd
     return decorator_cmd_str
