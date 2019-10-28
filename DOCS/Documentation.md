@@ -660,61 +660,65 @@ These complex commands include:
 
     * *Set debug to True if the function has print() statements or you want to catch an error*
 * *Set rtn to False if the function that is being called returns None*
-    
+  
+
 ***IN MICROPYTHON:***
     
-    ```python
-    >>> from lsm9ds1 import LSM9DS1
-    >>> from machine import I2C
-    >>> from machine import Pin
-    >>> i2c = I2C(scl=Pin(22), sda=Pin(23))
-    >>> imu = LSM9DS1(i2c)
-    >>> imu.read_accel()
-    (-0.03057861, -1.010193, 0.08703613)
-    >>> imu.read_gyro()
-    (-0.231781, 0.7177735, -0.3215027)
-    >>> imu.read_magnet()
-    (0.4556885, 0.2744141, -0.03625488)
-    ```
-    
-    ***IN PYTHON3***:
-    
-    ```python
-    # DEFINE THE DEVICE
-    from upydevice import W_UPYDEVICE, upy_cmd_c
-    esp32 = W_UPYDEVICE('192.168.1.53', 'mypass')
-    
-    # DEFINE THE 'PHANTOM' CLASS
-    
-    class LSM9DS1:
-        def __init__(self, name): # must accept a name as a parameter
-            """Phantom LSM9DS1 class"""
-            self.name = name
-            
-        @upy_cmd_c(esp32)
-        def read_gyro(self):
-            return self.name # every method must return self.name
-        @upy_cmd_c(esp32)
-        def read_accel(self):
-            return self.name
-        @upy_cmd_c(esp32)
-        def read_magnet(self):
-            return self.name
-    
-    imu = LSM9DS1(name='imu') # pass the name of the variable defined in MicroPython
-    
-    # NOW CALLING THE METHODS, JUST CALLS THEM ON THE DEVICE
-    
-    imu.read_accel()
-    (-0.0145874, -1.00061, 0.1412964)
-    
-    imu.read_gyro()
-    (-0.4710389, 0.7925416, -0.3065491)
-    
-    imu.read_magnet()
-    (0.456665, 0.2738037, -0.04858398)
-    ```
-  
+```python
+>>> from lsm9ds1 import LSM9DS1
+>>> from machine import I2C
+>>> from machine import Pin
+>>> i2c = I2C(scl=Pin(22), sda=Pin(23))
+>>> imu = LSM9DS1(i2c)
+>>> imu.read_accel()
+(-0.03057861, -1.010193, 0.08703613)
+>>> imu.read_gyro()
+(-0.231781, 0.7177735, -0.3215027)
+>>> imu.read_magnet()
+(0.4556885, 0.2744141, -0.03625488)
+```
+
+***IN PYTHON3***
+
+```python
+
+# DEFINE THE DEVICE
+from upydevice import W_UPYDEVICE, upy_cmd_c
+esp32 = W_UPYDEVICE('192.168.1.53', 'mypass')
+
+# DEFINE THE 'PHANTOM' CLASS
+
+class LSM9DS1:
+    def __init__(self, name): # must accept a name as a parameter
+        """Phantom LSM9DS1 class"""
+        self.name = name
+        
+    @upy_cmd_c(esp32)
+    def read_gyro(self):
+        return self.name # every method must return self.name
+    @upy_cmd_c(esp32)
+    def read_accel(self):
+        return self.name
+    @upy_cmd_c(esp32)
+    def read_magnet(self):
+        return self.name
+
+imu = LSM9DS1(name='imu') # pass the name of the variable defined in MicroPython
+
+# NOW CALLING THE METHODS, JUST CALLS THEM ON THE DEVICE
+
+imu.read_accel()
+(-0.0145874, -1.00061, 0.1412964)
+
+imu.read_gyro()
+(-0.4710389, 0.7925416, -0.3065491)
+
+imu.read_magnet()
+(0.456665, 0.2738037, -0.04858398)
+```
+
+
+
 - Pyboard example:
 
   - ```python
@@ -771,10 +775,9 @@ These complex commands include:
       
       ```
 
-      
-  - #### Now we can do a custom ESP32 class that implements all these classes altogether:
-
-  - ```python
+    - #### Now we can do a custom ESP32 class that implements all these classes altogether:
+  
+- ```python
     class ESP32:
         def __init__(self, dev=esp32, sensor=imu, upy=uos):
             self.uos = upy
@@ -792,8 +795,8 @@ These complex commands include:
     my_esp32.uos.uname()
     (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
     ```
-
-    
+  
+  
 
 ------
 
