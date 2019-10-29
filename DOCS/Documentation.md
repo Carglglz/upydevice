@@ -654,12 +654,13 @@ These complex commands include:
 
 - #### A Python 'Phantom' Class of a Class defined in MicroPython:
 
-  - #### @upy_cmd_c(device, debug=False, rtn=True)
+  - #### @upy_cmd_c(device, debug=False, rtn=True, out=False)
 
     This allows to define a 'phantom' class in python whose methods will call the methods of a defined class in MicroPython, see the next example with an IMU sensor and its library: (LSM9DS1)
 
     * *Set debug to True if the function has print() statements or you want to catch an error*
     * *Set rtn to False if the function that is being called returns None*
+    * *Set out to True if the function that is being called in micropython is defined in the global space*
 
 
 
@@ -748,7 +749,7 @@ imu.read_magnet()
 
 - Another example, implement some uos Micropython methods
 
-    - #### @upy_cmd_c_raw(device) 
+    - #### @upy_cmd_c_raw(device, out=False) 
 
       *Use this if the ouput of the function is not evaluable python object*
 
@@ -808,9 +809,9 @@ imu.read_magnet()
 
   Use **@upy_cmd_c_r**, **@upy_cmd_c_raw_r**
 
-  - #### @upy_cmd_c_r(debug=False, rtn=True)
+  - #### @upy_cmd_c_r(debug=False, rtn=True, out=False)
 
-  - #### @upy_cmd_c_raw_r()
+  - #### @upy_cmd_c_raw_r(out=False)
 
     Define a class like in the following example:
 
@@ -855,7 +856,80 @@ imu.read_magnet()
     ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
     ```
 
+
+
+
+- #### Another example: A 'phantom' Timer class
+
+- ```python
+  # In MicroPython do:
+  from machine import Timer
+  Tim = Timer(1)
+  
+  # # LED CALLBACK
+  
+  def led_toggle(x):
+  	led.value(not led.value()) # led is already defined in esp32 Pin(13)
     
+  # In Python3 do:
+  
+  class machine_Timer:
+      def __init__(self, device, name):
+          self.name = name
+          self.dev_dict = {'name':self.name, 'dev':device}
+          self.PERIODIC = 1
+          self.ONE_SHOT = 0
+      
+      @upy_cmd_c_r(rtn=False)
+      def init(self, mode, period, callback):
+          return self.dev_dict
+      
+      @upy_cmd_c_r(rtn=False)
+      def deinit(self):
+          return self.dev_dict
+  
+  # NOW THE CALLBACK
+  
+  def led_toggle():
+    pass
+  
+  # NOW EVERYTHIN IS READY
+  esp32_timer = machine_Timer(esp32, name='Tim') # esp32 is an already defined W_UPYDEVICE
+  
+  esp32_timer.init(mode=esp32_timer.PERIODIC, period=500, callback=led_toggle)
+  
+  # now the led should blink every 500 millisecs
+  # to stop it
+  esp32_timer.deinit()
+  ```
+
+
+
+And finally, the complete ESP32 class with a custom function to start the blinking led:
+
+```python
+class ESP32:
+    def __init__(self, dev=esp32):
+        self.d= dev
+        self.uos = UOS(self.d)
+        self.machine = MACHINE(self.d)
+        self.imu = LSM9DS1(self.d, name= 'imu')
+        self.timer = machine_Timer(self.d, name='Tim')
+    
+    def start_blink(self, c_period):
+        self.timer.init(mode=self.timer.PERIODIC, period=c_period, callback=self.led_toggle)
+    
+    def led_toggle(self):
+        pass
+
+
+t_esp32 = ESP32()
+t_esp32.start_blink(500) # now the led should blink every 500 millisecs
+
+# t_esp32.timer.deinit() to stop
+```
+
+
 
 ------
 
