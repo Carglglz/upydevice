@@ -943,6 +943,7 @@ def upy_cmd(device, debug=False, rtn=True):
             kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd = f"{func.__name__}({signature})"
+            device.output = None
             if debug:
                 device.cmd(cmd)
             else:
@@ -959,12 +960,14 @@ def upy_cmd_c(device, debug=False, rtn=True, out=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
-            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             name = func(*args, **kwargs)
             cmd = "{}.{}".format(name, cmd_)
+            device.output = None
             if out:
                 cmd = "{}".format(cmd_)
             else:
@@ -985,12 +988,14 @@ def upy_cmd_c_raw(device, out=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
-            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             name = func(*args, **kwargs)
             cmd = "{}.{}".format(name, cmd_)
+            device.output = None
             if out:
                 cmd = "{}".format(cmd_)
             else:
@@ -1010,12 +1015,14 @@ def upy_cmd_c_r(debug=False, rtn=True, out=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
-            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             dev_dict = func(*args, **kwargs)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            dev_dict['dev'].output = None
             if out:
                 cmd = "{}".format(cmd_)
             else:
@@ -1036,12 +1043,14 @@ def upy_cmd_c_raw_r(out=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
-            args_repr = [repr(a) for a in args if '<__main__.' not in repr(a)]
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             dev_dict = func(*args, **kwargs)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            dev_dict['dev'].output = None
             if out:
                 cmd = "{}".format(cmd_)
             else:
