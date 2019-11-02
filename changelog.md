@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.1] Unreleased [Github repo]
 ## Added
 - phantom submodule, with some phantom classes (UOS, LSM9DS1, MACHINE, pyb_LED, pyb_Timer, machine_Timer, WLAN, AP, I2C)
+- Now bytearray and array objects are supported
 ## [0.1.0] - 2019-10-29
 ## Added
 - Now 'phantom' class methods allow to pass function in kwargs, this is useful to pass function to callbacks (for example Timers)

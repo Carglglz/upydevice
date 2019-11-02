@@ -12,7 +12,9 @@ import serial
 import struct
 import multiprocessing
 from dill.source import getsource
+from array import array
 import functools
+
 
 name = 'upydevice'
 
@@ -148,8 +150,18 @@ class W_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -161,8 +173,19 @@ class W_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -202,8 +225,18 @@ class W_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -215,8 +248,18 @@ class W_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -307,6 +350,18 @@ class W_UPYDEVICE:
         try:
             self.output = ast.literal_eval(self.response)
         except Exception as e:
+            if 'bytearray' in self.response:
+                try:
+                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                except Exception as e:
+                    pass
+            else:
+                if 'array' in self.response:
+                    try:
+                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        self.output = array(arr[0], arr[1])
+                    except Exception as e:
+                        pass
             pass
 
     def kbi(self, bundle_dir='', output=True):
@@ -375,6 +430,18 @@ class S_UPYDEVICE:
         try:
             self.output = ast.literal_eval(self.response)
         except Exception as e:
+            if 'bytearray' in self.response:
+                try:
+                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                except Exception as e:
+                    pass
+            else:
+                if 'array' in self.response:
+                    try:
+                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        self.output = array(arr[0], arr[1])
+                    except Exception as e:
+                        pass
             pass
 
     def enter_cmd(self):
@@ -415,8 +482,18 @@ class S_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -429,8 +506,18 @@ class S_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -475,8 +562,18 @@ class S_UPYDEVICE:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -489,8 +586,18 @@ class S_UPYDEVICE:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -595,7 +702,20 @@ class PYBOARD:
         try:
             self.output = ast.literal_eval(self.response)
         except Exception as e:
+            if 'bytearray' in self.response:
+                try:
+                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                except Exception as e:
+                    pass
+            else:
+                if 'array' in self.response:
+                    try:
+                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        self.output = array(arr[0], arr[1])
+                    except Exception as e:
+                        pass
             pass
+
 
     def enter_cmd(self):
         if not self.serial.is_open:
@@ -636,8 +756,18 @@ class PYBOARD:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -650,8 +780,18 @@ class PYBOARD:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
@@ -699,8 +839,18 @@ class PYBOARD:
                             self.long_output.append(resp[4:])
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp[4:]), block=False)
+                                try:
+                                    output = ast.literal_eval(resp[4:])
+                                except Exception as e:
+                                    if 'bytearray' in resp[4:]:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp[4:]:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                     else:
@@ -713,8 +863,18 @@ class PYBOARD:
                             self.long_output.append(resp)
                         if p_queue is not None:
                             try:
-                                p_queue.put(ast.literal_eval(
-                                    resp), block=False)
+                                try:
+                                    output = ast.literal_eval(resp)
+                                except Exception as e:
+                                    if 'bytearray' in resp:
+                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                    else:
+                                        if 'array' in resp:
+                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            output = array(arr[0], arr[1])
+                                    pass
+                                p_queue.put((
+                                    output), block=False)
                             except Exception as e:
                                 pass
                 else:
