@@ -125,8 +125,6 @@ GROUP (to send commands to several devices at a time)
     >>>
     >>> my_group.output
     {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
-
-To see more info read the DOCS at the github repo.
 """
 
 from .upydevice import *

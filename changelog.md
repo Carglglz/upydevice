@@ -5,10 +5,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.2] Unreleased [Github repo]
+## Added
+- New decorator (upy_cmd_c_r_in_callback) to be able to pass self methods (functions) as keywords arguments (for callbacks)
+- New decorator that allows non-blocking function calls (upy_cmd_c_r_nb)
+- New "IRQ_util.py" upy script (U_IRQ_MG class) + "Phantom" python IRQ_MG class
+  This allow to manage/set interrupts, and receive and interrupt callback on python3 (see Phantom class Docs)
+- New W_UPYDEVICE method 'is_reachable' (pings the device to see if it is
+  reachable)
+- New decorator (upy_cmd_c_r_nb_in_callback) to be able to pass self methods (functions) as keywords arguments (for callbacks) in non-blocking style
+(good for timer interrupts)
+- New "STREAMER_util.py" upy script (U_STREAMER class) as a "super" class to
+  make streaming sensor data in real time easier (up to ~900 Hz of sampling frequency tested) + "Phantom" python STREAMER class (see Phantom class Docs)
+- New phantom sensors classes (ADS1115, BME280, LSM9DS1)
+- New phantom sensors STREAMER classes (IMU_STREAMER, BME_STREAMER,
+  ADS_STREAMER)+ upydevice_utils scripts (IMU_util.py, ADS_util.py,
+  BME_util.py) to test U_STREAMER and U_IRQ_MG classes (more about this in docs
+  and examples)
 ## [0.1.1] - 2019-11-02
 ## Added
 - phantom submodule, with some phantom classes (UOS, LSM9DS1, MACHINE, pyb_LED, pyb_Timer, machine_Timer, WLAN, AP, I2C)
 - Now bytearray and array objects are supported
+
 ## [0.1.0] - 2019-10-29
 ## Added
 - Now 'phantom' class methods allow to pass function in kwargs, this is useful to pass function to callbacks (for example Timers)

@@ -15,6 +15,8 @@ from dill.source import getsource
 from array import array
 import functools
 
+# TODO: make a compatible version
+
 
 name = 'upydevice'
 version = '0.1.2'
@@ -1130,9 +1132,9 @@ def upy_cmd(device, debug=False, rtn=True):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             args_repr = [repr(a) for a in args]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd = f"{func.__name__}({signature})"
+            cmd = "{}({})".format(func.__name__, signature)
             device.output = None
             if debug:
                 device.cmd(cmd)
@@ -1152,9 +1154,9 @@ def upy_cmd_c(device, debug=False, rtn=True, out=False):
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             name = func(*args, **kwargs)
             cmd = "{}.{}".format(name, cmd_)
             device.output = None
@@ -1180,9 +1182,9 @@ def upy_cmd_c_raw(device, out=False):
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             name = func(*args, **kwargs)
             cmd = "{}.{}".format(name, cmd_)
             device.output = None
@@ -1207,9 +1209,9 @@ def upy_cmd_c_r(debug=False, rtn=True, out=False):
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             dev_dict = func(*args, **kwargs)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
             dev_dict['dev'].output = None
@@ -1235,9 +1237,9 @@ def upy_cmd_c_raw_r(out=False):
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             dev_dict = func(*args, **kwargs)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
             dev_dict['dev'].output = None
@@ -1264,9 +1266,9 @@ def upy_cmd_c_r_in_callback(debug=False, rtn=True, out=False):
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             dev_dict = func(*args, **kwargs)
             name = dev_dict['name']
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}.{}".format(k, name, v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
             dev_dict['dev'].output = None
             if out:
@@ -1291,9 +1293,9 @@ def upy_cmd_c_r_nb(debug=False, rtn=True, out=False):
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}".format(k , v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             dev_dict = func(*args, **kwargs)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
             dev_dict['dev'].output = None
@@ -1322,9 +1324,9 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
             args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
             dev_dict = func(*args, **kwargs)
             name = dev_dict['name']
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = ["{}={!r}".format(k, v) if not callable(v) else "{}={}.{}".format(k, name, v.__name__) for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
-            cmd_ = f"{func.__name__}({signature})"
+            cmd_ = "{}({})".format(func.__name__, signature)
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
             dev_dict['dev'].output = None
             if out:
@@ -1344,7 +1346,7 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
-# LOAD DEVICE CONFIGURATION FUNCTIONS (json) tools.py (submodule) 
+# LOAD DEVICE CONFIGURATION FUNCTIONS (json)
 
 # DEFAULT IS GLOBAL DIR, BUT dir= option available (in case of bundle_dir)
 # MAKE A GLOBAL DIR TO STORE DEV CONFIGURATIONS, (.upydevice_devs in $HOME)

@@ -225,7 +225,7 @@ These are the set of basic methods that each device can use:
 
       * **block_dev**: to release the WebREPL connection after *time_out* seconds, this allows the following:
 
-        *if the command to send is a for/while loop, to be able to stop it use the option block_dev = False, then the command esp32.kbi() (This is a KeyboardInterrupt) will stop the loop. This is because the WebREPL protocol supports one connection at a time only, so if block_dev is set to False to free this WebREPL connection.*
+        *if the command to send is a for/while loop, to be able to stop it use the option block_dev = False, then the command esp32.kbi() (This is a KeyboardInterrupt) will stop the loop. This is because the WebREPL protocol supports one connection at a time only, so block_dev is set to False to free this WebREPL connection.*
 
     <u>Non-blocking Output</u>:
 
@@ -308,7 +308,30 @@ These are the set of basic methods that each device can use:
 
     Use this when a for/while loop is being executed in the device to make it stop
 
-     By default is 'verbose', to make it silent use output=False option
+     By default is 'verbose', to make it silent use output=False option.
+    
+    Ex:
+    
+    ```
+    esp32.kbi(output=False)
+    ```
+    
+    
+  
+- #### is_reachable (* Just for W_UPYDEVICE class)
+
+  Options: (n_tries=2, max_loss=1, debug=False, timeout=2)
+
+  - To see if a device is reachable. This command pings the device 'n_tries' times, with a threshold of 'max_loss' packet loss and a time out of 'timeout' seconds.
+
+  - If it is reachable returns True, otherwise returns False.
+
+    ```
+    esp32.is_reachable()
+    True
+    ```
+
+    
 
 ------
 

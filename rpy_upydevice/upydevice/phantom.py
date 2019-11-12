@@ -11,9 +11,8 @@ from datetime import datetime
 import json
 import os
 
-# TODO:
+# TODO: UPYDEV DIAGNOSTICS --> MACHINE RESET CAUSE, CAT ERROR LOG IF ANY, modify logging + sys.print_Exception
 # upydev stream-test --> (buf= length) --> use like sync-tool
-# USE STREAMER CLASS MAKE A BUFFER WITH COMMAND OPTION -buffsize
 
 
 # MICROPYTHON DEFAULT CLASSES
@@ -323,11 +322,7 @@ class AP:
             mac_ad = ':'.join(str(val) for val in bytdev)
             mac_addr.append(mac_ad)
             if verbose:
-                try:
-                    print(f'MAC address: {mac_ad}')
-                except Exception as e:
-                    print("MAC address: {}".format(mac_ad))
-                    pass
+                print(f'MAC addres: {mac_ad}')
 
         return mac_addr
 
@@ -340,7 +335,7 @@ class AP:
 
 # IRQ UTILS
 
-class IRQ_MG:
+class U_IRQ_MG:
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, sensor=None):
         self.d = device
@@ -1101,7 +1096,7 @@ class ADS1115:
 
 # IMU (LSM9DS1)
 
-class IMU_STREAMER(STREAMER):
+class U_IMU_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, log_dir=None, max_digit=8, chunk_buff_size=32,
                  soc_timeout=1):
@@ -1148,7 +1143,7 @@ class IMU_STREAMER(STREAMER):
 
 # BME280
 
-class BME_STREAMER(STREAMER):
+class U_BME_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, log_dir=None, soc_timeout=1, logg=None):
         super().__init__(device, name, init_soc=init_soc, port=port,
@@ -1165,7 +1160,7 @@ class BME_STREAMER(STREAMER):
 
 # ADS1115
 
-class ADS_STREAMER(STREAMER):
+class U_ADS_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=1, log_dir=None, channel=0, soc_timeout=1):
         super().__init__(device, name, init_soc=init_soc, port=port,
