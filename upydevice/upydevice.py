@@ -2,7 +2,7 @@
 # @Author: carlosgilgonzalez
 # @Date:   2019-07-11T23:33:30+01:00
 # @Last modified by:   carlosgilgonzalez
-# @Last modified time: 2019-10-20T23:57:55+01:00
+# @Last modified time: 2019-11-16T00:38:46+00:00
 
 import ast
 import subprocess
@@ -1344,7 +1344,7 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
-# LOAD DEVICE CONFIGURATION FUNCTIONS (json) tools.py (submodule) 
+# LOAD DEVICE CONFIGURATION FUNCTIONS (json) devtools.py (submodule) 
 
 # DEFAULT IS GLOBAL DIR, BUT dir= option available (in case of bundle_dir)
 # MAKE A GLOBAL DIR TO STORE DEV CONFIGURATIONS, (.upydevice_devs in $HOME)

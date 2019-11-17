@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+# @Author: carlosgilgonzalez
+# @Date:   2019-10-30T23:49:59+00:00
+# @Last modified by:   carlosgilgonzalez
+# @Last modified time: 2019-11-16T22:41:08+00:00
+
+
 """Phantom classes collection"""
 
 from .upydevice import (upy_cmd_c_r, upy_cmd_c_raw_r, upy_cmd_c_r_in_callback,
@@ -164,6 +170,26 @@ class UOS:
     def listdir(self, directory):
         return self.dev_dict
 
+    @upy_cmd_c_r()
+    def getcwd(self):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def mkdir(self, directory):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def rmdir(self, directory):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def chdir(self, directory):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def remove(self, file):
+        return self.dev_dict
+
     @upy_cmd_c_raw_r()
     def uname(self):
         return self.dev_dict
@@ -200,6 +226,37 @@ class pyb_Timer:
     @upy_cmd_c_r(rtn=False)
     def deinit(self):
         return self.dev_dict
+
+
+class pyb_Servo:
+    def __init__(self, device, name, number=None, init=False):
+        """Phantom pyb Servo"""
+        self.d = device
+        self.name = name
+        self.dev_dict = {'name': self.name, 'dev': device}
+        if init:
+            self.d.cmd('import pyb; {} = pyb.Servo({})'.format(name, number))
+
+    @upy_cmd_c_r()
+    def angle(self, *args, **kargs): # to allow no args
+        """args: angle, time"""
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def speed(self, *args, **kargs): # to allow no args
+        """args: speed, time"""
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def pulse_width(self, *args, **kargs): # to allow no args
+        """args: value"""
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def calibration(self, *args, **kargs): # to allow no args
+        """args: pulse_min, pulse_max, pulse_centre,[pulse_angle_90, pulse_speed_100]"""
+        return self.dev_dict
+
 
 #############################################
 
@@ -342,7 +399,7 @@ class AP:
 
 class IRQ_MG:
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
-                 n_vars=3, sensor=None):
+                 n_vars=3, sensor=None, log_dir=None, logg=None):
         self.d = device
         self.name = name
         self.dev_dict = {'name': self.name, 'dev': device}
@@ -353,6 +410,8 @@ class IRQ_MG:
         self.p_format = p_format
         self.n_vars = n_vars
         self.data_length = struct.calcsize(self.p_format*self.n_vars)
+        self.buffer = []
+        self.log_dir = log_dir
         # self.sensor, class U_IMU_IRQ (read_data, set_mode)
 
     @upy_cmd_c_r(rtn=False)
@@ -405,7 +464,7 @@ class IRQ_MG:
             time.sleep(wait_time)
 
         # check condition in self.d.output
-        on_irq()
+        on_irq(self.d.output)
 
     # THIS CAN HANG WEBREPL (BETTER USE SOCKETS) --> continuos_async_soc...
     def continuos_async_irq_loop(self, on_irq, func_loop=None, wait_time=0.05):
@@ -427,11 +486,11 @@ class IRQ_MG:
                 return False
             else:
                 # check condition in self.d.output
-                on_irq()
+                on_irq(self.d.output)
                 return self.d.output
         else:
             # check condition in self.d.output
-            on_irq()
+            on_irq(self.d.output)
             return self.d.output
 
     # SOCKETS MESSAGING
@@ -464,7 +523,14 @@ class IRQ_MG:
 
     # + LOG_OPTION
     def async_soc_irq_listener_loop(self, on_irq, func_loop=None,
-                                    wait_time=0.05):
+                                    wait_time=0.05, log_nf=False,
+                                    buffer=False, log=False,
+                                    filename=None, tag=None):
+        if log_nf:
+            log = True
+            if filename is None:
+                filename = 'irq_{}_log.txt'.format(self.name)
+            self.lognow_shot('irq', filename=filename, rtn=False)
         self.d.output = None
         while self.d.output is None:
             if func_loop is not None:
@@ -473,15 +539,25 @@ class IRQ_MG:
             time.sleep(wait_time)
 
         # check condition in self.d.output
-        on_irq()   # PRINT + LOG_OPTION + BUFFER
+        on_irq(self.d.output)   # PRINT + LOG_OPTION + BUFFER
+        if log:
+            self.log_data_shot(filename, self.d.output, n_tag=tag)
+        if buffer:
+            self.log_data_shot_buff(self.d.output, n_tag=tag)
 
     # + LOG_OPTION
     def continuos_async_soc_irq_loop(self, on_irq, func_loop=None,
-                                     wait_time=0.05):
+                                     wait_time=0.05, filename=None,
+                                     log=False, tag=None, buffer=False):
+        if log:
+            if filename is None:
+                filename = 'irq_{}_log.txt'.format(self.name)
+            self.lognow_shot('irq', filename=filename, rtn=False)
         while True:
             try:
                 self.async_soc_irq_listener_loop(
-                    on_irq, func_loop, wait_time=wait_time)
+                    on_irq, func_loop, wait_time=wait_time, log=log,
+                    filename=filename, tag=tag, buffer=buffer)
                 time.sleep(wait_time)
             except KeyboardInterrupt:
                 break
@@ -512,6 +588,70 @@ class IRQ_MG:
     def sensor_soc_callback(self, x):
         pass
 
+    def data_print(self, x):
+        try:
+            print(self.data_print_msg.format(*x, self.header['UNIT']))
+        except Exception as e:
+            pass
+
+    # LOG methods
+
+    # FILE LOG
+
+    def lognow_shot(self, sensor_mode, filename=None, debug=True, rtn=True):
+        file_name = filename
+        if debug:
+            print('Saving file {} ...'.format(file_name))
+        with open(file_name, 'w') as file_log:
+            header_vars = self.header['VAR'].copy()
+            header_vars.append('TS')
+            header_unit = self.header['UNIT']
+            SHOT_HEADER = {'VAR': header_vars, 'UNIT': header_unit}
+            file_log.write(json.dumps(SHOT_HEADER))
+            file_log.write('\n')
+        if rtn:
+            return file_name
+
+    def log_data_shot(self, filename, data, n_tag=None):
+        try:
+            data_pack = dict(zip(self.header['VAR']+['TS'],
+                                 [val for val in data]+[datetime.now().strftime("%m_%d_%Y_%H_%M_%S")]))
+            if n_tag is not None:
+                data_pack = dict(zip(self.header['VAR']+['TS'],
+                                     [val for val in data]+[n_tag]))
+            with open(filename, 'a') as file_log:
+                file_log.write(json.dumps(data_pack))
+                file_log.write('\n')
+        except Exception as e:
+            pass
+
+    # BUFFER LOG
+
+    def log_data_shot_buff(self, data, n_tag=None):
+        try:
+            data_pack = dict(zip(self.header['VAR']+['TS'],
+                                 [val for val in data]+[datetime.now().strftime("%m_%d_%Y_%H_%M_%S")]))
+            if n_tag is not None:
+                data_pack = dict(zip(self.header['VAR']+['TS'],
+                                     [val for val in data]+[n_tag]))
+            self.buffer.append(json.dumps(data_pack))
+        except Exception as e:
+            pass
+
+    def read_buffer_shot(self):
+        list_of_vars = {var: [] for var in self.header['VAR']+['TS']}
+        for message in self.buffer:
+            try:
+                vals = json.loads(message)
+                for key in vals.keys():
+                    list_of_vars[key].append(vals[key])
+            except Exception as e:
+                pass
+        return (list_of_vars)
+
+    def flush_buffer(self):
+        self.buffer = []
+
 
 # TCP STREAMER
 class STREAMER:
@@ -538,7 +678,6 @@ class STREAMER:
         self.time_test = 0
         self._json_errors = 0
         self._json_buffer = ' '
-        # TODO: SELF.BUFFER TO STORE THE DATA LIST
 
     # STREAM CLASS INHERITANCE
     @upy_cmd_c_r()
@@ -1096,6 +1235,93 @@ class ADS1115:
 
 # POWER/CURRENT/VOLTAGE INA219
 
+
+# IRQ SENSOR classes
+
+# IMU (lsm9ds1)
+class IMU_IRQ(IRQ_MG):
+    def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
+                 n_vars=3, sensor=None, log_dir=None, logg=None):
+        super().__init__(device, name, init_soc=init_soc, port=port,
+                         p_format=p_format, n_vars=n_vars, sensor=None,
+                         log_dir=log_dir, logg=logg)
+        self.header = {'VAR': ['X', 'Y', 'Z'], 'UNIT': 'g=-9.8m/s^2'}
+        self.sens_mode = 'ACCELEROMETER'
+        self.data_print_msg = "X: {}, Y: {}, Z: {} ({})"
+
+    @upy_cmd_c_r()
+    def set_mode(self, mode):
+        return self.dev_dict
+
+    def setup_mode(self, v_mode):
+        if v_mode == 'acc':
+            self.header['UNIT'] = 'g=-9.8m/s^2'
+            self.sens_mode = 'ACCELEROMETER'
+            self.set_mode(v_mode)
+        if v_mode == 'gyro':
+            self.header['UNIT'] = 'deg/s'
+            self.sens_mode = 'GYROSCOPE'
+            self.set_mode(v_mode)
+        if v_mode == 'mag':
+            self.header['UNIT'] = 'gauss'
+            self.sens_mode = 'MAGNETOMETER'
+            self.set_mode(v_mode)
+
+
+# WEATHER (bme280)
+
+class BME_IRQ(IRQ_MG):
+    def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
+                 n_vars=3, sensor=None, log_dir=None, logg=None):
+        super().__init__(device, name, init_soc=init_soc, port=port,
+                         p_format=p_format, n_vars=n_vars, sensor=None,
+                         log_dir=log_dir, logg=logg)
+        # CUSTOM SENS
+        self.header = {'VAR': ['Temp', 'Press', 'RH'], 'UNIT': 'C ; Pa ; %'}
+        self.sens_mode = 'WEATHER'
+        self.header_msg = 'Streaming BME {}: Temp, Press, Rel.Hum ({}),fq={}Hz'
+        self.data_print_msg = "T: {}, P: {}, RH: {} ({})"
+
+
+# ADC (ADS1115)
+
+class ADS_IRQ(IRQ_MG):
+    def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
+                 n_vars=1, sensor=None, log_dir=None, logg=None, channel=0):
+        super().__init__(device, name, init_soc=init_soc, port=port,
+                         p_format=p_format, n_vars=n_vars, sensor=None,
+                         log_dir=log_dir, logg=logg)
+        # CUSTOM SENS
+        self.channel = channel
+        self.header = {'VAR': ['V'], 'UNIT': 'Volts'}
+        self.sens_mode = 'ADS CHANNEl {}'.format(self.channel)
+        self.header_msg = 'Streaming {}: V ({}),fq={}Hz'
+        self.data_print_msg = "V: {} ({})"
+
+    @upy_cmd_c_r()
+    def set_channel(self, channel):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def set_mode(self, mode):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def read_shot(self):
+        return self.dev_dict
+
+    @upy_cmd_c_r()
+    def init_ads(self):
+        return self.dev_dict
+
+    def setup_channel(self, v_channel):
+        self.set_channel(v_channel)
+        self.channel = v_channel
+        self.sens_mode = 'CHANNEl {}'.format(self.channel)
+        self.init_ads()
+
+        def init_ads_call(self):  # on_init callback
+            pass
 # STREAM SENSOR classes
 
 

@@ -1,7 +1,14 @@
+# @Author: carlosgilgonzalez
+# @Date:   2019-11-05T04:43:41+00:00
+# @Last modified by:   carlosgilgonzalez
+# @Last modified time: 2019-11-15T23:09:32+00:00
+
+
 from machine import I2C, Pin
 import json
 from array import array
 from STREAMER_util import U_STREAMER
+from IRQ_util import U_IRQ_MG
 
 try:
     i2c = I2C(scl=Pin(22), sda=Pin(23))
@@ -12,8 +19,10 @@ except ValueError:
 
 # IRQ
 
-class U_IMU_IRQ:
-    def __init__(self, imu_lib, i2c, opt='acc'):  # SUPER INIT IRQ_UTIL
+class U_IMU_IRQ(U_IRQ_MG):
+    def __init__(self, imu_lib, i2c, sig_pin, irq_pin, opt='acc', n_vars=3,
+                 p_format='f', timeout=1000):  # SUPER INIT IRQ_UTIL
+        super().__init__(sig_pin, irq_pin, timeout=timeout)
         self.imu = imu_lib(i2c)
         self.opt = opt
         self.buff = array('f', (0 for _ in range(3)))

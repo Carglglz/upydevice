@@ -335,7 +335,7 @@ class AP:
 
 # IRQ UTILS
 
-class U_IRQ_MG:
+class IRQ_MG:
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, sensor=None):
         self.d = device
@@ -1096,7 +1096,7 @@ class ADS1115:
 
 # IMU (LSM9DS1)
 
-class U_IMU_STREAMER(STREAMER):
+class IMU_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, log_dir=None, max_digit=8, chunk_buff_size=32,
                  soc_timeout=1):
@@ -1143,7 +1143,7 @@ class U_IMU_STREAMER(STREAMER):
 
 # BME280
 
-class U_BME_STREAMER(STREAMER):
+class BME_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=3, log_dir=None, soc_timeout=1, logg=None):
         super().__init__(device, name, init_soc=init_soc, port=port,
@@ -1160,7 +1160,7 @@ class U_BME_STREAMER(STREAMER):
 
 # ADS1115
 
-class U_ADS_STREAMER(STREAMER):
+class ADS_STREAMER(STREAMER):
     def __init__(self, device, name, init_soc=False, port=8005, p_format='f',
                  n_vars=1, log_dir=None, channel=0, soc_timeout=1):
         super().__init__(device, name, init_soc=init_soc, port=port,

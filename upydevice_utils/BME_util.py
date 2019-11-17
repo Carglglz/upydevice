@@ -1,5 +1,12 @@
+# @Author: carlosgilgonzalez
+# @Date:   2019-11-05T04:45:56+00:00
+# @Last modified by:   carlosgilgonzalez
+# @Last modified time: 2019-11-15T23:56:45+00:00
+
+
 from machine import I2C, Pin
 from STREAMER_util import U_STREAMER
+from IRQ_util import U_IRQ_MG
 
 try:
     i2c = I2C(scl=Pin(22), sda=Pin(23))
@@ -8,7 +15,7 @@ except ValueError:
     pass
 
 
-class U_BME_IRQ:
+class U_BME_IRQ(U_IRQ_MG):
     def __init__(self, my_bme_class, i2c):
         self.bme = my_bme_class(i2c=i2c)
 

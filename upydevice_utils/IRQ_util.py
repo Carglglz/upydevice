@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# @Author: carlosgilgonzalez
+# @Date:   2019-11-05T04:48:39+00:00
+# @Last modified by:   carlosgilgonzalez
+# @Last modified time: 2019-11-15T23:10:57+00:00
 
 from machine import Pin, PWM
 import time
@@ -8,7 +12,7 @@ import socket
 
 class U_IRQ_MG:
     def __init__(self, signal_pin, irq_pin, buzz_pin=None, led_pin=None,
-                 timeout=1000, driver_pin=None, sensor=None, n_vars=3,
+                 timeout=1000, driver_pin=None, n_vars=3,
                  p_format='f'):
         self.sig_pin = signal_pin
         self.irq_pin = irq_pin
@@ -27,7 +31,6 @@ class U_IRQ_MG:
         self.irq_message = "INTERRUPT DETECTED"
         self.irq_detflag = False
         self.irq_timeout = timeout  # ms
-        self.sensor = sensor
         self.sensor_vals = array(p_format, (0 for _ in range(n_vars)))
         self.cli_soc = None
 
@@ -210,7 +213,7 @@ class U_IRQ_MG:
             if self.irq_detect.value() == 1:  # reverse op == 0
                 print(self.irq_message)
                 # returns array()
-                self.sensor_vals[:] = self.sensor.read_data()
+                self.sensor_vals[:] = self.read_data()
                 self.irq_detect.init(Pin.OUT)
                 time.sleep_ms(self.irq_timeout)
                 self.irq_detect.value(0)  # reverse op == 1
@@ -227,7 +230,7 @@ class U_IRQ_MG:
             self.irq_busy = True
             if self.irq_detect.value() == 1:  # reverse op == 0
                 print(self.irq_message)
-                self.cli_soc.sendall(self.sensor.read_data())
+                self.cli_soc.sendall(self.read_data())
                 self.irq_detect.init(Pin.OUT)
                 time.sleep_ms(self.irq_timeout)
                 self.irq_detect.value(0)  # reverse op == 1

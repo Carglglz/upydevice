@@ -1,8 +1,15 @@
-##!/usr/bin/env python
+#!/usr/bin/env python
+# @Author: carlosgilgonzalez
+# @Date:   2019-11-05T04:40:29+00:00
+# @Last modified by:   carlosgilgonzalez
+# @Last modified time: 2019-11-15T23:55:26+00:00
+
+
 from machine import I2C, Pin
 import time
 from array import array
 from STREAMER_util import U_STREAMER
+from IRQ_util import U_IRQ_MG
 
 
 try:
@@ -12,7 +19,7 @@ except ValueError:
     pass
 
 
-class U_ADS_IRQ:
+class U_ADS_IRQ(U_IRQ_MG):
     def __init__(self, ads_lib, i2c, channel=0):
         self.addr = 72
         self.i2c = i2c
@@ -26,9 +33,18 @@ class U_ADS_IRQ:
         self.buff = array('f', (0 for _ in range(1)))
         time.sleep(1)
         self.ads.set_conv(7, channel1=self.channel)
+        self.read_method = self.read_data_raw
+        self.configuration = 'Channel: A{} | Voltage Range: +/- {} V | Gain: {} V/V'.format(
+            self.channel, self.range_dict[self.gain], self.gain_dict[self.gain])
+
+    def read_raw(self):
+        self.buff[0] = self.ads.raw_to_v(self.ads.alert_read())
+        return self.buff
 
     def read_data(self):
-        self.buff[0] = self.ads.raw_to_v(self.ads.alert_read())
+        for i in range(4):
+            self.buff[0] = self.ads.read_rev()
+        self.buff[0] = self.ads.raw_to_v(self.ads.read_rev())
         return self.buff
 
 

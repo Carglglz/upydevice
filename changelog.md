@@ -4,8 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.2] Unreleased [Github repo]
-## Added
+## [0.1.3] Unreleased [Github repo]
+### Added
+- Methods to UOS phantom class (mkdir, rmdir, getcwd, chdir, remove)
+- Phantom pyb_Servo pyboard class
+## [0.1.2] -2019-11-12
+### Added
 - New decorator (upy_cmd_c_r_in_callback) to be able to pass self methods (functions) as keywords arguments (for callbacks)
 - New decorator that allows non-blocking function calls (upy_cmd_c_r_nb)
 - New "IRQ_util.py" upy script (U_IRQ_MG class) + "Phantom" python IRQ_MG class
@@ -22,27 +26,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   BME_util.py) to test U_STREAMER and U_IRQ_MG classes (more about this in docs
   and examples)
 ## [0.1.1] - 2019-11-02
-## Added
+### Added
 - phantom submodule, with some phantom classes (UOS, LSM9DS1, MACHINE, pyb_LED, pyb_Timer, machine_Timer, WLAN, AP, I2C)
 - Now bytearray and array objects are supported
 
 ## [0.1.0] - 2019-10-29
-## Added
+### Added
 - Now 'phantom' class methods allow to pass function in kwargs, this is useful to pass function to callbacks (for example Timers)
 - option 'out' in class decorators that allows implement a function defined in micropython global space (main or dir()) as a part of a 'phantom' class
 
 ## [0.0.9] - 2019-10-28
-## Added
+### Added
 - decorators for reusable 'phantom' classes
 ## [0.0.8] - 2019-10-28
-## Fix
+### Fix
 - decorators return option for commands that should return None
 ## [0.0.7] - 2019-10-28
-## Added
+### Added
 - decorators for methods of 'phantom' python3 class
 
 ## [0.0.6] - 2019-10-27
-## Added
+### Added
 - Non-blocking cmd_nb method
 - methods and decorators to parse for/while loops and functions
 - decorator to define a function as a shortcut to a function in MicroPython
