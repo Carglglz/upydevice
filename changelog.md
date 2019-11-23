@@ -4,12 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.3] Unreleased [Github repo]
+## [0.1.4] Unreleased [Github repo]
+## [0.1.3] - 2019-11-23
 ### Added
 - Methods to UOS phantom class (mkdir, rmdir, getcwd, chdir, remove)
 - Phantom pyb_Servo pyboard class
-- New sensors IRQ phantom classes 
-## [0.1.2] -2019-11-12
+- New sensors IRQ phantom classes
+## [0.1.2] - 2019-11-12
 ### Added
 - New decorator (upy_cmd_c_r_in_callback) to be able to pass self methods (functions) as keywords arguments (for callbacks)
 - New decorator that allows non-blocking function calls (upy_cmd_c_r_nb)
