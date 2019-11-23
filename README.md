@@ -135,8 +135,8 @@ See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.
 # PYBOARD
     >>> pyboard = PYBOARD('/dev/tty.usbmodem387E386731342')
 # ESP32
-    >>> esp32_A = W_UPYDEVICE('192.168.1.53', 'keyespw')
-    >>> esp32_B = W_UPYDEVICE('192.168.1.40', 'keyespw')
+    >>> esp32_A = W_UPYDEVICE('192.168.1.73', 'mypass')
+    >>> esp32_B = W_UPYDEVICE('192.168.1.44', 'mypass')
 
 # Setup and configurate the group:
     >>> my_group = GROUP([esp32_A, esp32_B, pyboard])
@@ -147,10 +147,10 @@ See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.
 
 # Send command:
     >>> my_group.cmd('import machine;import  ubinascii;ubinascii.hexlify(machine.unique_id())')
-    Sending command to wupydev_53
+    Sending command to wupydev_73
     b'30aea4233564'
 
-    Sending command to wupydev_40
+    Sending command to wupydev_44
     b'807d3a809b30'
 
     Sending command to pyboard_tty.usbmodem387E386731342
@@ -160,11 +160,11 @@ See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.
 
 # Output is stored in group output attribute:
     >>> my_group.output
-    {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
+    {'wupydev_73': b'30aea4233564', 'wupydev_44': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
 
 # Send command parallel mode **: (experimental mode, may not work 100% of the times, depends on the connection quality (for wireless devices))
     >>> my_group.cmd_p('6*12')
-    Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
+    Sending command to: wupydev_73, wupydev_44, pyboard_tty.usbmodem387E386731342
     72
 
 
@@ -176,18 +176,18 @@ See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.
 # To see which ouput corresponds to which device use 'id=True' parameter:
 
     >>> my_group.cmd_p('ubinascii.hexlify(machine.unique_id())', id=True)
-    Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
+    Sending command to: wupydev_73, wupydev_44, pyboard_tty.usbmodem387E386731342
     pyboard_tty.usbmodem387E386731342:b'33004e000351343134383038'
     pyboard_tty.usbmodem387E386731342:
     pyboard_tty.usbmodem387E386731342:
-    wupydev_40:b'807d3a809b30'
-    wupydev_53:b'30aea4233564'
-    wupydev_40:
-    wupydev_53:
+    wupydev_44:b'807d3a809b30'
+    wupydev_73:b'30aea4233564'
+    wupydev_44:
+    wupydev_73:
     Done!
     >>>
     >>> my_group.output
-    {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
+    {'wupydev_73': b'30aea4233564', 'wupydev_44': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
 ```
 
 
@@ -228,7 +228,7 @@ Examples:
 ```
 from upydevice import W_UPYDEVICE
 from upydevice.phantom import UOS
-esp32 = W_UPYDEVICE('192.168.1.53', 'keyespw')
+esp32 = W_UPYDEVICE('192.168.1.73', 'mypass')
 uos = UOS(esp32)
 uos.listdir('/')
  ['boot.py', 'webrepl_cfg.py', 'main.py']
