@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Methods to UOS phantom class (mkdir, rmdir, getcwd, chdir, remove)
 - Phantom pyb_Servo pyboard class
+- New sensors IRQ phantom classes 
 ## [0.1.2] -2019-11-12
 ### Added
 - New decorator (upy_cmd_c_r_in_callback) to be able to pass self methods (functions) as keywords arguments (for callbacks)

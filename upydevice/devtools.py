@@ -9,7 +9,7 @@
 import os
 import json
 
-dev_dir = '.upydevice_devs'
+dev_dir = '.upydevices'
 dev_path = "{}/{}".format(os.environ['HOME'], dev_dir)
 
 
