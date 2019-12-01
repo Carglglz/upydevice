@@ -28,10 +28,10 @@ There are three python classes that define three different MicroPython devices:
 
     ```python
     from upydevice import W_UPYDEVICE
-    
+
     # BASIC INITIATION
     esp32 = W_UPYDEVICE('192.168.1.62', 'mypass') # (device ip , webrepl password)
-    
+
     # NOW THE DEVICE IS READY
     ```
 
@@ -41,7 +41,7 @@ There are three python classes that define three different MicroPython devices:
     * name: (optional) to give a name to the device (useful when use within a GROUP), if not set it can be set after with `esp32.name = 'esp32' `. * If not set at initialization moment, an automatic name will be set as `'upydev_class'+'ip or serial port'`, in this case would be `wupydev_62`
     * bundle_dir: to indicate the path where the binary 'web_repl_cmd_r' can be found. (This is useful when making an app bundle and this is explained further in [APP BUNDLE](#APP-BUNDLE))
 
-  
+
 
 - #### S_UPYDEVICE:
 
@@ -57,10 +57,10 @@ There are three python classes that define three different MicroPython devices:
 
     ```python
     from upydevice import S_UPYDEVICE
-    
+
     # BASIC INITIATION
     esp32_s = S_UPYDEVICE('/dev/tty.SLAB_USBtoUART', timeout=1000, baudrate=115200)
-    
+
     # By default the initialization resets the device
     # NOW THE DEVICE IS READY
     ```
@@ -72,7 +72,7 @@ There are three python classes that define three different MicroPython devices:
     * name: (optional) to give a name to the device (useful when use within a GROUP), if not set it can be set after with `esp32_s.name = 'esp32_s' `. * If not set at initialization moment, an automatic name will be set as `'upydev_class'+'ip or serial port'`, in this case would be `supydev_tty.SLAB_USBtoUART`
     * bundle_dir: to indicate the path where the binary 'picocom' can be found. (This is useful when making an app bundle and this is explained further in [APP BUNDLE](#APP-BUNDLE))
 
-  
+
 
 - #### PYBOARD:
 
@@ -88,10 +88,10 @@ There are three python classes that define three different MicroPython devices:
 
     ```python
     from upydevice import PYBOARD
-    
+
     # BASIC INITIATION
     pyboard = PYBOARD('/dev/tty.usbmodem3370377430372')
-    
+
     # By default the initialization resets the device
     # NOW THE DEVICE IS READY
     ```
@@ -127,7 +127,7 @@ These are the set of basic methods that each device can use:
     >>> esp32.cmd('foo()')
     >>> esp32.cmd('x = [1,2,3];my_var = len(x);print(my_var)')
     3
-    
+
     # PYBOARD
     >>> pyboard.cmd('pyb.LED(1).toggle()', timeout=100)
     >>> pyboard.cmd("import uos;uos.listdir('/flash')")
@@ -137,10 +137,10 @@ These are the set of basic methods that each device can use:
     >>> pyboard.cmd('foo()')
     >>> pyboard.cmd('x = [1,2,3];my_var = len(x);print(my_var)')
     3
-    
+
     ```
 
-    
+
 
   - <u>Options</u>: (command, silent=False, capture_output=False, timeout=None*)
 
@@ -172,7 +172,7 @@ These are the set of basic methods that each device can use:
     >>>
     >>> test_cmd()
     This is a message from esp32
-    
+
     This is a message from python3
     # Using cmd_nb (non-blocking)
     >>> def test_cmd_nb():
@@ -183,10 +183,10 @@ These are the set of basic methods that each device can use:
     >>> test_cmd_nb()
     This is a message from python3
     >>> This is a message from esp32
-    
+
     ## FOR W_UPYDEVICES
     ## if the command to send is a for/while loop, to be able to stop it use the option block_dev = False, then the command esp32.kbi() (This is a KeyboardInterrupt) will stop the loop. This is because the WebREPL protocol supports one connection at a time only, so if block_dev is set to False to free this WebREPL connection.
-    
+
     # PYBOARD
     # Using cmd (blocking)
     >>> def test_pyb_cmd():
@@ -196,12 +196,12 @@ These are the set of basic methods that each device can use:
     >>>
     >>> test_pyb_cmd()
     This is a message from pyboard
-    
-    
+
+
     This is a message from python3
-    
+
     # Using cmd_nb (non-blocking)
-    
+
     >>> def test_pyb_cmd_nb():
     ...     pyboard.cmd_nb("print('This is a message from pyboard')")
     ...     print('This is a message from python3')
@@ -210,7 +210,7 @@ These are the set of basic methods that each device can use:
     >>> test_pyb_cmd_nb()
     This is a message from python3
     >>> This is a message from pyboard
-    
+
     ```
 
     <u>Options</u>: (command, silent=False, *time_out=2, *block_dev=True)
@@ -233,7 +233,7 @@ These are the set of basic methods that each device can use:
 
     `[upydevice].get_opt()`
 
-    then output is stored in `[upydevice].output` 
+    then output is stored in `[upydevice].output`
 
     ```python
     # Example
@@ -247,16 +247,16 @@ These are the set of basic methods that each device can use:
     This is a message from python3
     >>> This is a message from esp32
     [1, 2, 3]
-    
-    
+
+
     >>> esp32.get_opt()
     >>> esp32.output
     [1, 2, 3]
-    
+
     # PYBOARD
-    
+
     >>> def test_pyb_cmd_nb():
-    
+
     ...     pyboard.cmd_nb("print('This is a message from pyboard');[1,2,3]")
     ...     print('This is a message from python3')
     ...
@@ -264,15 +264,15 @@ These are the set of basic methods that each device can use:
     This is a message from python3
     >>> This is a message from pyboard
     [1, 2, 3]
-    
-    
-    
+
+
+
     >>> pyboard.get_opt()
     >>> pyboard.output
     [1, 2, 3]
     ```
 
-    
+
 
 - #### RESET
 
@@ -284,9 +284,9 @@ These are the set of basic methods that each device can use:
     # W_UPYDEVICE
     >>> esp32.reset()
     Rebooting device...
-    
+
     ### closed ###
-    
+
     Done!
     # By default is 'verbose', to make it silent use output=False option
     >>> esp32.reset(output=False)
@@ -300,7 +300,7 @@ These are the set of basic methods that each device can use:
     >>>
     ```
 
-    
+
 
 - #### KBI
 
@@ -309,15 +309,15 @@ These are the set of basic methods that each device can use:
     Use this when a for/while loop is being executed in the device to make it stop
 
      By default is 'verbose', to make it silent use output=False option.
-    
+
     Ex:
-    
+
     ```
     esp32.kbi(output=False)
     ```
-    
-    
-  
+
+
+
 - #### is_reachable (* Just for W_UPYDEVICE class)
 
   Options: (n_tries=2, max_loss=1, debug=False, timeout=2)
@@ -331,7 +331,7 @@ These are the set of basic methods that each device can use:
     True
     ```
 
-    
+
 
 ------
 
@@ -374,15 +374,15 @@ These are the set of basic methods that each device can use:
       >>> my_group.cmd('import machine;import ubinascii;ubinascii.hexlify(machine.unique_id())')
       Sending command to wupydev_53
       b'30aea4233564'
-  
+
       Sending command to wupydev_40
       b'807d3a809b30'
-  
+
       Sending command to pyboard_tty.usbmodem387E386731342
       b'33004e000351343134383038'
-  
+
   # There is an option to silent the group messages with group_silent = True, and or each device ouput with device_silent=True
-  
+
   # Output is stored in group output attribute:
       >>> my_group.output
       {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
@@ -404,15 +404,15 @@ These are the set of basic methods that each device can use:
       >>> my_group.cmd_p('6*12')
       Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
       72
-  
-  
+
+
       72
-  
+
       72
-  
+
       Done!
   # To see which ouput corresponds to which device use 'id=True' parameter:
-  
+
       >>> my_group.cmd_p('ubinascii.hexlify(machine.unique_id())', id=True)
       Sending command to: wupydev_53, wupydev_40, pyboard_tty.usbmodem387E386731342
       pyboard_tty.usbmodem387E386731342:b'33004e000351343134383038'
@@ -428,7 +428,7 @@ These are the set of basic methods that each device can use:
       {'wupydev_53': b'30aea4233564', 'wupydev_40': b'807d3a809b30', 'pyboard_tty.usbmodem387E386731342': b'33004e000351343134383038'}
   ```
 
-  
+
 
   * <u>Parameters</u>: (command, group_silent=False, dev_silent=False, ignore=[], include=[], blocking=True, id=False)
 
@@ -443,16 +443,16 @@ These are the set of basic methods that each device can use:
     Example:
 
     ```python
-    # If using blocking=False 
+    # If using blocking=False
     my_group = GROUP([esp32, pyboard])
     my_group.cmd_p('led.on();time.sleep(1);[1,5,7]', blocking=False)
     Sending command to: wupydev_53, pyboard_tty.usbmodem3370377430372
     [1, 5, 7]
-    
+
     >>> [1, 5, 7]
-    
-    
-    
+
+
+
     >>> my_group.output # probably will return None or the output from a previous command
     # to get the output of the non-blocking command do:
     >>> my_group.get_opt()
@@ -460,7 +460,7 @@ These are the set of basic methods that each device can use:
     {'wupydev_53': [1, 5, 7], 'pyboard_tty.usbmodem3370377430372': [1, 5, 7]}
     ```
 
-    
+
 
 - #### RESET
 
@@ -472,14 +472,14 @@ These are the set of basic methods that each device can use:
   >>> my_group.reset()
   Rebooting wupydev_53
   Rebooting device...
-  
+
   ### closed ###
-  
+
   Done!
   Rebooting pyboard_tty.usbmodem3370377430372
   Rebooting pyboard...
   Done!
-  
+
   # By default is 'verbose', to make it silent use group_silent=True, output_dev=False option
   ```
 
@@ -490,11 +490,11 @@ These are the set of basic methods that each device can use:
     * **ignore**: a list of devices names to ignore, by default is empty
     * **include**:  a list devices names to include, by default includes all.
 
-    
+
 
 ------
 
-### PARSER AND DECORATORS 
+### PARSER AND DECORATORS
 
 ##### *Although more complex commands should be always stored in the device, sometimes they can be passed 'dynamically' from the host to the device*
 
@@ -527,7 +527,7 @@ These complex commands include:
     ...     else:
     ...         pass
     ...
-    
+
     ...
     ...
     Hello World
@@ -540,9 +540,9 @@ These complex commands include:
     Hello World
     Hello World
     Hello World
-    
+
     # Define a function that returns a for loop string 'command ready' that accepts parameters:
-    
+
     >>> def test_loop(n, wait):
     ...     my_loop = """
     ...     for i in range({}):
@@ -576,7 +576,7 @@ These complex commands include:
     ...         led.on()
     ...         time.sleep(0.5)
     ...         print('led OFF!')
-    
+
     ...         led.off()
     ...         time.sleep(0.5)
     ...     return [1,2,a]
@@ -593,9 +593,9 @@ These complex commands include:
             led.off()
             time.sleep(0.5)
         return [1,2,a]
-    
+
     "def test_loop(a):\rfor i in range(4):\rprint('led ON!')\rled.on()\rtime.sleep(0.5)\rprint('led OFF!')\rled.off()\rtime.sleep(0.5)\r\x08return [1,2,a]\r\r"
-    
+
     >>> pyboard.cmd(test_loop())
     @upy_code
     def test_loop(a):
@@ -605,10 +605,10 @@ These complex commands include:
             time.sleep(0.5)
             print('led OFF!')
             led.off()
-    
+
             time.sleep(0.5)
         return [1,2,a]
-    
+
     def test_loop(a):
     ...     for i in range(4):
     ...         print('led ON!')
@@ -618,7 +618,7 @@ These complex commands include:
     ...         led.off()
     ...         time.sleep(0.5)
     ...     return [1,2,a]
-    
+
     >>>>>> pyboard.cmd('test_loop(3)')
     led ON!
     led OFF!
@@ -635,32 +635,32 @@ These complex commands include:
 
   - #### @upy_cmd(device, debug=False, rtn=True)
 
-  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function. 
+  ​	This allow a function that is defined in the device (passed as a parameter to the decorator), to be called as a python function.
 
   * *Set debug to True if the function has print() statements or you want to catch an error*
-  * *Set rtn to False if the function that is being called returns None* 
-  
+  * *Set rtn to False if the function that is being called returns None*
+
   ```python
   # A simple way to do this would be:
   def led_toggle(n_times, wait):
     pyboard.cmd('led_toggle({},{})'.format(n_times, wait))
     return pyboard.output
-  
+
   # So when the function is called, it will send the command to execute the function with the defined parameters
-  
+
   # A fancier way to do this would be the @upy_cmd decorator:
-  
+
   @upy_cmd(device=pyboard)
   def led_toggle(n_times, wait):
     pass
-  
+
   # And thats all, when led_toggle is called it will send the command to execute the function with the defined parameters
-  
+
   # Example:
   # This function is already defined in the device:
   def test_f(n):
       return [1,n,3]
-  
+
   # In python3 do:
   >>> @upy_cmd(device=pyboard)
   ... def test_f(n):
@@ -688,7 +688,7 @@ These complex commands include:
 
 
 ***IN MICROPYTHON:***
-    
+
 
 ```python
 >>> from lsm9ds1 import LSM9DS1
@@ -718,7 +718,7 @@ class LSM9DS1:
     def __init__(self, name): # must accept a name as a parameter
         """Phantom LSM9DS1 class"""
         self.name = name
-        
+
     @upy_cmd_c(esp32)
     def read_gyro(self):
         return self.name # every method must return self.name
@@ -750,29 +750,29 @@ imu.read_magnet()
   - ```python
     # In MicroPython do:
     from pyb import LED
-    
+
     # In Python3 do:
     from upydevice import PYBOARD, upy_cmd_c
     pyboard = PYBOARD('/dev/tty.usbmodem3370377430372')
-    
+
     class LED:
         def __init__(self, number):
             """Phantom pyb.LED class"""
             self.name="{}({})".format('LED', number)
-        
+
         @upy_cmd_c(pyboard, rtn=False)
         def toggle(self):
             return self.name
-    
+
     green_led = LED(2)
     green_led.toggle()
     ```
 
-    
+
 
 - Another example, implement some uos Micropython methods
 
-    - #### @upy_cmd_c_raw(device, out=False) 
+    - #### @upy_cmd_c_raw(device, out=False)
 
       *Use this if the ouput of the function is not evaluable python object*
 
@@ -781,27 +781,27 @@ imu.read_magnet()
           def __init__(self):
             """Phantom UOS class"""
             self.name='uos'
-         
+
           @upy_cmd_c(esp32)
           def listdir(self, directory):
             return self.name
-      
-      
+
+
           @upy_cmd_c_raw(esp32)
           def uname(self):
             return self.name
-      
+
       uos = UOS()
-      
-      
+
+
       uos.listdir('/')
       ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
-      
+
       uos.uname()
       (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
-      
+
       ```
-    
+
   - #### Now we can do a custom ESP32 class that implements all these classes altogether:
 
 ```python
@@ -811,15 +811,15 @@ imu.read_magnet()
             self.uos = upy
             self.d = dev
             self.imu = sensor
-    
+
     my_esp32 = ESP32()
-    
+
     my_esp32.imu.read_gyro()
     (-0.3663635, 0.814972, -0.4411316)
-    
+
     my_esp32.uos.listdir('/')
     ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
-    
+
     my_esp32.uos.uname()
     (sysname='esp32', nodename='esp32', release='1.11.0', version='v1.11-422-g98c2eabaf on 2019-10-11', machine='ESP32 module with ESP32')
 ```
@@ -830,29 +830,29 @@ imu.read_magnet()
 
   Use **@upy_cmd_c_r**, **@upy_cmd_c_raw_r**, **@upy_cmd_c_r_in_callback**, **@upy_cmd_c_r_nb**, **@upy_cmd_c_r_nb_in_callback**.
 
-  - #### @upy_cmd_c_r(debug=False, rtn=True, out=False) 
+  - #### @upy_cmd_c_r(debug=False, rtn=True, out=False)
 
     - To call a 'standard' method of a defined class in MicroPython
-  - *(Use out=True if the function is not a method of the Micropython class, eg: defined as an independent function)
-  
-- #### @upy_cmd_c_raw_r(out=False)
-  
+    - *(Use out=True if the function is not a method of the Micropython class, eg: defined as an independent function)
+
+  - #### @upy_cmd_c_raw_r(out=False)
+
     - To call a method of a defined class in MicroPython whose output is not an evaluable python object
-  
+
   - #### @upy_cmd_c_r_nb(debug=False, rtn=True, out=False)
-  
+
     - Same as **@upy_cmd_c_r** but in 'non-blocking' mode. The use case is a function that returns None, or not returns anything. If used with a function that returns something, to get the output a call to *device.get_opt()* maybe needed before the output is stored and *device.output*.
-  
+
   - #### @upy_cmd_c_r_in_callback(debug=False, rtn=True, out=False)
-  
+
     - To call methods that accept function callbacks as a parameter, and the function callback is defined as a method of the MicroPython class.
-  
+
   - #### @upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False)
-  
+
     - Same as **@upy_cmd_c_r_in_callback** but in 'non-blocking' mode.
-  
+
     Define a class like in the following example:
-    
+
     ```python
     class UOS:
         def __init__(self, device):
@@ -862,34 +862,34 @@ imu.read_magnet()
         @upy_cmd_c_r()
         def listdir(self, directory):
             return self.dev_dict
-        
-        
+
+
         @upy_cmd_c_raw_r()
         def uname(self):
             return self.dev_dict
-    
+
     # Now it can be used with sereval devices:
-    
+
     esp32_uos = UOS(esp32)
-    
+
     esp32_uos.listdir('/')
     ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
-    
+
     pyb_uos = UOS(pyboard)
-    
+
     pyb_uos.listdir('/flash')
     ['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', 'udummy.py']
-    
+
     ## And now the custom esp32 class would look like this:
-    
+
     class ESP32:
         def __init__(self, dev=esp32):
             self.d= dev
             self.uos = UOS(self.d)
-    
-    
+
+
     my_esp32_custom = ESP32()
-    
+
     my_esp32_custom.uos.listdir('/')
     ['boot.py', 'webrepl_cfg.py', 'main.py', 'lib']
     ```
@@ -903,39 +903,39 @@ imu.read_magnet()
   # In MicroPython do:
   from machine import Timer
   Tim = Timer(1)
-  
+
   # # LED CALLBACK
-  
+
   def led_toggle(x):
   	led.value(not led.value()) # led is already defined in esp32 Pin(13)
-    
+
   # In Python3 do:
-  
+
   class machine_Timer:
       def __init__(self, device, name):
           self.name = name
           self.dev_dict = {'name':self.name, 'dev':device}
           self.PERIODIC = 1
           self.ONE_SHOT = 0
-      
+
       @upy_cmd_c_r(rtn=False)
       def init(self, mode, period, callback):
           return self.dev_dict
-      
+
       @upy_cmd_c_r(rtn=False)
       def deinit(self):
           return self.dev_dict
-  
+
   # NOW THE CALLBACK
-  
+
   def led_toggle():
     pass
-  
+
   # NOW EVERYTHIN IS READY
   esp32_timer = machine_Timer(esp32, name='Tim') # esp32 is an already defined W_UPYDEVICE
-  
+
   esp32_timer.init(mode=esp32_timer.PERIODIC, period=500, callback=led_toggle)
-  
+
   # now the led should blink every 500 millisecs
   # to stop it
   esp32_timer.deinit()
@@ -953,10 +953,10 @@ class ESP32:
         self.machine = MACHINE(self.d)
         self.imu = LSM9DS1(self.d, name= 'imu')
         self.timer = machine_Timer(self.d, name='Tim')
-    
+
     def start_blink(self, c_period):
         self.timer.init(mode=self.timer.PERIODIC, period=c_period, callback=self.led_toggle)
-    
+
     def led_toggle(self):
         pass
 
@@ -973,7 +973,7 @@ t_esp32.start_blink(500) # now the led should blink every 500 millisecs
 
 
 
-### APP BUNDLE 
+### APP BUNDLE
 
 #### Making a stand alone app (with Pyinstaller)
 
@@ -996,7 +996,7 @@ To make a 'stand alone app' from a python script that uses uPydevice, some neces
    else:
            # we are running in a normal Python environment
            bundle_dir = os.path.dirname(os.path.abspath(__file__))
-   
+
    # now the path is stored in bundle_dir variable
    ```
 
