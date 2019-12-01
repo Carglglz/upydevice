@@ -320,7 +320,7 @@ class WLAN:
             vals = hexlify(netscan[1]).decode()
             bssid = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
             print('{0:^20} | {1:^25} | {2:^10} | {3:^15} | {4:^15} | {5:^10} '.format(
-                netscan[0].decode(), bssid , netscan[2], netscan[3],
+                netscan[0].decode(), bssid, netscan[2], netscan[3],
                 auth, str(netscan[5])))
 
     def get_ifconfig(self):
