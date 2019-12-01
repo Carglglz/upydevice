@@ -14,12 +14,9 @@ import socket
 import struct
 import sys
 from datetime import datetime
+from binascii import hexlify
 import json
 import os
-
-# TODO:
-# upydev stream-test --> (buf= length) --> use like sync-tool
-# USE STREAMER CLASS MAKE A BUFFER WITH COMMAND OPTION -buffsize
 
 
 # MICROPYTHON DEFAULT CLASSES
@@ -238,22 +235,22 @@ class pyb_Servo:
             self.d.cmd('import pyb; {} = pyb.Servo({})'.format(name, number))
 
     @upy_cmd_c_r()
-    def angle(self, *args, **kargs): # to allow no args
+    def angle(self, *args, **kargs):  # to allow no args
         """args: angle, time"""
         return self.dev_dict
 
     @upy_cmd_c_r()
-    def speed(self, *args, **kargs): # to allow no args
+    def speed(self, *args, **kargs):  # to allow no args
         """args: speed, time"""
         return self.dev_dict
 
     @upy_cmd_c_r()
-    def pulse_width(self, *args, **kargs): # to allow no args
+    def pulse_width(self, *args, **kargs):  # to allow no args
         """args: value"""
         return self.dev_dict
 
     @upy_cmd_c_r()
-    def calibration(self, *args, **kargs): # to allow no args
+    def calibration(self, *args, **kargs):  # to allow no args
         """args: pulse_min, pulse_max, pulse_centre,[pulse_angle_90, pulse_speed_100]"""
         return self.dev_dict
 
@@ -316,8 +313,10 @@ class WLAN:
         print('=' * 110)
         for netscan in netscan_list:
             auth = self.AUTHMODE_DICT[netscan[4]]
+            vals = hexlify(netscan[1]).decode()
+            bssid = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
             print('{0:^20} | {1:^25} | {2:^10} | {3:^15} | {4:^15} | {5:^10} '.format(
-                netscan[0].decode(), str(netscan[1]), netscan[2], netscan[3],
+                netscan[0].decode(), bssid , netscan[2], netscan[3],
                 auth, str(netscan[5])))
 
     def get_ifconfig(self):

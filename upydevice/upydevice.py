@@ -17,7 +17,7 @@ import functools
 
 
 name = 'upydevice'
-version = '0.1.2'
+version = '0.1.4'
 
 
 class W_UPYDEVICE:
@@ -402,6 +402,7 @@ class W_UPYDEVICE:
         ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
         ping_cmd = shlex.split(ping_cmd_str)
         timeouts = 0
+        down_kw = ['Unreachable', 'down', 'timeout']
         try:
             proc = subprocess.Popen(
                 ping_cmd, stdout=subprocess.PIPE,
@@ -410,7 +411,7 @@ class W_UPYDEVICE:
                 resp = proc.stdout.readline()[:-1].decode()
                 if debug:
                     print(resp)
-                if 'timeout' in resp or 'down' in resp:
+                if any([kw in resp for kw in down_kw]):
                     timeouts += 1
 
             time.sleep(1)
@@ -1344,7 +1345,7 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
-# LOAD DEVICE CONFIGURATION FUNCTIONS (json) devtools.py (submodule) 
+# LOAD DEVICE CONFIGURATION FUNCTIONS (json) devtools.py (submodule)
 
 # DEFAULT IS GLOBAL DIR, BUT dir= option available (in case of bundle_dir)
 # MAKE A GLOBAL DIR TO STORE DEV CONFIGURATIONS, (.upydevice_devs in $HOME)

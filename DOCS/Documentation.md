@@ -826,18 +826,33 @@ imu.read_magnet()
 
 ​    
 
-
-
 - #### What about a reusable class ?
 
-  Use **@upy_cmd_c_r**, **@upy_cmd_c_raw_r**
+  Use **@upy_cmd_c_r**, **@upy_cmd_c_raw_r**, **@upy_cmd_c_r_in_callback**, **@upy_cmd_c_r_nb**, **@upy_cmd_c_r_nb_in_callback**.
 
-  - #### @upy_cmd_c_r(debug=False, rtn=True, out=False)
+  - #### @upy_cmd_c_r(debug=False, rtn=True, out=False) 
 
-  - #### @upy_cmd_c_raw_r(out=False)
-
+    - To call a 'standard' method of a defined class in MicroPython
+  - *(Use out=True if the function is not a method of the Micropython class, eg: defined as an independent function)
+  
+- #### @upy_cmd_c_raw_r(out=False)
+  
+    - To call a method of a defined class in MicroPython whose output is not an evaluable python object
+  
+  - #### @upy_cmd_c_r_nb(debug=False, rtn=True, out=False)
+  
+    - Same as **@upy_cmd_c_r** but in 'non-blocking' mode. The use case is a function that returns None, or not returns anything. If used with a function that returns something, to get the output a call to *device.get_opt()* maybe needed before the output is stored and *device.output*.
+  
+  - #### @upy_cmd_c_r_in_callback(debug=False, rtn=True, out=False)
+  
+    - To call methods that accept function callbacks as a parameter, and the function callback is defined as a method of the MicroPython class.
+  
+  - #### @upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False)
+  
+    - Same as **@upy_cmd_c_r_in_callback** but in 'non-blocking' mode.
+  
     Define a class like in the following example:
-
+    
     ```python
     class UOS:
         def __init__(self, device):

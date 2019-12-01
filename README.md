@@ -16,7 +16,7 @@ Python library to interface with Micropython devices through WebREPL protocol or
 
 - OS: 
   - MacOS Mojave 10.14.6
-  - Raspbian Stretch (9.11) (RPY ZERO W)
+  - Raspbian Stretch (9.11) (RPY ZERO W) (*just WebREPL protocol)
 - BOARDS:
   - Esp32 (Adafruit feather Huzzah)
   - Esp8266 (Adafruit feather Huzzah)
@@ -207,6 +207,7 @@ Available classes:
   * **UOS**
   * **pyb_LED**
   * **pyb_Timer**
+  * **pyb_Servo**
   * **machine_Timer**
   * **WLAN**
   * **AP**
@@ -217,9 +218,9 @@ Available classes:
 * Custom classes:
   * **IRQ_MG** (This needs *IRQ_util.py in the micropython device*)
   * **STREAMER** (to use as a super class, and this needs *STREAMER_util.py in the micropython device*)
-  * **IMU_STREAMER**
-  * **BME_STREAMER**
-  * **ADS_STREAMER**
+  * **IMU_STREAMER** (This needs *IMU_util.py in the micropython device*)
+  * **BME_STREAMER **(This needs *BME_util.py in the micropython device*)
+  * **ADS_STREAMER** (This needs *ADS_util.py in the micropython device*)
 
 Examples:
 
