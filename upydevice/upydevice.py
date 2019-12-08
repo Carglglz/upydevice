@@ -1095,26 +1095,63 @@ class GROUP:
 
 # CODE BLOCK PARSERS
 
+# def uparser_dec(long_command):
+#     lines_cmd = []
+#     space_count = [0]
+#     for line in long_command.split('\n')[1:]:
+#         line_before = space_count[-1]
+#         line_now = line.count('   ')
+#         # print(line_now)
+#         space_count.append(line_now)
+#         if line_before > line_now:
+#             if line_now > 0:
+#                 lines_cmd.append(
+#                     ''.join(['\b' for i in range(int((line_before/line_now)/2))]+[line.strip()]))
+#                 # print('This line must be backspaced {} times: '.format((line_before/line_now)/2), line)
+#             # else:
+#             #     if len(line.strip()) > 0:
+#             #         lines_cmd.append(''.join(['\b' for i in range(1)]+[line.strip()]))
+#
+#         else:
+#             lines_cmd.append('\r'.join([line.strip()]))
+#     return "{}\r\r".format('\r'.join(lines_cmd))
+
 def uparser_dec(long_command):
     lines_cmd = []
     space_count = [0]
+    buffer_line = ''
+    previous_incomplete = False
     for line in long_command.split('\n')[1:]:
-        line_befoure = space_count[-1]
-        line_now = line.count('   ')
+        line_before = space_count[-1]
+        if line != '':
+            if not previous_incomplete:
+                line_now = line.count('    ')
+                # print(line_now)
         # print(line_now)
-        space_count.append(line_now)
-        if line_befoure > line_now:
-            if line_now > 0:
-                lines_cmd.append(
-                    ''.join(['\b' for i in range(int((line_befoure/line_now)/2))]+[line.strip()]))
-                # print('This line must be backspaced {} times: '.format((line_befoure/line_now)/2), line)
-            # else:
-            #     if len(line.strip()) > 0:
-            #         lines_cmd.append(''.join(['\b' for i in range(1)]+[line.strip()]))
+            space_count.append(line_now)
+            if line_before > line_now:
+                if line_now > 0:
+                    lines_cmd.append(
+                        ''.join(['\b' for i in range(int("{:.0f}".format((line_before-line_now))))]+[line.strip()]))
+                    # print('This line must be backspaced {:.0f} times: {}'.format(((line_before-line_now)), line.strip()))
+                # else:
+                #     if len(line.strip()) > 0:
+                #         lines_cmd.append(''.join(['\b' for i in range(1)]+[line.strip()]))
 
-        else:
-            lines_cmd.append('\r'.join([line.strip()]))
-    return "{}\r\r".format('\r'.join(lines_cmd))
+            elif line[-1] == ',':
+                # print('line incomplete')
+                previous_incomplete = True
+                buffer_line += line.strip()
+            else:
+                if buffer_line != '':
+                    if previous_incomplete:
+                        # print('This is the complete line:{}'.format(buffer_line+line.strip()))
+                        lines_cmd.append('\r'.join([buffer_line+line.strip()]))
+                        buffer_line = ''
+                        previous_incomplete = False
+                else:
+                    lines_cmd.append('\r'.join([line.strip()]))
+    return "{}{}".format('\r'.join(lines_cmd), '\r'*line_now)
 
 
 def upy_code(func):  # TODO: ACCEPT DEVICE ARG
