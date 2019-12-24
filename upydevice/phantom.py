@@ -778,8 +778,8 @@ class STREAMER:
 
     # CONTINUOS STREAM (+ LOG_OPTION (FILE OR BUFFER)) +(TEST OPTION)
     def continuous_stream(self, on_message, timeout=100, init=True,
-                         static=False, log=False, buffer=False,
-                         on_init=None, test=False):
+                          static=False, log=False, buffer=False,
+                          on_init=None, test=False):
         if init:
             self.fq = 1/(timeout/1000)
             self.header['fq(hz)'] = self.fq

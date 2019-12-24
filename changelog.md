@@ -5,6 +5,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.4] Unreleased [Github repo]
+### Added
+- New methods 'open_wconn', 'wr_cmd' and 'close_wconn' to open a wrepl session
+and send commands (this will open a WebREPL connection and wont close it until
+close_wconn is called, which means the other commands methods won't work) This
+will drop the delay between sending a command and executing that command on the
+device
+- Methods 'open_wconn', 'wr_cmd' and 'close_wconn' for serial devices too.
+(With serial REPL instead of WebREPL)
+### Fix
+- uparser_dec improved
 ## [0.1.3] - 2019-11-23
 ### Added
 - Methods to UOS phantom class (mkdir, rmdir, getcwd, chdir, remove)

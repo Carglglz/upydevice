@@ -7,6 +7,7 @@ Python library to interface with Micropython devices through WebREPL protocol or
 * [picocom](https://github.com/npat-efault/picocom)
 * [pyserial](https://github.com/pyserial/pyserial/)
 * [dill](https://github.com/uqfoundation/dill)
+* [pexpect](https://github.com/pexpect/pexpect)
 
 *upydev , pyserial and dill will be automatically installed with pip*  
 

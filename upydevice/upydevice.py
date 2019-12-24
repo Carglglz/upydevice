@@ -13,6 +13,7 @@ import struct
 import multiprocessing
 from dill.source import getsource
 from array import array
+from pexpect.replwrap import REPLWrapper
 import functools
 
 
@@ -34,6 +35,8 @@ class W_UPYDEVICE:
         if name is None:
             self.name = 'wupydev_{}'.format(self.ip.split('.')[-1])
         self.output_queue = multiprocessing.Queue(maxsize=1)
+        self._wconn = None
+        self.repl_CONN = False
 
     def _send_recv_cmd2(self, cmd):  # test method
         resp_recv = False
@@ -153,10 +156,12 @@ class W_UPYDEVICE:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -177,10 +182,12 @@ class W_UPYDEVICE:
                                 except Exception as e:
                                     if 'bytearray' in resp:
 
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -228,10 +235,12 @@ class W_UPYDEVICE:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -251,10 +260,12 @@ class W_UPYDEVICE:
                                     output = ast.literal_eval(resp)
                                 except Exception as e:
                                     if 'bytearray' in resp:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -351,13 +362,15 @@ class W_UPYDEVICE:
         except Exception as e:
             if 'bytearray' in self.response:
                 try:
-                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                    self.output = bytearray(ast.literal_eval(
+                        self.response.strip().split('bytearray')[1]))
                 except Exception as e:
                     pass
             else:
                 if 'array' in self.response:
                     try:
-                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        arr = ast.literal_eval(
+                            self.response.strip().split('array')[1])
                         self.output = array(arr[0], arr[1])
                     except Exception as e:
                         pass
@@ -434,6 +447,94 @@ class W_UPYDEVICE:
         else:
             return True
 
+    def open_wconn(self, bundle_dir='', dbg=False):
+        self._wconn = REPLWrapper(
+            bundle_dir+'web_repl_conn {} -p {}'.format(self.ip, self.password), ">>> ", None)
+        self.repl_CONN = True
+        if dbg:
+            print('WebREPL connection ready!')
+
+    def wr_cmd(self, cmd_msg, dbg=False, silent=False, rtn=True, timeout=1, follow=True, pipe=None, m_kbi=False):
+        cmd = self._wconn.child.sendline(cmd_msg)
+        s_output = False
+        try:
+            raw_out = ' '
+            cmd_echo = self._wconn.child.readline()
+            timed_out = False
+            len_output_now = 0
+            len_output_prev = 0
+            expect_prompt = ' '
+            time.sleep(0.2)
+            while not self._wconn.prompt.strip() in expect_prompt.strip():
+                try:
+                    raw_out += self._wconn.child.read_nonblocking(
+                        2**16, timeout)
+                    s_output = True
+                    expect_prompt = raw_out.split('\n')[-1]
+                    if follow:
+                        outlines = [line for line in raw_out.split(
+                            '...')[-1].splitlines()[:-1] if line != '']  # line.strip()
+                        len_output_now = len(outlines)
+                        if dbg:
+                            print(outlines)
+                            print('LEN NOW: {}'.format(len_output_now))
+                            print('LEN PREV: {}'.format(len_output_prev))
+                        if len_output_now > len_output_prev:
+                            diff_len = len_output_now - len_output_prev
+                            len_output_prev = len(outlines)
+                            for line in outlines[-diff_len:]:
+                                if line == outlines[0]:
+                                    line = line[1:]
+                                cmds = [val for val in cmd_msg.split(
+                                    '\r') if val != '']
+                                if line.replace('>>> ', '') != cmd_msg and line.replace('>>> ', '').strip() not in cmds and '\x08' not in line.replace('>>> ', ''):
+                                    self.response = line.replace('>>> ', '')
+                                    if pipe is not None:
+                                        pipe(self.response+'\n')
+                                    else:
+                                        if not silent:
+                                            print(self.response)
+                        elif len_output_now < len_output_prev:
+                            len_output_prev = 0
+
+                except Exception as e:
+                    if dbg:
+                        print(e)
+                        print(expect_prompt)
+                    timed_out = True
+                except KeyboardInterrupt:
+                    if m_kbi:
+                        self.close_wconn()
+                        self.kbi()
+                        time.sleep(0.5)
+                        self.open_wconn()
+                except EOFError:
+                    if m_kbi:
+                        self.close_wconn()
+                        self.kbi()
+                        time.sleep(0.5)
+                        self.open_wconn()
+        except Exception as e:
+            if dbg:
+                print('Timeout')
+        if s_output:
+            s_output = raw_out.replace('>>>', '').strip().split('\n')[-1]
+            self.process_raw = raw_out
+            outlines = [line.strip() for line in self.process_raw.split(
+                '...')[-1].splitlines()[:-1] if line != '']
+            for line in outlines:
+                if line != cmd_msg:
+                    self.response = line
+                    if rtn:
+                        self.get_output()
+                    if not silent:
+                        if not follow:
+                            print(line)
+
+    def close_wconn(self):
+        self._wconn.child.close()
+        self.repl_CONN = False
+
 
 # S_UPYDEVICE
 
@@ -456,6 +557,8 @@ class S_UPYDEVICE:
         self.response_object = None
         self.output = None
         self.long_output = []
+        self._wconn = None
+        self.repl_CONN = False
         self.serial = serial.Serial(self.serial_port, self.baudrate)
         self.reset()
         # self._reset()
@@ -467,13 +570,15 @@ class S_UPYDEVICE:
         except Exception as e:
             if 'bytearray' in self.response:
                 try:
-                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                    self.output = bytearray(ast.literal_eval(
+                        self.response.strip().split('bytearray')[1]))
                 except Exception as e:
                     pass
             else:
                 if 'array' in self.response:
                     try:
-                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        arr = ast.literal_eval(
+                            self.response.strip().split('array')[1])
                         self.output = array(arr[0], arr[1])
                     except Exception as e:
                         pass
@@ -521,10 +626,12 @@ class S_UPYDEVICE:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -545,10 +652,12 @@ class S_UPYDEVICE:
                                     output = ast.literal_eval(resp)
                                 except Exception as e:
                                     if 'bytearray' in resp:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -601,10 +710,12 @@ class S_UPYDEVICE:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -625,10 +736,12 @@ class S_UPYDEVICE:
                                     output = ast.literal_eval(resp)
                                 except Exception as e:
                                     if 'bytearray' in resp:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -704,6 +817,86 @@ class S_UPYDEVICE:
         if output:
             print('Done!')
 
+    def open_wconn(self, bundle_dir='', dbg=False):
+        self._wconn = REPLWrapper(
+            bundle_dir + "picocom -t '>>> ' -b{} {}".format(self.baudrate, self.serial_port), ">>> ", None)
+        cmd = self._wconn.child.sendline("\x08"*len('>>> ')+"\r")
+        self.repl_CONN = True
+        if dbg:
+            print('Serial connection ready!')
+
+    def wr_cmd(self, cmd_msg, dbg=False, silent=False, rtn=True, timeout=1, follow=True, pipe=None):
+        if cmd_msg.endswith('\r'):
+            cmd = self._wconn.child.sendline(cmd_msg)
+        else:
+            cmd = self._wconn.child.sendline(cmd_msg + '\r')
+        s_output = False
+        try:
+            raw_out = ' '
+            cmd_echo = self._wconn.child.readline()
+            timed_out = False
+            len_output_now = 0
+            len_output_prev = 0
+            expect_prompt = ' '
+            # time.sleep(0.2)
+            while not self._wconn.prompt.strip() in expect_prompt.strip():
+                try:
+                    raw_out += self._wconn.child.read_nonblocking(
+                        2**16, timeout)
+                    s_output = True
+                    expect_prompt = raw_out.split('\n')[-1]
+                    if follow:
+                        outlines = [line for line in raw_out.split(
+                            '...')[-1].splitlines()[:-1] if line != '']  # line.strip()
+                        len_output_now = len(outlines)
+                        if dbg:
+                            print(outlines)
+                            print('LEN NOW: {}'.format(len_output_now))
+                            print('LEN PREV: {}'.format(len_output_prev))
+                        if len_output_now > len_output_prev:
+                            diff_len = len_output_now - len_output_prev
+                            len_output_prev = len(outlines)
+                            for line in outlines[-diff_len:]:
+                                if line == outlines[0]:
+                                    line = line[1:]
+                                cmds = [val for val in cmd_msg.split(
+                                    '\r') if val != '']
+                                if line.replace('>>> ', '') != cmd_msg and line.replace('>>> ', '').strip() not in cmds and '\x08' not in line.replace('>>> ', ''):
+                                    self.response = line.replace('>>> ', '')
+                                    if pipe is not None:
+                                        pipe(self.response+'\n')
+                                    else:
+                                        if not silent:
+                                            print(self.response)
+                        elif len_output_now < len_output_prev:
+                            len_output_prev = 0
+
+                except Exception as e:
+                    if dbg:
+                        print(e)
+                        print(expect_prompt)
+                    timed_out = True
+        except Exception as e:
+            if dbg:
+                print('Timeout')
+        if s_output:
+            s_output = raw_out.replace('>>>', '').strip().split('\n')[-1]
+            self.process_raw = raw_out
+            outlines = [line.strip() for line in self.process_raw.split(
+                '...')[-1].splitlines()[:-1] if line != '']
+            for line in outlines:
+                if line != cmd_msg:
+                    self.response = line
+                    if rtn:
+                        self.get_output()
+                    if not silent:
+                        if not follow:
+                            print(line)
+
+    def close_wconn(self):
+        self._wconn.child.close()
+        self.repl_CONN = False
+
 
 # PYBOARD
 
@@ -726,6 +919,8 @@ class PYBOARD:
         self.output = None
         self.process_raw = None
         self.long_output = []
+        self._wconn = None
+        self.repl_CONN = False
         self.serial = serial.Serial(self.serial_port, self.baudrate)
         self.reset(output=False)
         self.reset(output=False)
@@ -739,18 +934,19 @@ class PYBOARD:
         except Exception as e:
             if 'bytearray' in self.response:
                 try:
-                    self.output = bytearray(ast.literal_eval(self.response.strip().split('bytearray')[1]))
+                    self.output = bytearray(ast.literal_eval(
+                        self.response.strip().split('bytearray')[1]))
                 except Exception as e:
                     pass
             else:
                 if 'array' in self.response:
                     try:
-                        arr = ast.literal_eval(self.response.strip().split('array')[1])
+                        arr = ast.literal_eval(
+                            self.response.strip().split('array')[1])
                         self.output = array(arr[0], arr[1])
                     except Exception as e:
                         pass
             pass
-
 
     def enter_cmd(self):
         if not self.serial.is_open:
@@ -795,10 +991,12 @@ class PYBOARD:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -819,10 +1017,12 @@ class PYBOARD:
                                     output = ast.literal_eval(resp)
                                 except Exception as e:
                                     if 'bytearray' in resp:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -878,10 +1078,12 @@ class PYBOARD:
                                     output = ast.literal_eval(resp[4:])
                                 except Exception as e:
                                     if 'bytearray' in resp[4:]:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp[4:]:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -902,10 +1104,12 @@ class PYBOARD:
                                     output = ast.literal_eval(resp)
                                 except Exception as e:
                                     if 'bytearray' in resp:
-                                        output = bytearray(ast.literal_eval(resp.strip().split('bytearray')[1]))
+                                        output = bytearray(ast.literal_eval(
+                                            resp.strip().split('bytearray')[1]))
                                     else:
                                         if 'array' in resp:
-                                            arr = ast.literal_eval(resp.strip().split('array')[1])
+                                            arr = ast.literal_eval(
+                                                resp.strip().split('array')[1])
                                             output = array(arr[0], arr[1])
                                     pass
                                 p_queue.put((
@@ -982,6 +1186,86 @@ class PYBOARD:
         # self.serial.close()
         if output:
             print('Done!')
+
+    def open_wconn(self, bundle_dir='', dbg=False):
+        self._wconn = REPLWrapper(
+            bundle_dir + "picocom -t '>>> ' -b{} {}".format(self.baudrate, self.serial_port), ">>> ", None)
+        cmd = self._wconn.child.sendline("\x08"*len('>>> ')+"\r")
+        self.repl_CONN = True
+        if dbg:
+            print('Serial connection ready!')
+
+    def wr_cmd(self, cmd_msg, dbg=False, silent=False, rtn=True, timeout=1, follow=True, pipe=None):
+        if cmd_msg.endswith('\r'):
+            cmd = self._wconn.child.sendline(cmd_msg)
+        else:
+            cmd = self._wconn.child.sendline(cmd_msg + '\r')
+        s_output = False
+        try:
+            raw_out = ' '
+            cmd_echo = self._wconn.child.readline()
+            timed_out = False
+            len_output_now = 0
+            len_output_prev = 0
+            expect_prompt = ' '
+            # time.sleep(0.2)
+            while not self._wconn.prompt.strip() in expect_prompt.strip():
+                try:
+                    raw_out += self._wconn.child.read_nonblocking(
+                        2**16, timeout)
+                    s_output = True
+                    expect_prompt = raw_out.split('\n')[-1]
+                    if follow:
+                        outlines = [line for line in raw_out.split(
+                            '...')[-1].splitlines()[:-1] if line != '']  # line.strip()
+                        len_output_now = len(outlines)
+                        if dbg:
+                            print(outlines)
+                            print('LEN NOW: {}'.format(len_output_now))
+                            print('LEN PREV: {}'.format(len_output_prev))
+                        if len_output_now > len_output_prev:
+                            diff_len = len_output_now - len_output_prev
+                            len_output_prev = len(outlines)
+                            for line in outlines[-diff_len:]:
+                                if line == outlines[0]:
+                                    line = line[1:]
+                                cmds = [val for val in cmd_msg.split(
+                                    '\r') if val != '']
+                                if line.replace('>>> ', '') != cmd_msg and line.replace('>>> ', '').strip() not in cmds and '\x08' not in line.replace('>>> ', ''):
+                                    self.response = line.replace('>>> ', '')
+                                    if pipe is not None:
+                                        pipe(self.response+'\n')
+                                    else:
+                                        if not silent:
+                                            print(self.response)
+                        elif len_output_now < len_output_prev:
+                            len_output_prev = 0
+
+                except Exception as e:
+                    if dbg:
+                        print(e)
+                        print(expect_prompt)
+                    timed_out = True
+        except Exception as e:
+            if dbg:
+                print('Timeout')
+        if s_output:
+            s_output = raw_out.replace('>>>', '').strip().split('\n')[-1]
+            self.process_raw = raw_out
+            outlines = [line.strip() for line in self.process_raw.split(
+                '...')[-1].splitlines()[:-1] if line != '']
+            for line in outlines:
+                if line != cmd_msg:
+                    self.response = line
+                    if rtn:
+                        self.get_output()
+                    if not silent:
+                        if not follow:
+                            print(line)
+
+    def close_wconn(self):
+        self._wconn.child.close()
+        self.repl_CONN = False
 
 
 class GROUP:
@@ -1116,7 +1400,7 @@ class GROUP:
 #             lines_cmd.append('\r'.join([line.strip()]))
 #     return "{}\r\r".format('\r'.join(lines_cmd))
 
-def uparser_dec(long_command):
+def uparser_dec(long_command, pastemode=False, end=''):
     lines_cmd = []
     space_count = [0]
     buffer_line = ''
@@ -1151,7 +1435,10 @@ def uparser_dec(long_command):
                         previous_incomplete = False
                 else:
                     lines_cmd.append('\r'.join([line.strip()]))
-    return "{}{}".format('\r'.join(lines_cmd), '\r'*line_now)
+    if not pastemode:
+        return "{}{}{}".format('\r'.join(lines_cmd), '\r'*line_now, end)
+    else:
+        return "\x05{}\x04".format(long_command)
 
 
 def upy_code(func):  # TODO: ACCEPT DEVICE ARG
@@ -1168,7 +1455,8 @@ def upy_cmd(device, debug=False, rtn=True):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             args_repr = [repr(a) for a in args]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd = f"{func.__name__}({signature})"
             device.output = None
@@ -1189,8 +1477,10 @@ def upy_cmd_c(device, debug=False, rtn=True, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             name = func(*args, **kwargs)
@@ -1217,8 +1507,10 @@ def upy_cmd_c_raw(device, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             name = func(*args, **kwargs)
@@ -1244,8 +1536,10 @@ def upy_cmd_c_r(debug=False, rtn=True, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             dev_dict = func(*args, **kwargs)
@@ -1272,8 +1566,10 @@ def upy_cmd_c_raw_r(out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             dev_dict = func(*args, **kwargs)
@@ -1299,10 +1595,12 @@ def upy_cmd_c_r_in_callback(debug=False, rtn=True, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
             dev_dict = func(*args, **kwargs)
             name = dev_dict['name']
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
@@ -1328,8 +1626,10 @@ def upy_cmd_c_r_nb(debug=False, rtn=True, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             dev_dict = func(*args, **kwargs)
@@ -1357,10 +1657,12 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
-            args_repr = [repr(a) for a in args if any(f not in repr(a) for f in flags)]
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
             dev_dict = func(*args, **kwargs)
             name = dev_dict['name']
-            kwargs_repr = [f"{k}={v!r}" if not callable(v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
             cmd = "{}.{}".format(dev_dict['name'], cmd_)
