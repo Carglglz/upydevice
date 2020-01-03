@@ -376,7 +376,7 @@ class W_UPYDEVICE:
                         pass
             pass
 
-    def kbi(self, bundle_dir='', output=True):
+    def kbi(self, bundle_dir='', output=True, traceback=False):
         reset_cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(hex(3),
                                                                                     self.ip, self.password)
         if bundle_dir is not '':
@@ -389,20 +389,24 @@ class W_UPYDEVICE:
             proc = subprocess.Popen(
                 reset_cmd, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT)
-            for i in range(6):
+            for i in range(2):
                 proc.stdout.readline()
             while proc.poll() is None:
                 resp = proc.stdout.readline()[:-1].decode()
                 if len(resp) > 0:
                     if resp[0] == '>':
-                        if output:
+                        if traceback:
                             print(resp[4:])
                     else:
-                        if output:
+                        if traceback:
                             print(resp)
                 else:
-                    if output:
+                    if traceback:
                         print(resp)
+                if 'KeyboardInterrupt' in resp:
+                    while proc.poll() is None:
+                        proc.stdout.readline()
+                    break
             if output:
                 print('Done!')
         except KeyboardInterrupt:
@@ -497,23 +501,33 @@ class W_UPYDEVICE:
                         elif len_output_now < len_output_prev:
                             len_output_prev = 0
 
+                except KeyboardInterrupt:
+                    # print('KBI!')
+                    # self._wconn.child.sendline('C' + '\r')
+                    self.close_wconn()
+                    self.kbi(traceback=True, output=False)
+                    time.sleep(0.2)
+                    self.open_wconn()
+                    s_output = False
+                    break
+
                 except Exception as e:
                     if dbg:
                         print(e)
                         print(expect_prompt)
                     timed_out = True
-                except KeyboardInterrupt:
-                    if m_kbi:
-                        self.close_wconn()
-                        self.kbi()
-                        time.sleep(0.5)
-                        self.open_wconn()
-                except EOFError:
-                    if m_kbi:
-                        self.close_wconn()
-                        self.kbi()
-                        time.sleep(0.5)
-                        self.open_wconn()
+                # except KeyboardInterrupt:
+                #     if m_kbi:
+                #         self.close_wconn()
+                #         self.kbi()
+                #         time.sleep(0.5)
+                #         self.open_wconn()
+                # except EOFError:
+                #     if m_kbi:
+                #         self.close_wconn()
+                #         self.kbi()
+                #         time.sleep(0.5)
+                #         self.open_wconn()
         except Exception as e:
             if dbg:
                 print('Timeout')
@@ -1241,11 +1255,15 @@ class PYBOARD:
                         elif len_output_now < len_output_prev:
                             len_output_prev = 0
 
+                except KeyboardInterrupt:
+                    print('KBI!')
+                    self._wconn.child.sendline('C' + '\r')
                 except Exception as e:
                     if dbg:
                         print(e)
                         print(expect_prompt)
                     timed_out = True
+
         except Exception as e:
             if dbg:
                 print('Timeout')
@@ -1684,6 +1702,94 @@ def upy_cmd_c_r_nb_in_callback(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
+def upy_wrcmd_c_r(debug=False, rtn=True, out=False):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            dev_dict = func(*args, **kwargs)
+            cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            dev_dict['dev'].output = None
+            if out:
+                cmd = "{}".format(cmd_)
+            else:
+                pass
+            if debug:
+                dev_dict['dev'].wr_cmd(cmd)
+            else:
+                dev_dict['dev'].wr_cmd(cmd, silent=True)
+            if rtn:
+                return dev_dict['dev'].output
+            else:
+                return None
+        return wrapper_cmd
+    return decorator_cmd_str
+
+
+# def upy_wrcmd_c_raw_r(out=False):
+#     def decorator_cmd_str(func):
+#         @functools.wraps(func)
+#         def wrapper_cmd(*args, **kwargs):
+#             flags = ['>', '<', 'object', 'at', '0x']
+#             args_repr = [repr(a) for a in args if any(
+#                 f not in repr(a) for f in flags)]
+#             kwargs_repr = [f"{k}={v!r}" if not callable(
+#                 v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+#             signature = ", ".join(args_repr + kwargs_repr)
+#             cmd_ = f"{func.__name__}({signature})"
+#             dev_dict = func(*args, **kwargs)
+#             cmd = "{}.{}".format(dev_dict['name'], cmd_)
+#             dev_dict['dev'].output = None
+#             if out:
+#                 cmd = "{}".format(cmd_)
+#             else:
+#                 pass
+#             dev_dict['dev'].wr_cmd(cmd, capture_output=True)
+#             try:
+#                 dev_dict['dev'].output = dev_dict['dev'].long_output[0].strip()
+#             except Exception as e:
+#                 print(e)
+#                 pass
+#             return None
+#         return wrapper_cmd
+#     return decorator_cmd_str
+
+
+def upy_wrcmd_c_r_in_callback(debug=False, rtn=True, out=False):
+    def decorator_cmd_str(func):
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            dev_dict = func(*args, **kwargs)
+            name = dev_dict['name']
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={name}.{v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            cmd = "{}.{}".format(dev_dict['name'], cmd_)
+            dev_dict['dev'].output = None
+            if out:
+                cmd = "{}".format(cmd_)
+            else:
+                pass
+            if debug:
+                dev_dict['dev'].wr_cmd(cmd)
+            else:
+                dev_dict['dev'].wr_cmd(cmd, silent=True)
+            if rtn:
+                return dev_dict['dev'].output
+            else:
+                return None
+        return wrapper_cmd
+    return decorator_cmd_str
 # LOAD DEVICE CONFIGURATION FUNCTIONS (json) devtools.py (submodule)
 
 # DEFAULT IS GLOBAL DIR, BUT dir= option available (in case of bundle_dir)

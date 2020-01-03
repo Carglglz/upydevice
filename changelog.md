@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.5] Unreleased [Github repo]
+### Fix
+- KeyboardInterrupt handling in wr_cmd method of W_UPYDEVICE
 ## [0.1.4] - 2019-12-24
 ### Added
 - New methods 'open_wconn', 'wr_cmd' and 'close_wconn' to open a wrepl session
