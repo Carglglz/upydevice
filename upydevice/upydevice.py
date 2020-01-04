@@ -18,11 +18,11 @@ import functools
 
 
 name = 'upydevice'
-version = '0.1.4'
+version = '0.1.5'
 
 
 class W_UPYDEVICE:
-    def __init__(self, ip_target, password, name=None, bundle_dir=''):
+    def __init__(self, ip_target, password, name=None, bundle_dir='', platform=None):
         self.password = password
         self.ip = ip_target
         self.response = None
@@ -37,6 +37,7 @@ class W_UPYDEVICE:
         self.output_queue = multiprocessing.Queue(maxsize=1)
         self._wconn = None
         self.repl_CONN = False
+        self.platform = platform
 
     def _send_recv_cmd2(self, cmd):  # test method
         resp_recv = False
@@ -506,6 +507,8 @@ class W_UPYDEVICE:
                     # self._wconn.child.sendline('C' + '\r')
                     self.close_wconn()
                     self.kbi(traceback=True, output=False)
+                    if self.platform == 'esp8266':
+                        self.cmd('\x0d', silent=True)
                     time.sleep(0.2)
                     self.open_wconn()
                     s_output = False
