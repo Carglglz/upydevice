@@ -888,6 +888,9 @@ class S_UPYDEVICE:
                         elif len_output_now < len_output_prev:
                             len_output_prev = 0
 
+                except KeyboardInterrupt:
+                    print('^C')
+                    self._wconn.child.sendline('\x03' + '\r')
                 except Exception as e:
                     if dbg:
                         print(e)
@@ -1259,8 +1262,8 @@ class PYBOARD:
                             len_output_prev = 0
 
                 except KeyboardInterrupt:
-                    print('KBI!')
-                    self._wconn.child.sendline('C' + '\r')
+                    print('^C')
+                    self._wconn.child.sendline('\x03' + '\r')
                 except Exception as e:
                     if dbg:
                         print(e)
