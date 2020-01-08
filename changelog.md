@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.6] Unreleased [Github repo]
+### Added
+- Reset option in "init" S_UPYDEVICE
 ## [0.1.5] - 2020-01-07
 ### Added
 - phantom_wr module like phantom but faster

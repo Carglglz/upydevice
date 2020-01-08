@@ -18,7 +18,7 @@ import functools
 
 
 name = 'upydevice'
-version = '0.1.5'
+version = '0.1.6'
 
 
 class W_UPYDEVICE:
@@ -556,7 +556,7 @@ class W_UPYDEVICE:
 # S_UPYDEVICE
 
 class S_UPYDEVICE:
-    def __init__(self, serial_port, timeout=100, baudrate=9600, name=None, bundle_dir=''):
+    def __init__(self, serial_port, timeout=100, baudrate=9600, name=None, bundle_dir='', reset=True):
         self.serial_port = serial_port
         self.returncode = None
         self.timeout = timeout
@@ -577,9 +577,10 @@ class S_UPYDEVICE:
         self._wconn = None
         self.repl_CONN = False
         self.serial = serial.Serial(self.serial_port, self.baudrate)
-        self.reset()
-        # self._reset()
-        self.serial.close()
+        if reset:
+            self.reset(output=False)
+            # self._reset()
+            self.serial.close()
 
     def get_output(self):
         try:
