@@ -18,7 +18,7 @@ import functools
 
 
 name = 'upydevice'
-version = '0.1.6'
+version = '0.1.7'
 
 
 class W_UPYDEVICE:
@@ -377,8 +377,8 @@ class W_UPYDEVICE:
                         pass
             pass
 
-    def kbi(self, bundle_dir='', output=True, traceback=False):
-        reset_cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(hex(3),
+    def kbi(self, bundle_dir='', output=True, traceback=False, filter_ban=True):
+        reset_cmd_str = self.bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format('\x03',
                                                                                     self.ip, self.password)
         if bundle_dir is not '':
             reset_cmd_str = bundle_dir+'web_repl_cmd_r -c "{}" -t {} -p {}'.format(hex(3),
@@ -386,6 +386,7 @@ class W_UPYDEVICE:
         reset_cmd = shlex.split(reset_cmd_str)
         if output:
             print('KeyboardInterrupt sent!')
+        kw_ban = ["MicroPython", "module with", 'Type "help()" for more information.']
         try:
             proc = subprocess.Popen(
                 reset_cmd, stdout=subprocess.PIPE,
@@ -397,13 +398,26 @@ class W_UPYDEVICE:
                 if len(resp) > 0:
                     if resp[0] == '>':
                         if traceback:
-                            print(resp[4:])
+                            if filter_ban:
+                                if not any([kw in resp[4:] for kw in kw_ban]):
+                                    print(resp[4:])
+                            else:
+                                print(resp[4:])
                     else:
                         if traceback:
-                            print(resp)
+                            if filter_ban:
+                                if not any([kw in resp for kw in kw_ban]):
+                                    if resp != '':
+                                        print(resp)
+                            else:
+                                print(resp)
                 else:
                     if traceback:
-                        print(resp)
+                        if filter_ban:
+                            if resp != '':
+                                print(resp)
+                        else:
+                            print(resp)
                 if 'KeyboardInterrupt' in resp:
                     while proc.poll() is None:
                         proc.stdout.readline()
@@ -511,6 +525,7 @@ class W_UPYDEVICE:
                         self.cmd('\x0d', silent=True)
                     time.sleep(0.2)
                     self.open_wconn()
+                    flush = self._wconn.child.read_nonblocking(256, 0.1)
                     s_output = False
                     break
 
