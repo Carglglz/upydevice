@@ -13,7 +13,7 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.1.7',
+      version='0.1.8',
       description='Python library to interface with wireless/serial Micropython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',

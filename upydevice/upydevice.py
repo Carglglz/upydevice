@@ -10,15 +10,17 @@ import shlex
 import time
 import serial
 import struct
+import socket
 import multiprocessing
 from dill.source import getsource
 from array import array
 from pexpect.replwrap import REPLWrapper
+from upydevice import wsclient
 import functools
 
 
 name = 'upydevice'
-version = '0.1.7'
+version = '0.1.8'
 
 
 class W_UPYDEVICE:
@@ -1828,3 +1830,167 @@ def upy_wrcmd_c_r_in_callback(debug=False, rtn=True, out=False):
 # esp32 = W_UPYDEVICE(dev['ip'], dev['passwd'])
 # dev = load_dev('my_pyb')
 # pyboard = PYBOARD(dev['s_port'])
+
+# BASE CLASSES UPYDEVICES
+
+
+class BASE_SERIAL_DEVICE:
+    def __init__(self, serial_port, baudrate):
+        self.serial = serial.Serial(serial_port, baudrate)
+        self.bytes_sent = 0
+        self.buff = b''
+
+    def cmd(self, cmd, decode=True):
+        self.bytes_sent = self.serial.write(bytes(cmd+'\r', 'utf-8'))
+        time.sleep(0.2)
+        self.buff = self.serial.read_all()[self.bytes_sent+1:]
+        if self.buff == b'':
+            time.sleep(0.2)
+            self.buff = self.serial.read_all()
+        # print(self.buff)
+        if decode:
+            try:
+                return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode())
+            except Exception as e:
+                return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
+        else:
+            try:
+                return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b''))
+            except Exception as e:
+                return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
+
+
+class BASE_WS_DEVICE:
+    def __init__(self, target, password, init=False):
+        self.ws = None
+        self.ip = target
+        self.pswd = password
+        self.port = 8266
+        self.bytes_sent = 0
+        self.buff = b''
+        self.raw_buff = b''
+        self.prompt = b'>>> '
+        self.response = ''
+        self._kbi = '\x03'
+        self._banner = '\x02'
+        self._flush = b''
+        self.output = None
+        if init:
+            self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+
+    def open_wconn(self):
+        self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+
+    def close_wconn(self):
+        self.ws.close()
+
+    def write(self, cmd):
+        n_bytes = len(bytes(cmd, 'utf-8'))
+        self.ws.send(cmd)
+        return n_bytes
+
+    def read_all(self):
+        self.ws.sock.settimeout(None)
+        try:
+            self.raw_buff = b''
+            while self.prompt not in self.raw_buff:
+                fin, opcode, data = self.ws.read_frame()
+                self.raw_buff += data
+
+            return self.raw_buff
+        except socket.timeout as e:
+            return self.raw_buff
+
+    def flush(self):
+        self.ws.sock.settimeout(0.01)
+        self._flush = b''
+        while True:
+            try:
+                fin, opcode, data = self.ws.read_frame()
+                self._flush += data
+            except socket.timeout as e:
+                break
+
+    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False, long_string=False):
+        self.buff = b''
+        self.flush()
+        self.bytes_sent = self.write(cmd+'\r')
+        # time.sleep(0.1)
+        # self.buff = self.read_all()[self.bytes_sent:]
+        self.buff = self.read_all()
+        if self.buff == b'':
+            # time.sleep(0.1)
+            self.buff = self.read_all()
+        # print(self.buff)
+        # filter command
+        cmd_filt = bytes(cmd + '\r\n', 'utf-8')
+        self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if long_string:
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        else:
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        if not silent:
+            if self.response != '\n' and self.response != '':
+                print(self.response)
+            else:
+                self.response = ''
+        if rtn:
+            self.get_output()
+            if self.output == '\n' and self.output == '':
+                self.output = None
+            if self.output is None:
+                if self.response != '' and self.response != '\n':
+                    self.output = self.response
+        if rtn_resp:
+            return self.output
+        # if decode:
+        #     try:
+        #         if lite_eval:
+        #             if rtn:
+        #                 return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode())
+        #         else:
+        #             if rtn:
+        #                 return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
+        #     except Exception as e:
+        #         return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
+        # else:
+        #     try:
+        #         if lite_eval:
+        #             if rtn:
+        #                 return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b''))
+        #         else:
+        #             if rtn:
+        #                 return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
+        #     except Exception as e:
+        #         return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
+        # return self.buff
+
+    def cmd(self, cmd, silent=False, rtn=False):
+        self.open_wconn()
+        self.wr_cmd(cmd, silent=True)
+        self.close_wconn()
+        self.get_output()
+        if not silent:
+            print(self.response)
+        if rtn:
+            return self.output
+
+    def get_output(self):
+        try:
+            self.output = ast.literal_eval(self.response)
+        except Exception as e:
+            if 'bytearray' in self.response:
+                try:
+                    self.output = bytearray(ast.literal_eval(
+                        self.response.strip().split('bytearray')[1]))
+                except Exception as e:
+                    pass
+            else:
+                if 'array' in self.response:
+                    try:
+                        arr = ast.literal_eval(
+                            self.response.strip().split('array')[1])
+                        self.output = array(arr[0], arr[1])
+                    except Exception as e:
+                        pass
+            pass
