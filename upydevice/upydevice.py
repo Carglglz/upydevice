@@ -1875,6 +1875,7 @@ class BASE_WS_DEVICE:
         self._banner = '\x02'
         self._flush = b''
         self.output = None
+        self.platform = None
         if init:
             self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
 
