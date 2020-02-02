@@ -15,7 +15,7 @@ import multiprocessing
 from dill.source import getsource
 from array import array
 from pexpect.replwrap import REPLWrapper
-from upydevice import wsclient
+from upydevice import wsclient, protocol
 import functools
 
 
@@ -1839,25 +1839,83 @@ class BASE_SERIAL_DEVICE:
         self.serial = serial.Serial(serial_port, baudrate)
         self.bytes_sent = 0
         self.buff = b''
+        self._kbi = '\x03'
+        self._banner = '\x02'
+        self._reset = '\x04'
+        self.response = ''
+        self._traceback = b'Traceback (most recent call last):'
+        self.output = None
+        self.wr_cmd = self.cmd
 
-    def cmd(self, cmd, decode=True):
+    def cmd(self, cmd, silent=False, rtn=True, long_string=False, rtn_resp=False):
+        self.response = ''
+        self.output = None
+        self.buff = b''
         self.bytes_sent = self.serial.write(bytes(cmd+'\r', 'utf-8'))
         time.sleep(0.2)
-        self.buff = self.serial.read_all()[self.bytes_sent+1:]
+        # self.buff = self.serial.read_all()[self.bytes_sent+1:]
         if self.buff == b'':
             time.sleep(0.2)
             self.buff = self.serial.read_all()
-        # print(self.buff)
-        if decode:
-            try:
-                return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode())
-            except Exception as e:
-                return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
+        cmd_filt = bytes(cmd + '\r\n', 'utf-8')
+        self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if self._traceback in self.buff:
+            long_string = True
+        if long_string:
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         else:
-            try:
-                return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b''))
-            except Exception as e:
-                return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        if not silent:
+            if self.response != '\n' and self.response != '':
+                print(self.response)
+            else:
+                self.response = ''
+        if rtn:
+            self.get_output()
+            if self.output == '\n' and self.output == '':
+                self.output = None
+            if self.output is None:
+                if self.response != '' and self.response != '\n':
+                    self.output = self.response
+        if rtn_resp:
+            return self.output
+
+    def reset(self, silent=False):
+        self.buff = b''
+        if not silent:
+            print('Rebooting device...')
+        self.bytes_sent = self.serial.write(bytes(self._reset, 'utf-8'))
+        time.sleep(0.5)
+        self.buff = self.serial.read_all()
+        if not silent:
+            print('Done!')
+
+    def kbi(self):
+        self.cmd(self._kbi)
+
+    def banner(self):
+        self.cmd(self._banner, silent=True, long_string=True)
+        print(self.response.replace('\n\n', '\n'))
+
+    def get_output(self):
+        try:
+            self.output = ast.literal_eval(self.response)
+        except Exception as e:
+            if 'bytearray' in self.response:
+                try:
+                    self.output = bytearray(ast.literal_eval(
+                        self.response.strip().split('bytearray')[1]))
+                except Exception as e:
+                    pass
+            else:
+                if 'array' in self.response:
+                    try:
+                        arr = ast.literal_eval(
+                            self.response.strip().split('array')[1])
+                        self.output = array(arr[0], arr[1])
+                    except Exception as e:
+                        pass
+            pass
 
 
 class BASE_WS_DEVICE:
@@ -1873,17 +1931,23 @@ class BASE_WS_DEVICE:
         self.response = ''
         self._kbi = '\x03'
         self._banner = '\x02'
+        self._reset = '\x04'
+        self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
         self.output = None
         self.platform = None
+        self.connected = False
         if init:
             self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+            self.connected = True
 
     def open_wconn(self):
         self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+        self.connected = True
 
     def close_wconn(self):
         self.ws.close()
+        self.connected = False
 
     def write(self, cmd):
         n_bytes = len(bytes(cmd, 'utf-8'))
@@ -1911,8 +1975,12 @@ class BASE_WS_DEVICE:
                 self._flush += data
             except socket.timeout as e:
                 break
+            except protocol.NoDataException as e:
+                break
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False, long_string=False):
+        self.output = None
+        self.response = ''
         self.buff = b''
         self.flush()
         self.bytes_sent = self.write(cmd+'\r')
@@ -1926,6 +1994,8 @@ class BASE_WS_DEVICE:
         # filter command
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if self._traceback in self.buff:
+            long_string = True
         if long_string:
             self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         else:
@@ -1944,27 +2014,6 @@ class BASE_WS_DEVICE:
                     self.output = self.response
         if rtn_resp:
             return self.output
-        # if decode:
-        #     try:
-        #         if lite_eval:
-        #             if rtn:
-        #                 return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode())
-        #         else:
-        #             if rtn:
-        #                 return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
-        #     except Exception as e:
-        #         return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'').decode()
-        # else:
-        #     try:
-        #         if lite_eval:
-        #             if rtn:
-        #                 return ast.literal_eval(self.buff.replace(b'\r\n', b'').replace(b'>>> ', b''))
-        #         else:
-        #             if rtn:
-        #                 return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
-        #     except Exception as e:
-        #         return self.buff.replace(b'\r\n', b'').replace(b'>>> ', b'')
-        # return self.buff
 
     def cmd(self, cmd, silent=False, rtn=False):
         self.open_wconn()
@@ -1975,6 +2024,39 @@ class BASE_WS_DEVICE:
             print(self.response)
         if rtn:
             return self.output
+
+    def reset(self, silent=False):
+        if not silent:
+            print('Rebooting device...')
+        if self.connected:
+            self.bytes_sent = self.write(self._reset)
+            self.close_wconn()
+            time.sleep(1)
+            while True:
+                try:
+                    self.open_wconn()
+                    self.wr_cmd(self._banner, silent=True)
+                    break
+                except Exception as e:
+                    time.sleep(0.5)
+            if not silent:
+                print('Done!')
+        else:
+            self.open_wconn()
+            self.bytes_sent = self.write(self._reset)
+            self.close_wconn()
+            if not silent:
+                print('Done!')
+
+    def kbi(self, silent=True):
+        if self.connected:
+            self.wr_cmd(self._kbi, silent=silent)
+        else:
+            self.cmd(self._kbi, silent=silent)
+
+    def banner(self):
+        self.wr_cmd(self._banner, silent=True, long_string=True)
+        print(self.response.replace('\n\n', '\n'))
 
     def get_output(self):
         try:
