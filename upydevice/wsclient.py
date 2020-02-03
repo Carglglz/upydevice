@@ -10,6 +10,8 @@ import socket
 import binascii
 import random
 import ssl
+import os
+import io
 
 from upydevice.protocol import Websocket, urlparse
 
@@ -22,11 +24,21 @@ class WebsocketClient(Websocket):
     is_client = True
 
 
-def connect(uri, password, silent=True):
+def load_custom_CA_data(path):
+    certificates = [cert for cert in os.listdir(path) if 'certificate' in cert and cert.endswith('.pem')]
+    cert_datafile = ''
+    for cert in certificates:
+        with io.open(path+'/{}'.format(cert), 'r') as certfile:
+            cert_datafile += certfile.read()
+            cert_datafile += '\n\n'
+    return cert_datafile
+
+
+def connect(uri, password, silent=True, auth=False, capath=None):
     """
     Connect a websocket.
     """
-
+    hostname = uri
     uri = urlparse(uri)
     assert uri
 
@@ -35,9 +47,25 @@ def connect(uri, password, silent=True):
 
     sock = socket.socket()
     addr = socket.getaddrinfo(uri.hostname, uri.port)
-    sock.connect(addr[0][4])
     if uri.protocol == 'wss':
-        sock = ssl.wrap_socket(sock)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        # context = ssl._create_unverified_context()
+        if auth:
+            context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+            context.load_verify_locations(cadata=load_custom_CA_data(capath))
+            context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
+            sock = context.wrap_socket(sock, server_hostname=hostname)
+        else:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
+            # sock = context.wrap_socket(sock, server_hostname=hostname)
+            sock = context.wrap_socket(sock)
+        sock.connect(addr[0][-1])
+    else:
+        sock.connect(addr[0][4])
 
     def send_header(header):
         # if __debug__: LOGGER.debug(str(header), *args)

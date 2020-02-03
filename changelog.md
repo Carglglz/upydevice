@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.1.9] [Github repo]
+### Added
+- BASE_WS_DEVICE compatibility with WebSecureREPL
+
 ## [0.1.8] 2020-02-02
 ### Added
 - BASE_SERIAL_DEVICE and BASE_WS_DEVICE work in progress

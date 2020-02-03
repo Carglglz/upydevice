@@ -17,10 +17,14 @@ from array import array
 from pexpect.replwrap import REPLWrapper
 from upydevice import wsclient, protocol
 import functools
+try:
+    from upydev import __path__ as CA_PATH
+except Exception as e:
+    pass
 
 
 name = 'upydevice'
-version = '0.1.8'
+version = '0.1.9'
 
 
 class W_UPYDEVICE:
@@ -1919,7 +1923,7 @@ class BASE_SERIAL_DEVICE:
 
 
 class BASE_WS_DEVICE:
-    def __init__(self, target, password, init=False):
+    def __init__(self, target, password, init=False, ssl=False, auth=False, capath=CA_PATH[0]):
         self.ws = None
         self.ip = target
         self.pswd = password
@@ -1938,11 +1942,19 @@ class BASE_WS_DEVICE:
         self.platform = None
         self.connected = False
         if init:
-            self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+            if not ssl:
+                self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+            else:
+                self.port = 8833
+                self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
             self.connected = True
 
-    def open_wconn(self):
-        self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+    def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
+        if not ssl:
+            self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+        else:
+            self.port = 8833
+            self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
         self.connected = True
 
     def close_wconn(self):
@@ -2015,8 +2027,8 @@ class BASE_WS_DEVICE:
         if rtn_resp:
             return self.output
 
-    def cmd(self, cmd, silent=False, rtn=False):
-        self.open_wconn()
+    def cmd(self, cmd, silent=False, rtn=False, ssl=False):
+        self.open_wconn(ssl=ssl, auth=True)
         self.wr_cmd(cmd, silent=True)
         self.close_wconn()
         self.get_output()
@@ -2025,7 +2037,7 @@ class BASE_WS_DEVICE:
         if rtn:
             return self.output
 
-    def reset(self, silent=False):
+    def reset(self, silent=False, ssl=False):
         if not silent:
             print('Rebooting device...')
         if self.connected:
@@ -2042,7 +2054,7 @@ class BASE_WS_DEVICE:
             if not silent:
                 print('Done!')
         else:
-            self.open_wconn()
+            self.open_wconn(ssl=ssl, auth=True)
             self.bytes_sent = self.write(self._reset)
             self.close_wconn()
             if not silent:
