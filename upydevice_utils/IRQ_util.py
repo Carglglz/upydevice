@@ -6,6 +6,7 @@
 
 from machine import Pin, PWM
 import time
+import urandom
 from array import array
 import socket
 
@@ -90,6 +91,22 @@ class U_IRQ_MG:
             self.buzz.deinit()
             time.sleep_ms(ntimespaced)
 
+    def sound_effect_up_down(self, fi, ff, fst, ts):
+        fq_range = [i for i in range(fi, ff, fst)]
+        self.buzz.init()
+        for f in fq_range:
+            self.buzz.freq(f)
+            time.sleep_ms(ts)
+        fq_range.reverse()
+        for f in fq_range:
+            self.buzz.freq(f)
+            time.sleep_ms(ts)
+        self.buzz.deinit()
+
+    def sec_alarm(self, ntimes=10):
+        for i in range(ntimes):
+            self.sound_effect_up_down(1250, 6250, 200, 5)
+
     def led_blink(self, sleeptime, ntimes, ntimespaced):
         for i in range(ntimes):
             self.led.on()
@@ -132,6 +149,22 @@ class U_IRQ_MG:
             self.irq_busy = True
             if self.irq_detect.value() == 0:  # reverse op == 0
                 self.buzz_beep(150, 3, 100, self.fq)
+                self.irq_detect.init(Pin.OUT)
+                time.sleep_ms(self.irq_timeout)
+                self.irq_detect.value(1)  # reverse op == 1
+                self.irq_detect.init(Pin.IN)
+                self.irq_count += 1
+                self.irq_detflag = True
+            # butpress.init(Pin.IN, Pin.PULL_UP)
+            self.irq_busy = False
+
+    def buzzer_alarm_callback_rev(self, x):
+        if self.irq_busy:
+            return
+        else:
+            self.irq_busy = True
+            if self.irq_detect.value() == 0:  # reverse op == 0
+                self.sec_alarm(ntimes=10)
                 self.irq_detect.init(Pin.OUT)
                 time.sleep_ms(self.irq_timeout)
                 self.irq_detect.value(1)  # reverse op == 1

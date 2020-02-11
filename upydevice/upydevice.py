@@ -1850,6 +1850,7 @@ class BASE_SERIAL_DEVICE:
         self._traceback = b'Traceback (most recent call last):'
         self.output = None
         self.wr_cmd = self.cmd
+        self.prompt = b'>>> '
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False, rtn_resp=False):
         self.response = ''
@@ -1894,8 +1895,12 @@ class BASE_SERIAL_DEVICE:
         if not silent:
             print('Done!')
 
-    def kbi(self):
-        self.cmd(self._kbi)
+    def kbi(self, silent=True, pipe=None):
+        if pipe is not None:
+            self.wr_cmd(self._kbi, silent=silent)
+            pipe(self.response, std='stderr')
+        else:
+            self.cmd(self._kbi, silent=silent)
 
     def banner(self):
         self.cmd(self._banner, silent=True, long_string=True)
@@ -2060,9 +2065,13 @@ class BASE_WS_DEVICE:
             if not silent:
                 print('Done!')
 
-    def kbi(self, silent=True):
+    def kbi(self, silent=True, pipe=None):
         if self.connected:
-            self.wr_cmd(self._kbi, silent=silent)
+            if pipe is not None:
+                self.wr_cmd(self._kbi, silent=silent)
+                pipe(self.response, std='stderr')
+            else:
+                self.wr_cmd(self._kbi, silent=silent)
         else:
             self.cmd(self._kbi, silent=silent)
 
@@ -2089,3 +2098,403 @@ class BASE_WS_DEVICE:
                     except Exception as e:
                         pass
             pass
+
+
+class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
+    def __init__(self, serial_port, baudrate=115200, name=None, dev_platf=None, autodetect=False):
+        super().__init__(serial_port=serial_port, baudrate=baudrate)
+        self.dev_class = 'SERIAL'
+        self.dev_platform = dev_platf
+        self.serial_port = serial_port
+        self.baudrate = baudrate
+        self.name = name
+        self.repl_CONN = False
+        self.raw_buff = b''
+        self.message = b''
+        self.paste_cmd = ''
+        self.connected = True
+        self._is_traceback = False
+        if name is None and self.dev_platform:
+            self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
+        if autodetect:
+            self.cmd('\r', silent=True)
+            self.cmd("import sys; sys.platform", silent=True)
+            self.dev_platform = self.output
+            self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
+
+    def flush_conn(self):
+        flushed = 0
+        while flushed < 2:
+            try:
+                if self.serial.readable():
+                    self.buff = self.serial.read_all()
+                    flushed += 1
+                    self.buff = b''
+            except Exception as e:
+                flushed += 1
+
+    def read_until(self, exp=None, exp_p=True, rtn=False):
+        self.raw_buff = b''
+        while exp not in self.raw_buff:
+            self.raw_buff += self.serial.read(1)
+            if exp_p:
+                if self.prompt in self.raw_buff:
+                    break
+        if rtn:
+            return self.raw_buff
+            # print(self.raw_buff)
+
+    def cmd(self, cmd, silent=False, rtn=True, long_string=False,
+            rtn_resp=False, follow=False, pipe=None):
+        self._is_traceback = False
+        self.response = ''
+        self.output = None
+        self.flush_conn()
+        self.buff = b''
+        self.bytes_sent = self.serial.write(bytes(cmd+'\r', 'utf-8'))
+        # time.sleep(0.2)
+        # self.buff = self.serial.read_all()[self.bytes_sent+1:]
+        if self.buff == b'':
+            if not follow:
+                time.sleep(0.2)
+                # self.read_until(b'\n')
+                self.buff = self.serial.read_all()
+                if self.buff == b'' or self.prompt not in self.buff:
+                    time.sleep(0.2)
+                    self.buff += self.serial.read_all()
+                    while self.prompt not in self.buff:
+                        self.buff += self.serial.read_all()
+            else:
+                silent = True
+                rtn = False
+                rtn_resp = False
+                try:
+                    self.follow_output(cmd, pipe=pipe)
+                except KeyboardInterrupt:
+                    # time.sleep(0.2)
+                    self.paste_cmd = ''
+                    print('')  # print Traceback under ^C
+                    self.kbi(silent=False, pipe=pipe)  # KBI
+                    time.sleep(0.2)
+                    for i in range(1):
+                        self.serial.write(b'\r')
+                        self.flush_conn()
+        cmd_filt = bytes(cmd + '\r\n', 'utf-8')
+        self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if self._traceback in self.buff:
+            long_string = True
+        if long_string:
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        else:
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        if not silent:
+            if self.response != '\n' and self.response != '':
+                print(self.response)
+            else:
+                self.response = ''
+        if rtn:
+            self.get_output()
+            if self.output == '\n' and self.output == '':
+                self.output = None
+            if self.output is None:
+                if self.response != '' and self.response != '\n':
+                    self.output = self.response
+        if rtn_resp:
+            return self.output
+
+    def follow_output(self, inp, pipe=None):
+        self.raw_buff = b''
+        # self.raw_buff += self.serial.read(len(inp)+2)
+        # if not pipe:
+        self.read_until(exp=b'\n')
+        # self.read_until(exp=bytes(inp, 'utf-8')+b'\r\n')
+        # self.read_until(exp=bytes(inp, 'utf-8'))
+        if pipe is not None:
+            if self.paste_cmd != '':
+                if self.dev_platform != 'pyboard':
+                    while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
+                        self.read_until(exp=b'\n')
+
+                    self.read_until(exp=b'\n')
+        while True:
+
+            self.message = self.serial.read_all()
+            self.buff += self.message
+            self.raw_buff += self.message
+            if self.message == b'':
+                pass
+            else:
+                if self.message.startswith(b'\n'):
+                    self.message = self.message[1:]
+                if pipe:
+                    cmd_filt = bytes(inp + '\r\n', 'utf-8')
+                    self.message = self.message.replace(cmd_filt, b'', 1)
+                msg = self.message.replace(b'\r', b'').decode()
+                if 'cat' in inp:
+                    if msg.endswith('>>> '):
+                        msg = msg.replace('>>> ', '')
+                        if not msg.endswith('\n'):
+                            msg = msg+'\n'
+                if pipe is not None:
+                    if msg == '>>> ':
+                        pass
+                    else:
+                        pipe_out = msg.replace('>>> ', '')
+                        if pipe_out != '':
+                            if self.paste_cmd != '':
+                                if self.buff.endswith(b'>>> '):
+                                    # if pipe_out[-1] == '\n':
+                                    pipe_out = pipe_out[:-1]
+                                    if pipe_out != '' and pipe_out != '\n':
+                                        if self._traceback.decode() in pipe_out:
+                                            self._is_traceback = True
+                                            # catch before traceback:
+                                            pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                            if pipe_stdout != '' and pipe_stdout != '\n':
+                                                pipe(pipe_stdout)
+                                            pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                        if self._is_traceback:
+                                            pipe(pipe_out, std='stderr')
+                                        else:
+                                            pipe(pipe_out)
+                                else:
+                                    if self._traceback.decode() in pipe_out:
+                                        self._is_traceback = True
+                                        # catch before traceback:
+                                        pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                        if pipe_stdout != '' and pipe_stdout != '\n':
+                                            pipe(pipe_stdout)
+                                        pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                    if self._is_traceback:
+                                        pipe(pipe_out, std='stderr')
+                                    else:
+                                        pipe(pipe_out)
+                            else:
+                                if self._traceback.decode() in pipe_out:
+                                    self._is_traceback = True
+                                    # catch before traceback:
+                                    pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                    if pipe_stdout != '' and pipe_stdout != '\n':
+                                        pipe(pipe_stdout)
+                                    pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                if self._is_traceback:
+                                    pipe(pipe_out, std='stderr')
+                                else:
+                                    pipe(pipe_out)
+                else:
+                    print(msg.replace('>>> ', ''), end='')
+            if self.buff.endswith(b'>>> '):
+                break
+        self.paste_cmd = ''
+
+    def is_reachable(self):
+        return self.serial.writable()
+
+    def close_wconn(self):
+        self.serial.close()
+        self.connected = False
+
+    def open_wconn(self):
+        if self.serial.is_open:
+            pass
+        else:
+            self.serial.open()
+        self.connected = True
+
+    def paste_buff(self, long_command):
+        self.paste_cmd = long_command
+        self.serial.write(b'\x05')
+        lines = long_command.split('\n')
+        for line in lines:
+            time.sleep(0.01)
+            self.serial.write(bytes(line+'\n', 'utf-8'))
+        self.flush_conn()
+
+
+class WS_DEVICE(BASE_WS_DEVICE):
+    def __init__(self, target, password, init=False, ssl=False, auth=False,
+                 capath=CA_PATH[0], name=None, dev_platf=None,
+                 autodetect=False):
+        super().__init__(target=target, password=password, init=init, ssl=ssl,
+                         auth=auth, capath=capath)
+        self.dev_class = 'WIRELESS'
+        self.dev_platform = dev_platf
+        self.name = name
+        self.repl_CONN = False
+        self.raw_buff = b''
+        self.message = b''
+        self.paste_cmd = ''
+        self.flush_conn = self.flush
+        self._is_traceback = False
+        if name is None and self.dev_platform:
+            self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
+        if autodetect:
+            if not self.connected:
+                self.cmd("import sys; sys.platform", silent=True)
+            else:
+                self.wr_cmd("import sys; sys.platform", silent=True)
+            self.dev_platform = self.output
+            self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
+
+    def readline(self):
+        self.ws.sock.settimeout(None)
+        try:
+            self.raw_buff = b''
+            while b'\r\n' not in self.raw_buff:
+                fin, opcode, data = self.ws.read_frame()
+                self.raw_buff += data
+                if self.prompt in self.raw_buff:
+                    break
+
+            return self.raw_buff
+        except socket.timeout as e:
+            return self.raw_buff
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt
+
+    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
+               long_string=False, follow=False, pipe=None):
+        self.output = None
+        self._is_traceback = False
+        self.response = ''
+        self.buff = b''
+        self.flush()
+        self.bytes_sent = self.write(cmd+'\r')
+        # time.sleep(0.1)
+        # self.buff = self.read_all()[self.bytes_sent:]
+        if not follow:
+            self.buff = self.read_all()
+        if self.buff == b'':
+            # time.sleep(0.1)
+            if not follow:
+                self.buff = self.read_all()
+            else:
+                silent = True
+                rtn = False
+                rtn_resp = False
+                try:
+                    self.follow_output(cmd, pipe=pipe)
+                except KeyboardInterrupt:
+                    # time.sleep(0.2)
+                    self.paste_cmd = ''
+                    print('')
+                    self.kbi(silent=False, pipe=pipe)  # KBI
+                    time.sleep(0.2)
+                    for i in range(1):
+                        self.write('\r')
+                        self.flush_conn()
+        # print(self.buff)
+        # filter command
+        cmd_filt = bytes(cmd + '\r\n', 'utf-8')
+        self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if self._traceback in self.buff:
+            long_string = True
+        if long_string:
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        else:
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+        if not silent:
+            if self.response != '\n' and self.response != '':
+                print(self.response)
+            else:
+                self.response = ''
+        if rtn:
+            self.get_output()
+            if self.output == '\n' and self.output == '':
+                self.output = None
+            if self.output is None:
+                if self.response != '' and self.response != '\n':
+                    self.output = self.response
+        if rtn_resp:
+            return self.output
+
+    def follow_output(self, inp, pipe=None):
+        self.raw_buff += self.readline()
+        if pipe is not None:
+            if self.paste_cmd != '':
+                while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
+                    self.raw_buff += self.readline()
+        while True:
+
+            self.message = self.readline()
+            self.buff += self.message
+            self.raw_buff += self.message
+            if self.message == b'':
+                pass
+            else:
+                if self.message.startswith(b'\n'):
+                    self.message = self.message[1:]
+                if pipe:
+                    cmd_filt = bytes(inp + '\r\n', 'utf-8')
+                    self.message = self.message.replace(cmd_filt, b'', 1)
+                msg = self.message.replace(b'\r', b'').decode()
+                if 'cat' in inp:
+                    if msg.endswith('>>> '):
+                        msg = msg.replace('>>> ', '')
+                        if not msg.endswith('\n'):
+                            msg = msg+'\n'
+
+                if pipe is not None:
+                    if msg == '>>> ':
+                        pass
+                    else:
+                        pipe_out = msg.replace('>>> ', '')
+                        if pipe_out != '':
+                            # if '...' in pipe_out:
+                            #     pipe(pipe_out.split('...')[-1])
+                            # else:
+                            if 'Traceback (most' in pipe_out:
+                                self._is_traceback = True
+                            if self._is_traceback:
+                                pipe(pipe_out, std='stderr')
+                            else:
+                                pipe(pipe_out)
+                print(msg.replace('>>> ', ''), end='')
+            if self.buff.endswith(b'>>> '):
+                break
+        self.paste_cmd = ''
+
+    def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2):
+        ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
+        ping_cmd = shlex.split(ping_cmd_str)
+        timeouts = 0
+        down_kw = ['Unreachable', 'down', 'timeout']
+        try:
+            proc = subprocess.Popen(
+                ping_cmd, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT)
+            while proc.poll() is None:
+                resp = proc.stdout.readline()[:-1].decode()
+                if debug:
+                    print(resp)
+                if any([kw in resp for kw in down_kw]):
+                    timeouts += 1
+
+            time.sleep(1)
+            result = proc.stdout.readlines()
+            for message in result:
+                if debug:
+                    print(message[:-1].decode())
+
+        except KeyboardInterrupt:
+            time.sleep(1)
+            result = proc.stdout.readlines()
+            for message in result:
+                if debug:
+                    print(message[:-1].decode())
+
+        if timeouts >= max_loss:
+            if debug:
+                print('DEVICE IS DOWN OR SIGNAL RSSI IS TO LOW')
+            return False
+        else:
+            return True
+
+    def paste_buff(self, long_command):
+        self.paste_cmd = long_command
+        self.write('\x05')
+        lines = long_command.split('\n')
+        for line in lines:
+            time.sleep(0.1)
+            self.write(line+'\n')
+        self.flush_conn()
