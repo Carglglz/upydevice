@@ -1902,9 +1902,12 @@ class BASE_SERIAL_DEVICE:
         else:
             self.cmd(self._kbi, silent=silent)
 
-    def banner(self):
+    def banner(self, pipe=None):
         self.cmd(self._banner, silent=True, long_string=True)
-        print(self.response.replace('\n\n', '\n'))
+        if pipe is None:
+            print(self.response.replace('\n\n', '\n'))
+        else:
+            pipe(self.response.replace('\n\n', '\n'))
 
     def get_output(self):
         try:
@@ -2069,15 +2072,22 @@ class BASE_WS_DEVICE:
         if self.connected:
             if pipe is not None:
                 self.wr_cmd(self._kbi, silent=silent)
-                pipe(self.response, std='stderr')
+                bf_output = self.response.split('Traceback')[0]
+                traceback = 'Traceback' + self.response.split('Traceback')[1]
+                if bf_output != '' and bf_output != '\n':
+                    pipe(bf_output)
+                pipe(traceback, std='stderr')
             else:
                 self.wr_cmd(self._kbi, silent=silent)
         else:
             self.cmd(self._kbi, silent=silent)
 
-    def banner(self):
+    def banner(self, pipe=None):
         self.wr_cmd(self._banner, silent=True, long_string=True)
-        print(self.response.replace('\n\n', '\n'))
+        if pipe is None:
+            print(self.response.replace('\n\n', '\n'))
+        else:
+            pipe(self.response.replace('\n\n', '\n'))
 
     def get_output(self):
         try:
@@ -2114,6 +2124,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.paste_cmd = ''
         self.connected = True
         self._is_traceback = False
+        self._is_first_line = True
+        self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
+                          'tree', 'du']
         if name is None and self.dev_platform:
             self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
         if autodetect:
@@ -2145,7 +2158,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             # print(self.raw_buff)
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False,
-            rtn_resp=False, follow=False, pipe=None):
+            rtn_resp=False, follow=False, pipe=None, multiline=False):
         self._is_traceback = False
         self.response = ''
         self.output = None
@@ -2169,12 +2182,13 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                 rtn = False
                 rtn_resp = False
                 try:
-                    self.follow_output(cmd, pipe=pipe)
+                    self.follow_output(cmd, pipe=pipe, multiline=multiline)
                 except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
-                    print('')  # print Traceback under ^C
-                    self.kbi(silent=False, pipe=pipe)  # KBI
+                    if pipe is None:
+                        print('')  # print Traceback under ^C
+                    self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
                     for i in range(1):
                         self.serial.write(b'\r')
@@ -2189,7 +2203,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if not silent:
             if self.response != '\n' and self.response != '':
-                print(self.response)
+                if pipe is None:
+                    print(self.response)
             else:
                 self.response = ''
         if rtn:
@@ -2202,7 +2217,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         if rtn_resp:
             return self.output
 
-    def follow_output(self, inp, pipe=None):
+    def follow_output(self, inp, pipe=None, multiline=False):
         self.raw_buff = b''
         # self.raw_buff += self.serial.read(len(inp)+2)
         # if not pipe:
@@ -2210,6 +2225,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         # self.read_until(exp=bytes(inp, 'utf-8')+b'\r\n')
         # self.read_until(exp=bytes(inp, 'utf-8'))
         if pipe is not None:
+            self._is_first_line = True
+            if any(_kw in inp for _kw in self.stream_kw):
+                self._is_first_line = False
             if self.paste_cmd != '':
                 if self.dev_platform != 'pyboard':
                     while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
@@ -2217,8 +2235,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
 
                     self.read_until(exp=b'\n')
         while True:
-
-            self.message = self.serial.read_all()
+            if pipe is not None and not multiline:
+                self.message = b''
+                while b'\n' not in self.message:
+                    self.message += self.serial.read(1)
+                    if self.prompt in self.message:
+                        break
+            else:
+                self.message = self.serial.read_all()
             self.buff += self.message
             self.raw_buff += self.message
             if self.message == b'':
@@ -2256,7 +2280,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                         if self._is_traceback:
                                             pipe(pipe_out, std='stderr')
                                         else:
-                                            pipe(pipe_out)
+                                            if self._is_first_line:
+                                                self._is_first_line = False
+                                                if not multiline:
+                                                    pipe(pipe_out, execute_prompt=True)
+                                                else:
+                                                    pipe(pipe_out)
+                                            else:
+                                                pipe(pipe_out)
                                 else:
                                     if self._traceback.decode() in pipe_out:
                                         self._is_traceback = True
@@ -2268,7 +2299,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                     if self._is_traceback:
                                         pipe(pipe_out, std='stderr')
                                     else:
-                                        pipe(pipe_out)
+                                        if self._is_first_line:
+                                            self._is_first_line = False
+                                            if not multiline:
+                                                pipe(pipe_out, execute_prompt=True)
+                                            else:
+                                                pipe(pipe_out)
+                                        else:
+                                            pipe(pipe_out)
                             else:
                                 if self._traceback.decode() in pipe_out:
                                     self._is_traceback = True
@@ -2280,9 +2318,17 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                 if self._is_traceback:
                                     pipe(pipe_out, std='stderr')
                                 else:
-                                    pipe(pipe_out)
+                                    if self._is_first_line:
+                                        self._is_first_line = False
+                                        if not multiline:
+                                            pipe(pipe_out, execute_prompt=True)
+                                        else:
+                                            pipe(pipe_out)
+                                    else:
+                                        pipe(pipe_out)
                 else:
-                    print(msg.replace('>>> ', ''), end='')
+                    if pipe is None:
+                        print(msg.replace('>>> ', ''), end='')
             if self.buff.endswith(b'>>> '):
                 break
         self.paste_cmd = ''
@@ -2326,6 +2372,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.paste_cmd = ''
         self.flush_conn = self.flush
         self._is_traceback = False
+        self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
+                          'tree', 'du']
         if name is None and self.dev_platform:
             self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
         if autodetect:
@@ -2353,7 +2401,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
             raise KeyboardInterrupt
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
-               long_string=False, follow=False, pipe=None):
+               long_string=False, follow=False, pipe=None, multiline=False):
         self.output = None
         self._is_traceback = False
         self.response = ''
@@ -2373,12 +2421,13 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 rtn = False
                 rtn_resp = False
                 try:
-                    self.follow_output(cmd, pipe=pipe)
+                    self.follow_output(cmd, pipe=pipe, multiline=multiline)
                 except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
-                    print('')
-                    self.kbi(silent=False, pipe=pipe)  # KBI
+                    if pipe is None:
+                        print('')
+                    self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
                     for i in range(1):
                         self.write('\r')
@@ -2395,7 +2444,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if not silent:
             if self.response != '\n' and self.response != '':
-                print(self.response)
+                if pipe is None:
+                    print(self.response)
             else:
                 self.response = ''
         if rtn:
@@ -2408,9 +2458,12 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if rtn_resp:
             return self.output
 
-    def follow_output(self, inp, pipe=None):
+    def follow_output(self, inp, pipe=None, multiline=False):
         self.raw_buff += self.readline()
         if pipe is not None:
+            self._is_first_line = True
+            if any(_kw in inp for _kw in self.stream_kw):
+                self._is_first_line = False
             if self.paste_cmd != '':
                 while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
                     self.raw_buff += self.readline()
@@ -2445,11 +2498,24 @@ class WS_DEVICE(BASE_WS_DEVICE):
                             # else:
                             if 'Traceback (most' in pipe_out:
                                 self._is_traceback = True
+                                # catch before traceback:
+                                pipe_stdout = pipe_out.split('Traceback (most')[0]
+                                if pipe_stdout != '' and pipe_stdout != '\n':
+                                    pipe(pipe_stdout)
+                                pipe_out = 'Traceback (most' + pipe_out.split('Traceback (most')[1]
                             if self._is_traceback:
                                 pipe(pipe_out, std='stderr')
                             else:
-                                pipe(pipe_out)
-                print(msg.replace('>>> ', ''), end='')
+                                if self._is_first_line:
+                                    self._is_first_line = False
+                                    if not multiline:
+                                        pipe(pipe_out, execute_prompt=True)
+                                    else:
+                                        pipe(pipe_out)
+                                else:
+                                    pipe(pipe_out)
+                if pipe is None:
+                    print(msg.replace('>>> ', ''), end='')
             if self.buff.endswith(b'>>> '):
                 break
         self.paste_cmd = ''
