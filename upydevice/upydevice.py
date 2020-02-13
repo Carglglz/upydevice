@@ -17,6 +17,7 @@ from array import array
 from pexpect.replwrap import REPLWrapper
 from upydevice import wsclient, protocol
 import functools
+import glob
 try:
     from upydev import __path__ as CA_PATH
 except Exception as e:
@@ -2121,6 +2122,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.repl_CONN = False
         self.raw_buff = b''
         self.message = b''
+        self.data_buff = ''
+        self.datalog = []
         self.paste_cmd = ''
         self.connected = True
         self._is_traceback = False
@@ -2158,7 +2161,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             # print(self.raw_buff)
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False,
-            rtn_resp=False, follow=False, pipe=None, multiline=False):
+            rtn_resp=False, follow=False, pipe=None, multiline=False,
+            dlog=False):
         self._is_traceback = False
         self.response = ''
         self.output = None
@@ -2178,11 +2182,13 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                     while self.prompt not in self.buff:
                         self.buff += self.serial.read_all()
             else:
+                silent_pipe = silent
                 silent = True
                 rtn = False
                 rtn_resp = False
                 try:
-                    self.follow_output(cmd, pipe=pipe, multiline=multiline)
+                    self.follow_output(cmd, pipe=pipe, multiline=multiline,
+                                       silent=silent_pipe)
                 except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
@@ -2195,6 +2201,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                         self.flush_conn()
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if dlog:
+            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if self._traceback in self.buff:
             long_string = True
         if long_string:
@@ -2217,7 +2225,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         if rtn_resp:
             return self.output
 
-    def follow_output(self, inp, pipe=None, multiline=False):
+    def follow_output(self, inp, pipe=None, multiline=False, silent=False):
         self.raw_buff = b''
         # self.raw_buff += self.serial.read(len(inp)+2)
         # if not pipe:
@@ -2328,13 +2336,17 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                         pipe(pipe_out)
                 else:
                     if pipe is None:
-                        print(msg.replace('>>> ', ''), end='')
+                        if not silent:
+                            print(msg.replace('>>> ', ''), end='')
             if self.buff.endswith(b'>>> '):
                 break
         self.paste_cmd = ''
 
     def is_reachable(self):
-        return self.serial.writable()
+        if self.serial.writable() and self.serial_port in glob.glob('/dev/*'):
+            return True
+        else:
+            return False
 
     def close_wconn(self):
         self.serial.close()
@@ -2356,6 +2368,31 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.serial.write(bytes(line+'\n', 'utf-8'))
         self.flush_conn()
 
+    def get_datalog(self, dvars=None, fs=None, time_out=None, units=None):
+        self.datalog = []
+        self.output = None
+        for line in self.data_buff.splitlines():
+            self.output = None
+            self.response = line
+            self.get_output()
+            if self.output is not None and self.output != '':
+                self.datalog.append(self.output)
+        if dvars is not None and self.datalog != []:
+            temp_dict = {var: [] for var in dvars}
+            temp_dict['vars'] = dvars
+            for data in self.datalog:
+                if len(data) == len(dvars):
+                    for i in range(len(data)):
+                        temp_dict[dvars[i]].append(data[i])
+            if time_out is not None:
+                fs = int((1/time_out)*1000)
+            if fs is not None:
+                temp_dict['fs'] = fs
+                temp_dict['ts'] = [i/temp_dict['fs'] for i in range(len(temp_dict[dvars[0]]))]
+            if units is not None:
+                temp_dict['u'] = units
+            self.datalog = temp_dict
+
 
 class WS_DEVICE(BASE_WS_DEVICE):
     def __init__(self, target, password, init=False, ssl=False, auth=False,
@@ -2369,6 +2406,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.repl_CONN = False
         self.raw_buff = b''
         self.message = b''
+        self.data_buff = ''
+        self.datalog = []
         self.paste_cmd = ''
         self.flush_conn = self.flush
         self._is_traceback = False
@@ -2401,7 +2440,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
             raise KeyboardInterrupt
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
-               long_string=False, follow=False, pipe=None, multiline=False):
+               long_string=False, follow=False, pipe=None, multiline=False,
+               dlog=False):
         self.output = None
         self._is_traceback = False
         self.response = ''
@@ -2417,11 +2457,13 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if not follow:
                 self.buff = self.read_all()
             else:
+                silent_pipe = silent
                 silent = True
                 rtn = False
                 rtn_resp = False
                 try:
-                    self.follow_output(cmd, pipe=pipe, multiline=multiline)
+                    self.follow_output(cmd, pipe=pipe, multiline=multiline,
+                                       silent=silent_pipe)
                 except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
@@ -2436,6 +2478,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         # filter command
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if dlog:
+            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if self._traceback in self.buff:
             long_string = True
         if long_string:
@@ -2458,7 +2502,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if rtn_resp:
             return self.output
 
-    def follow_output(self, inp, pipe=None, multiline=False):
+    def follow_output(self, inp, pipe=None, multiline=False, silent=False):
         self.raw_buff += self.readline()
         if pipe is not None:
             self._is_first_line = True
@@ -2515,7 +2559,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                                 else:
                                     pipe(pipe_out)
                 if pipe is None:
-                    print(msg.replace('>>> ', ''), end='')
+                    if not silent:
+                        print(msg.replace('>>> ', ''), end='')
             if self.buff.endswith(b'>>> '):
                 break
         self.paste_cmd = ''
@@ -2564,3 +2609,28 @@ class WS_DEVICE(BASE_WS_DEVICE):
             time.sleep(0.1)
             self.write(line+'\n')
         self.flush_conn()
+
+    def get_datalog(self, dvars=None, fs=None, time_out=None, units=None):
+        self.datalog = []
+        self.output = None
+        for line in self.data_buff.splitlines():
+            self.output = None
+            self.response = line
+            self.get_output()
+            if self.output is not None and self.output != '':
+                self.datalog.append(self.output)
+        if dvars is not None and self.datalog != []:
+            temp_dict = {var: [] for var in dvars}
+            temp_dict['vars'] = dvars
+            for data in self.datalog:
+                if len(data) == len(dvars):
+                    for i in range(len(data)):
+                        temp_dict[dvars[i]].append(data[i])
+            if time_out is not None:
+                fs = int((1/time_out)*1000)
+            if fs is not None:
+                temp_dict['fs'] = fs
+                temp_dict['ts'] = [i/temp_dict['fs'] for i in range(len(temp_dict[dvars[0]]))]
+            if units is not None:
+                temp_dict['u'] = units
+            self.datalog = temp_dict
