@@ -1950,6 +1950,7 @@ class BASE_WS_DEVICE:
         self.output = None
         self.platform = None
         self.connected = False
+        self.repl_CONN = self.connected
         if init:
             if not ssl:
                 self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
@@ -1957,6 +1958,7 @@ class BASE_WS_DEVICE:
                 self.port = 8833
                 self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
             self.connected = True
+            self.repl_CONN = self.connected
 
     def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
         if not ssl:
@@ -1965,10 +1967,12 @@ class BASE_WS_DEVICE:
             self.port = 8833
             self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
         self.connected = True
+        self.repl_CONN = self.connected
 
     def close_wconn(self):
         self.ws.close()
         self.connected = False
+        self.repl_CONN = self.connected
 
     def write(self, cmd):
         n_bytes = len(bytes(cmd, 'utf-8'))
@@ -2037,9 +2041,11 @@ class BASE_WS_DEVICE:
             return self.output
 
     def cmd(self, cmd, silent=False, rtn=False, ssl=False):
-        self.open_wconn(ssl=ssl, auth=True)
+        if not self.connected:
+            self.open_wconn(ssl=ssl, auth=True)
         self.wr_cmd(cmd, silent=True)
-        self.close_wconn()
+        if self.connected:
+            self.close_wconn()
         self.get_output()
         if not silent:
             print(self.response)
@@ -2119,13 +2125,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.serial_port = serial_port
         self.baudrate = baudrate
         self.name = name
-        self.repl_CONN = False
         self.raw_buff = b''
         self.message = b''
         self.data_buff = ''
         self.datalog = []
+        self.output_queue = multiprocessing.Queue(maxsize=1)
         self.paste_cmd = ''
         self.connected = True
+        self.repl_CONN = self.connected
         self._is_traceback = False
         self._is_first_line = True
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
@@ -2162,7 +2169,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False,
             rtn_resp=False, follow=False, pipe=None, multiline=False,
-            dlog=False):
+            dlog=False, nb_queue=None):
         self._is_traceback = False
         self.response = ''
         self.output = None
@@ -2222,6 +2229,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             if self.output is None:
                 if self.response != '' and self.response != '\n':
                     self.output = self.response
+            if nb_queue is not None:
+                nb_queue.put((self.output), block=False)
         if rtn_resp:
             return self.output
 
@@ -2393,6 +2402,21 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                 temp_dict['u'] = units
             self.datalog = temp_dict
 
+    def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
+               rtn_resp=False, follow=False, pipe=None, multiline=False,
+               dlog=False):
+        self.dev_process_raw = multiprocessing.Process(
+            target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+                                      follow, pipe, multiline, dlog,
+                                      self.output_queue))
+        self.dev_process_raw.start()
+
+    def get_nb_opt(self):
+        try:
+            self.output = self.output_queue.get(block=False)
+        except Exception:
+            pass
+
 
 class WS_DEVICE(BASE_WS_DEVICE):
     def __init__(self, target, password, init=False, ssl=False, auth=False,
@@ -2403,9 +2427,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.dev_class = 'WIRELESS'
         self.dev_platform = dev_platf
         self.name = name
-        self.repl_CONN = False
         self.raw_buff = b''
         self.message = b''
+        self.output_queue = multiprocessing.Queue(maxsize=1)
         self.data_buff = ''
         self.datalog = []
         self.paste_cmd = ''
@@ -2439,9 +2463,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
         except KeyboardInterrupt:
             raise KeyboardInterrupt
 
-    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
-               long_string=False, follow=False, pipe=None, multiline=False,
-               dlog=False):
+    def wr_cmd(self, cmd, silent=False, rtn=True, long_string=False,
+               rtn_resp=False, follow=False, pipe=None, multiline=False,
+               dlog=False, nb_queue=None):
         self.output = None
         self._is_traceback = False
         self.response = ''
@@ -2499,6 +2523,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if self.output is None:
                 if self.response != '' and self.response != '\n':
                     self.output = self.response
+            if nb_queue is not None:
+                nb_queue.put((self.output), block=False)
         if rtn_resp:
             return self.output
 
@@ -2634,3 +2660,103 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if units is not None:
                 temp_dict['u'] = units
             self.datalog = temp_dict
+
+    def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
+               rtn_resp=False, follow=False, pipe=None, multiline=False,
+               dlog=False):
+        self.dev_process_raw = multiprocessing.Process(
+            target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+                                      follow, pipe, multiline, dlog,
+                                      self.output_queue))
+        self.dev_process_raw.start()
+
+    def get_nb_opt(self):
+        try:
+            self.output = self.output_queue.get(block=False)
+        except Exception:
+            pass
+
+
+#############################################
+
+# DEV GROUP
+
+class DEVGROUP:
+    def __init__(self, devs=[None], name=None):
+        self.name = name
+        self.devs = {dev.name: dev for dev in devs}
+        self.dev_process_raw_dict = None
+        self.output = None
+        self.output_queue = {
+            dev.name: multiprocessing.Queue(maxsize=1) for dev in devs}
+
+    def cmd(self, command, group_silent=False, dev_silent=False, ignore=[], include=[]):
+        if len(include) == 0:
+            include = [dev for dev in self.devs.keys()]
+        for dev in ignore:
+            include.remove(dev)
+        for dev in include:
+            if not group_silent:
+                print('Sending command to {}'.format(dev))
+            self.devs[dev].wr_cmd(command, silent=dev_silent)
+        self.output = {dev: self.devs[dev].output for dev in include}
+
+    def cmd_p(self, command, group_silent=False, dev_silent=False, ignore=[],
+              include=[], blocking=True, id=False, rtn=True, long_string=False,
+              rtn_resp=False, follow=False, pipe=None, multiline=False,
+              dlog=False):
+        if not id:
+            self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].wr_cmd, args=(
+                command, dev_silent, rtn, long_string, rtn_resp, follow, pipe,
+                multiline, dlog, self.output_queue[dev])) for dev in self.devs.keys()}
+            if len(include) == 0:
+                include = [dev for dev in self.devs.keys()]
+            for dev in ignore:
+                include.remove(dev)
+            if not group_silent:
+                print('Sending command to: {}'.format(', '.join(include)))
+            for dev in include:
+                # self.devs[dev].cmd(command, silent=dev_silent)
+                self.dev_process_raw_dict[dev].start()
+
+            while blocking:
+                dev_proc_state = [self.dev_process_raw_dict[dev].is_alive(
+                ) for dev in self.dev_process_raw_dict.keys()]
+                if all(state is False for state in dev_proc_state):
+                    time.sleep(0.1)
+                    if not group_silent:
+                        print('Done!')
+                    break
+
+            try:
+                self.output = {dev: self.output_queue[dev].get(
+                    timeout=2) for dev in include}
+            except Exception as e:
+                pass
+            for dev in include:
+                try:
+                    self.devs[dev].output = self.output[dev]
+                except Exception as e:
+                    pass
+
+    def get_opt(self):
+        try:
+            self.output = {dev: self.output_queue[dev].get(
+                timeout=2) for dev in self.devs.keys()}
+        except Exception as e:
+            pass
+        for dev in self.devs.keys():
+            try:
+                self.devs[dev].output = self.output[dev]
+            except Exception as e:
+                pass
+
+    def reset(self, group_silent=False, silent_dev=True, ignore=[], include=[]):
+        if len(include) == 0:
+            include = [dev for dev in self.devs.keys()]
+        for dev in ignore:
+            include.remove(dev)
+        for dev in include:
+            if not group_silent:
+                print('Rebooting {}'.format(dev))
+            self.devs[dev].reset(silent=silent_dev)

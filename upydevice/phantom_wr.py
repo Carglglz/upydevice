@@ -173,7 +173,7 @@ class UOS:
             self.d.open_wconn()
 
     @upy_wrcmd_c_r()
-    def listdir(self, directory):
+    def listdir(self, directory='.'):
         return self.dev_dict
 
     @upy_wrcmd_c_r()
@@ -196,14 +196,10 @@ class UOS:
     def remove(self, file):
         return self.dev_dict
 
-    @upy_cmd_c_raw_r()
+    @upy_wrcmd_c_r()
     def uname(self):
         return self.dev_dict
 
-    def Uname(self):
-        self.d.close_wconn()
-        self.uname()
-        self.d.open_wconn()
 
 #############################################
 

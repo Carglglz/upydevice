@@ -16,6 +16,7 @@ import io
 from upydevice.protocol import Websocket, urlparse
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 #  ws.send('8KJpDQQc\r')
 

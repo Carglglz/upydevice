@@ -10,6 +10,7 @@ import socket
 from collections import namedtuple
 
 LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.INFO)
 
 # Opcodes
 OP_CONT = 0x0
