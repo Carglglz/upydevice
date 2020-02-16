@@ -1,6 +1,8 @@
 # uPydevice
 
-Python library to interface with Micropython devices through WebREPL protocol or through Serial connection.
+[![PyPI version](https://badge.fury.io/py/upydevice.svg)](https://badge.fury.io/py/upydevice)[![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
+
+Python library to interface with MicroPython devices through websockets (WebREPL protocol) or through Serial connection (USB).
 
 ### Requirements
 * [upydev](https://github.com/Carglglz/upydev)
@@ -12,6 +14,10 @@ Python library to interface with Micropython devices through WebREPL protocol or
 *upydev , pyserial and dill will be automatically installed with pip*  
 
 *to install picocom do:*  `brew install picocom`
+
+### Requirements * (New in version 0.2.0):
+
+For the new classes `SERIAL_DEVICE` and `WS_DEVICE` only [pyserial](https://github.com/pyserial/pyserial/) is required.
 
 ### Tested on
 
@@ -47,7 +53,54 @@ $ sudo pip3 install dill
 
 See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md)
 
-#### Example usage:
+#### Example usage * (New classes in version 0.2.0):
+
+### WIRELESS DEVICE (WebREPL Protocol): `WS_DEVICE`
+
+```
+>>> from upydevice import WS_DEVICE
+>>> esp32 = ('192.168.1.56', 'mypass', init=True, autodetect=True)
+>>> esp32.wr_cmd('led.on()')
+>>> esp32.wr_cmd("uos.listdir()")
+['boot.py', 'webrepl_cfg.py', 'main.py'] # this output is stored in [upydevice].output
+
+>>> esp32.output
+['boot.py', 'webrepl_cfg.py', 'main.py']
+>>>> esp32.wr_cmd('x = [1,2,3];my_var = len(x);print(my_var)')
+3
+# Soft Reset:
+>>> esp32.reset()
+    Rebooting device...
+		Done!
+```
+
+
+
+### SERIAL DEVICE (Pyserial) : `SERIAL_DEVICE`
+
+Works for any serial device (esp, pyboard, circuitplayground...)
+
+```
+from upydevice import SERIAL_DEVICE
+>>> esp32 = SERIAL_DEVICE('/dev/tty.SLAB_USBtoUART', autodetect=True) # baudrate default is 115200
+>>> esp32.wr_cmd('led.on()')
+>>> esp32.wr_cmd('led.on()')
+>>> esp32.wr_cmd("uos.listdir()")
+['boot.py', 'webrepl_cfg.py', 'main.py'] # this output is stored in [upydevice].output
+
+>>> esp32.output
+['boot.py', 'webrepl_cfg.py', 'main.py']
+>>>> esp32.wr_cmd('x = [1,2,3];my_var = len(x);print(my_var)')
+3
+# Soft Reset:
+>>> esp32.reset()
+    Rebooting device...
+		Done!
+```
+
+
+
+#### Example usage (OLD CLASSES):
 
 ### WIRELESS DEVICE (WebREPL Protocol)
         >>> from upydevice import W_UPYDEVICE
