@@ -17,7 +17,7 @@ Python library to interface with MicroPython devices through websockets (WebREPL
 
 ### Requirements * (New in version 0.2.0):
 
-For the new classes `SERIAL_DEVICE` and `WS_DEVICE` only [pyserial](https://github.com/pyserial/pyserial/) is required.
+For the new classes `SERIAL_DEVICE` , `WS_DEVICE` and `DEVGROUP` only [pyserial](https://github.com/pyserial/pyserial/) is required.
 
 ### Tested on
 
