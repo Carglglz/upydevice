@@ -84,7 +84,6 @@ Works for any serial device (esp, pyboard, circuitplayground...)
 from upydevice import SERIAL_DEVICE
 >>> esp32 = SERIAL_DEVICE('/dev/tty.SLAB_USBtoUART', autodetect=True) # baudrate default is 115200
 >>> esp32.wr_cmd('led.on()')
->>> esp32.wr_cmd('led.on()')
 >>> esp32.wr_cmd("uos.listdir()")
 ['boot.py', 'webrepl_cfg.py', 'main.py'] # this output is stored in [upydevice].output
 
@@ -95,7 +94,7 @@ from upydevice import SERIAL_DEVICE
 # Soft Reset:
 >>> esp32.reset()
     Rebooting device...
-		Done!
+    Done!
 ```
 
 
