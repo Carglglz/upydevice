@@ -71,7 +71,7 @@ See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.
 # Soft Reset:
 >>> esp32.reset()
     Rebooting device...
-		Done!
+    Done!
 ```
 
 
