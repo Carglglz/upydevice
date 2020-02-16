@@ -2156,6 +2156,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             except Exception as e:
                 flushed += 1
 
+    def _kbi_cmd(self):
+        self.bytes_sent = self.serial.write(bytes(self._kbi+'\r', 'utf-8'))
+
     def read_until(self, exp=None, exp_p=True, rtn=False):
         self.raw_buff = b''
         while exp not in self.raw_buff:
