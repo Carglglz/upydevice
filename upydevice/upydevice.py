@@ -2022,9 +2022,9 @@ class BASE_WS_DEVICE:
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if not silent:
             if self.response != '\n' and self.response != '':
                 print(self.response)
@@ -2506,13 +2506,13 @@ class WS_DEVICE(BASE_WS_DEVICE):
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
         if dlog:
-            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if not silent:
             if self.response != '\n' and self.response != '':
                 if pipe is None:
@@ -2538,7 +2538,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if any(_kw in inp for _kw in self.stream_kw):
                 self._is_first_line = False
             if self.paste_cmd != '':
-                while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
+                while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode('utf-8', 'ignore'):
                     self.raw_buff += self.readline()
         while True:
 
@@ -2553,7 +2553,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 if pipe:
                     cmd_filt = bytes(inp + '\r\n', 'utf-8')
                     self.message = self.message.replace(cmd_filt, b'', 1)
-                msg = self.message.replace(b'\r', b'').decode()
+                msg = self.message.replace(b'\r', b'').decode('utf-8', 'ignore')
                 if 'cat' in inp:
                     if msg.endswith('>>> '):
                         msg = msg.replace('>>> ', '')

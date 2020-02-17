@@ -88,9 +88,11 @@ class Websocket:
         Read a frame from the socket.
         See https://tools.ietf.org/html/rfc6455#section-5.2 for the details.
         """
-
+        two_bytes = b''
         # Frame header
-        two_bytes = self.sock.recv(2)
+        two_bytes += self.sock.recv(2)
+        while len(two_bytes) < 2:
+            two_bytes += self.sock.recv(1)
 
         if not two_bytes:
             raise NoDataException
