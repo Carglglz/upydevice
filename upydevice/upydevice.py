@@ -25,7 +25,7 @@ except Exception as e:
 
 
 name = 'upydevice'
-version = '0.2.1'
+version = '0.2.2'
 
 
 class W_UPYDEVICE:
@@ -2664,14 +2664,35 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 temp_dict['u'] = units
             self.datalog = temp_dict
 
+    def cmd(self, cmd, silent=False, rtn=False, ssl=False, nb_queue=None):
+        if not self.connected:
+            self.open_wconn(ssl=ssl, auth=True)
+        self.wr_cmd(cmd, silent=True)
+        if self.connected:
+            self.close_wconn()
+        self.get_output()
+        if not silent:
+            print(self.response)
+        if rtn:
+            return self.output
+        if nb_queue is not None:
+            nb_queue.put((self.output), block=False)
+
     def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
                rtn_resp=False, follow=False, pipe=None, multiline=False,
                dlog=False):
-        self.dev_process_raw = multiprocessing.Process(
-            target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
-                                      follow, pipe, multiline, dlog,
-                                      self.output_queue))
-        self.dev_process_raw.start()
+        # do a
+        if self.connected:
+            self.dev_process_raw = multiprocessing.Process(
+                target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+                                          follow, pipe, multiline, dlog,
+                                          self.output_queue))
+            self.dev_process_raw.start()
+        else:
+            self.dev_process_raw = multiprocessing.Process(
+                target=self.cmd, args=(command, silent, False, False,
+                                          self.output_queue))
+            self.dev_process_raw.start()
 
     def get_nb_opt(self):
         try:
