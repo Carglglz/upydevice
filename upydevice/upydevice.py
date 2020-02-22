@@ -2414,7 +2414,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                       self.output_queue))
         self.dev_process_raw.start()
 
-    def get_nb_opt(self):
+    def get_opt(self):
         try:
             self.output = self.output_queue.get(block=False)
         except Exception:
@@ -2694,7 +2694,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
                                           self.output_queue))
             self.dev_process_raw.start()
 
-    def get_nb_opt(self):
+    def get_opt(self):
         try:
             self.output = self.output_queue.get(block=False)
         except Exception:
