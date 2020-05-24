@@ -26,7 +26,7 @@ except Exception as e:
 
 
 name = 'upydevice'
-version = '0.2.2'
+version = '0.2.3'
 
 
 class W_UPYDEVICE:
