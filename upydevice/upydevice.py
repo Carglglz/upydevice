@@ -9,6 +9,7 @@ import subprocess
 import shlex
 import time
 import serial
+import serial.tools.list_ports
 import struct
 import socket
 import multiprocessing
@@ -2355,7 +2356,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.paste_cmd = ''
 
     def is_reachable(self):
-        if self.serial.writable() and self.serial_port in glob.glob('/dev/*'):
+        portlist = [p.device for p in
+                    serial.tools.list_ports.comports()] + glob.glob('/dev/*')
+        if self.serial.writable() and self.serial_port in portlist:
             return True
         else:
             return False

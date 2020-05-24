@@ -325,7 +325,7 @@ from upydevice.phantom import IMU_STREAMER
 imu_st = IMU_STREAMER(esp32, name='imu_st', init_soc=True)
 	192.168.1.43  # (This prints host ip)
 
-# SIMPLE SAMPLE (this use upydevice.cmd)
+# SIMPLE SAMPLE (this uses upydevice.cmd)
 imu_st.read_data()
 	array('f', [-0.4462279975414276, -0.12023930251598358, -0.9497069716453552])
 imu_st.setup_mode('gyro')
