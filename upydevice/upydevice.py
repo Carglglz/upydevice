@@ -17,6 +17,7 @@ from dill.source import getsource
 from array import array
 from pexpect.replwrap import REPLWrapper
 from upydevice import wsclient, protocol
+from upydevice.ble_device import BASE_BLE_DEVICE, BLE_DEVICE
 import functools
 import glob
 try:
@@ -26,7 +27,7 @@ except Exception as e:
 
 
 name = 'upydevice'
-version = '0.2.3'
+version = '0.2.4'
 
 
 class W_UPYDEVICE:
