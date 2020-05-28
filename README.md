@@ -40,7 +40,7 @@ This requires [WebREPL](http://docs.micropython.org/en/latest/esp8266/tutorial/r
 
 ### BLE DEVICE (BleREPL Protocol): `BLE_DEVICE`
 
-This requires [BleREPL](https://github.com/Carglglz/upyble#getting-started) to be enabled in the device.
+This requires [BleREPL](https://github.com/Carglglz/upyble#getting-started) to be enabled in the device. (This is experimental, only tested on MacOS)
 
 ```
 >>> from upydevice import BLE_DEVICE
