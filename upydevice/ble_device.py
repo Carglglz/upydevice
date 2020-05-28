@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+import logging
+
+logging.getLogger("bleak.backends.corebluetooth.CentralManagerDelegate").setLevel(logging.ERROR)
+logging.getLogger('asyncio').setLevel(logging.WARNING)
+
 import asyncio
 import struct
 from bleak import BleakClient
