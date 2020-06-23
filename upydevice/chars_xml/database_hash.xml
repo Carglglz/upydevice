@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--Copyright 2019 Bluetooth SIG, Inc. All rights reserved.-->
+<Characteristic xsi:noNamespaceSchemaLocation="http://schemas.bluetooth.org/Documents/characteristic.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="Database Hash" type="org.bluetooth.characteristic.database_hash" uuid="2B2A" last-modified="2019-01-28" approved="No">
+    <Value>
+        <Field name="Database Hash">
+            <Requirement>Mandatory</Requirement>
+            <Format>uint128</Format>
+		</Field>
+	</Value>
+</Characteristic>

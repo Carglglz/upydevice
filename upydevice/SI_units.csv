@@ -1,0 +1,76 @@
+length,meter,m
+mass,kilogram,kg
+time,second,s
+electric current,ampere,A
+thermodynamic temperature,kelvin,K
+amount of substance,mole,mol
+luminous intensity,candela,cd
+area,square meter,m2
+volume,cubic meter,m3
+speed,meter per second,m/s
+velocity,metres per second,m/s
+acceleration,meter per second squared  ,m/s2
+wave number,reciprocal meter,m-1
+mass density,kilogram per cubic meter,kg/m3
+specific volume,cubic meter per kilogram,m3/kg
+current density,ampere per square meter,A/m2
+magnetic field strength  ,ampere per meter,A/m
+amount-of-substance concentration,mole per cubic meter,mol/m3
+luminance,candela per square meter,cd/m2
+mass fraction,kilogram per kilogram, which may be represented by the number 1,kg/kg = 1
+plane angle,radian,rad
+solid angle,steradian,sr
+frequency,hertz,Hz
+force,newton,N
+pressure,pascal,Pa
+energy,joule,J
+power,watt,W
+electric charge,coulomb,C
+electric potential difference,volt,V
+capacitance,farad,F
+electric resistance,ohm,Omega
+electric conductance,siemens,S
+magnetic flux,weber,Wb
+magnetic flux density,tesla,T
+inductance,henry,H
+Celsius temperature,degree celsius,°C,
+luminous flux,lumen,lm
+illuminance,lux,lx,
+activity (of a radionuclide),becquerel,Bq
+absorbed dose,gray,Gy
+dose equivalent,sievert,Sv
+catalytic activity,katal,kat
+dynamic viscosity,pascal second,Pa·s
+moment of force,newton meter,N·m
+surface tension,newton per meter,N/m
+angular velocity,radian per second,rad/s
+angular acceleration,radian per second squared,rad/s2
+heat flux density,watt per square meter,W/m2
+heat capacity,joule per kelvin,J/K
+specific heat capacity,joule per kilogram kelvin,J/(kg·K)
+specific energy,joule per kilogram,J/kg
+thermal conductivity,watt per meter kelvin,W/(m·K)
+energy density,joule per cubic meter,J/m3
+electric field strength,volt per meter,V/m
+electric charge density,coulomb per cubic meter,C/m3
+electric flux density,coulomb per square meter,C/m2
+permittivity,farad per meter,F/m
+permeability,henry per meter,H/m
+molar energy,joule per mole,J/mol
+molar heat capacity,joule per mole kelvin,J/(mol·K)
+exposure (x and gamma rays),coulomb per kilogram,C/kg
+absorbed dose rate,gray per second,Gy/s
+radiant intensity,watt per steradian,W/sr
+radiance,watt per square meter steradian,W/(m2·sr)
+catalytic (activity) concentration,katal per cubic meter,kat/m3
+percentage,percentage,%
+period,beats per minute,bpm
+time,year,Y
+time,month,M
+time,day,D
+irradiance,watt per square metre,W/m^2
+plane angle,degree,º
+thermodynamic temperature,degree fahrenheit,ºF
+logarithmic radio quantity,decibel,dBm
+velocity,kilometre per hour,km/h
+concentration,count per cubic metre,1/m^3

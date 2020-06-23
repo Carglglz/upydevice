@@ -40,7 +40,7 @@ setup(name='upydevice',
       license='MIT',
       packages=['upydevice'],
       zip_safe=False,
-      include_package_data=True,
       scripts=['upydevice_dir/bin/web_repl_conn'],
+      include_package_data=True,
       install_requires=['upydev>=0.3.2', 'pyserial', 'dill', 'pexpect',
                         'bleak'])
