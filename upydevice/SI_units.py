@@ -42,5 +42,6 @@ DATA_FMT = {"sint8": 'b',
             "uint128": '2Q',
             "uint12": 'H',
             "4bit": 'B',
+            "characteristic": 'X'
 
             }
