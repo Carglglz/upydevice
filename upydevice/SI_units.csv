@@ -74,3 +74,16 @@ thermodynamic temperature,degree fahrenheit,ºF
 logarithmic radio quantity,decibel,dBm
 velocity,kilometre per hour,km/h
 concentration,count per cubic metre,1/m^3
+time,minute,min
+mass density,kilogram per litre,kg/L
+mass density,mole per litre,mol/L
+length,inch,inch
+mass,pound,lbs
+angular velocity,revolution per minute,RPM
+energy,kilogram calorie,kcal
+velocity,kilometre per minute,km/min
+length,metre,m
+step per minute,step per minute,stp/min
+stroke per minute,stroke per minute,str/min
+time,hour,h
+moment of force,newton metre,Nm

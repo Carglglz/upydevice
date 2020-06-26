@@ -1,7 +1,7 @@
 import upydevice
-import traceback
 import xml.etree.ElementTree as ET
 from upydevice.SI_units import ble_SI_units_dict, DATA_FMT
+import traceback
 
 CHARS_XML_DIR = "{}/chars_xml".format(upydevice.__path__[0])
 
@@ -287,7 +287,6 @@ ble_char_dict_rev = dict(zip(TK, CK_codes))
 
 
 # XML PARSER --> get char tag and return char_xml class
-
 class CHAR_XML:
     def __init__(self, xml_file):
         self._tree = ET.parse("{}/{}".format(CHARS_XML_DIR, xml_file))
@@ -321,8 +320,11 @@ class CHAR_XML:
         self.bitfields = {}
         self.actual_bitfield = None
         self.actual_bit = None
+        self._nr = 0
         self.get_data()
         self.get_fields()
+        if self.unit_symbol is None:
+            self.unit_symbol = ''
 
     def get_data(self):
         for val in self._root.iter():
@@ -346,7 +348,7 @@ class CHAR_XML:
                         if 'name' in val.attrib.keys():
                             bitname = val.attrib['name']
                         else:
-                            bitname = "Bit {}".format(val.attrib['index'])
+                            bitname = "BitGroup {}".format(val.attrib['index'])
                         self.bitfields[self.actual_bitfield][bitname] = {}
                         self.bitfields[self.actual_bitfield][bitname]['index'] = val.attrib['index']
                         self.bitfields[self.actual_bitfield][bitname]['size'] = val.attrib['size']
@@ -452,7 +454,11 @@ class CHAR_XML:
                 if val.tag == 'Requirement':
                     try:
                         if self.fields.keys():
-                            self.fields[self.actual_field][val.tag] = val.text
+                            if val.tag in self.fields[self.actual_field].keys():
+                                self._nr += 1
+                                self.fields[self.actual_field]["{}-{}".format(val.tag, self._nr)] = val.text
+                            else:
+                                self.fields[self.actual_field][val.tag] = val.text
                     except Exception as e:
                         print(e)
                 if val.tag == 'Format':
@@ -461,6 +467,7 @@ class CHAR_XML:
                     if self.fields.keys():
                         self.fields[self.actual_field][val.tag] = val.text
                         self.fields[self.actual_field]['Ctype'] = DATA_FMT[val.text]
+
                 if val.tag == 'Enumeration':
                     if self.fields.keys():
                         if 'Enumerations' in self.fields[self.actual_field].keys():
@@ -472,8 +479,97 @@ class CHAR_XML:
                 if val.tag == 'Enumerations':
                     if self.fields.keys():
                         self.fields[self.actual_field][val.tag] = {}
+
+                if val.tag == 'BitField':
+                    if self.fields.keys():
+                        self.fields[self.actual_field][val.tag] = {}
+                    # self.bitfields[val.tag] = {}
+                    self.actual_bitfield = val.tag
+                if val.tag == 'Bit':
+                    if self.fields[self.actual_field].keys():
+                        # if self.bitfields.keys():
+                        if 'name' in val.attrib.keys():
+                            bitname = val.attrib['name']
+                        else:
+                            bitname = "BitGroup {}".format(val.attrib['index'])
+                        self.fields[self.actual_field][self.actual_bitfield][bitname] = {}
+                        self.fields[self.actual_field][self.actual_bitfield][bitname]['index'] = val.attrib['index']
+                        self.fields[self.actual_field][self.actual_bitfield][bitname]['size'] = val.attrib['size']
+                        self.actual_bit = bitname
+
+                if val.tag == 'Enumeration':
+                    if self.actual_bitfield is not None:
+                        if self.actual_bitfield in self.fields[self.actual_field].keys():
+                            if self.fields[self.actual_field][self.actual_bitfield].keys():
+                                self.fields[self.actual_field][self.actual_bitfield][self.actual_bit]['Enumerations'][val.attrib['key']] = val.attrib['value']
+                if val.tag == 'Enumerations':
+                    if self.actual_bitfield is not None:
+                        if self.actual_bitfield in self.fields[self.actual_field].keys():
+                            if self.fields[self.actual_field][self.actual_bitfield].keys():
+                                self.fields[self.actual_field][self.actual_bitfield][self.actual_bit][val.tag] = {}
+                if val.tag == 'DecimalExponent':
+                    if self.fields.keys():
+                        self.fields[self.actual_field][val.tag] = int(val.text)
+                        # self.dec_exp = int(val.text)
+                if val.tag == 'Unit':
+                    self.fields[self.actual_field]['Unit_id'] = val.text
+                    # get unit from unit stringcode
+                    unit_stringcode_filt = val.text.replace(
+                        "org.bluetooth.unit.", '')
+                    quantity = ' '.join(
+                        unit_stringcode_filt.split('.')[0].split('_'))
+                    self.fields[self.actual_field]['Quantity'] = quantity
+                    try:
+                        unit = ' '.join(
+                            unit_stringcode_filt.split('.')[1].split('_')).strip()
+                        self.fields[self.actual_field][val.tag] = unit
+                        self.fields[self.actual_field]['Symbol'] = ble_SI_units_dict[unit]
+                    except Exception as e:
+                        # print(traceback.format_exc())
+                        try:
+                            self.fields[self.actual_field][val.tag] = quantity
+                            self.fields[self.actual_field]['Symbol'] = ble_SI_units_dict[quantity]
+                        except Exception as e:
+                            self.fields[self.actual_field][val.tag] = ''
+                            self.fields[self.actual_field]['Symbol'] = ''
+                if val.tag == 'InformativeText':
+                    if self.fields.keys():
+                        if hasattr(val.text, 'strip'):
+                            self.fields[self.actual_field][val.tag] = val.text.strip()
+                        else:
+                            self.fields[self.actual_field][val.tag] = val.text
+                if val.tag == 'Reference':
+                    if self.fields.keys():
+                        if hasattr(val.text, 'strip'):
+                            self.fields[self.actual_field][val.tag] = val.text.strip()
+                        else:
+                            self.fields[self.actual_field][val.tag] = val.text
+                if val.tag == 'BinaryExponent':
+                    if self.fields.keys():
+                        if hasattr(val.text, 'strip'):
+                            self.fields[self.actual_field][val.tag] = int(val.text.strip())
+                        else:
+                            self.fields[self.actual_field][val.tag] = int(val.text)
+                if val.tag == 'Multiplier':
+                    if self.fields.keys():
+                        if hasattr(val.text, 'strip'):
+                            self.fields[self.actual_field][val.tag] = int(val.text.strip())
+                        else:
+                            self.fields[self.actual_field][val.tag] = int(val.text)
             except Exception as e:
                 print(traceback.format_exc())
+
+    def fmt_val(self, value):
+        if value is None:
+            value = 0
+        if self.dec_exp is not None:
+            value = value*(10**self.dec_exp)
+
+        if 'Category' in self.fields:
+            if 'Enumerations' in self.fields['Category']:
+                value = self.fields['Category']['Enumerations'][str(value)]
+
+        return value
 
 
 def get_XML_CHAR(char):
