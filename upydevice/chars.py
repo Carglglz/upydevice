@@ -1,6 +1,7 @@
 import upydevice
 import xml.etree.ElementTree as ET
 from upydevice.SI_units import ble_SI_units_dict, DATA_FMT
+from bleak.backends.corebluetooth.utils import cb_uuid_to_str
 import traceback
 
 CHARS_XML_DIR = "{}/chars_xml".format(upydevice.__path__[0])
@@ -281,7 +282,7 @@ TK = ['Aerobic Heart Rate Lower Limit',
       'Weight Scale Feature',
       'Wind Chill']
 
-CK_codes = [ck.replace('0x', '') for ck in CK]
+CK_codes = [cb_uuid_to_str(ck.replace('0x', '')) for ck in CK]
 ble_char_dict = dict(zip(CK_codes, TK))
 ble_char_dict_rev = dict(zip(TK, CK_codes))
 
@@ -472,9 +473,18 @@ class CHAR_XML:
                     if self.fields.keys():
                         if 'Enumerations' in self.fields[self.actual_field].keys():
                             self.fields[self.actual_field]['Enumerations'][val.attrib['key']] = val.attrib['value']
+                            if 'requires' in val.attrib:
+                                if 'Requires' not in self.fields[self.actual_field]['Enumerations']:
+                                    self.fields[self.actual_field]['Enumerations']['Requires'] = {}
+                                self.fields[self.actual_field]['Enumerations']['Requires'][val.attrib['key']] = val.attrib['requires']
                         else:
                             self.fields[self.actual_field]['Enumerations'] = {}
                             self.fields[self.actual_field]['Enumerations'][val.attrib['key']] = val.attrib['value']
+                            if 'requires' in val.attrib:
+                                if 'Requires' not in self.fields[self.actual_field]['Enumerations']:
+                                    self.fields[self.actual_field]['Enumerations']['Requires'] = {}
+                                self.fields[self.actual_field]['Enumerations']['Requires'][val.attrib['key']] = val.attrib['requires']
+
 
                 if val.tag == 'Enumerations':
                     if self.fields.keys():

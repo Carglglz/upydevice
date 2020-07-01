@@ -28,7 +28,7 @@ power,watt,W
 electric charge,coulomb,C
 electric potential difference,volt,V
 capacitance,farad,F
-electric resistance,ohm,Omega
+electric resistance,ohm,Ω
 electric conductance,siemens,S
 magnetic flux,weber,Wb
 magnetic flux density,tesla,T

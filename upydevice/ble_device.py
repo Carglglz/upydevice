@@ -37,18 +37,10 @@ def ble_scan(log=False):
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(run())
 
-# MACOS
 
-
-NUS = {"6E400001-B5A3-F393-E0A9-E50E24DCCA9E": "Nordic UART Service",
-       "6E400003-B5A3-F393-E0A9-E50E24DCCA9E": 'TX',
-       "6E400002-B5A3-F393-E0A9-E50E24DCCA9E": 'RX'}
-
-# Linux # if sys.platform linux :
-if sys.platform == 'linux':
-    NUS = {"6e400001-b5a3-f393-e0a9-e50e24dcca9e": "Nordic UART Service",
-           "6e400003-b5a3-f393-e0a9-e50e24dcca9e": 'TX',
-           "6e400002-b5a3-f393-e0a9-e50e24dcca9e": 'RX'}
+NUS = {"6e400001-b5a3-f393-e0a9-e50e24dcca9e": "Nordic UART Service",
+       "6e400003-b5a3-f393-e0a9-e50e24dcca9e": 'TX',
+       "6e400002-b5a3-f393-e0a9-e50e24dcca9e": 'RX'}
 
 
 # class BASE_SBLE_DEVICE:
@@ -407,20 +399,20 @@ class BASE_BLE_DEVICE:
     # SERVICES
     def get_services(self, log=True):
         for service in self.ble_client.services:
-            if service.description == 'Unknown' and service.uuid in list(NUS.keys()):
+            if service.description == 'Unknown' and service.uuid.lower() in list(NUS.keys()):
                 is_NUS = True
                 if log:
                     print("[Service] {0}: {1}".format(
-                        service.uuid, NUS[service.uuid]))
-                self.services[NUS[service.uuid]] = {
-                    'UUID': service.uuid, 'CHARS': {}}
+                        service.uuid.lower(), NUS[service.uuid.lower()]))
+                self.services[NUS[service.uuid.lower()]] = {
+                    'UUID': service.uuid.lower(), 'CHARS': {}}
             else:
                 is_NUS = False
                 if log:
                     print("[Service] {0}: {1}".format(
-                        service.uuid, service.description))
+                        service.uuid.lower(), service.description))
                 self.services[service.description] = {
-                    'UUID': service.uuid, 'CHARS': {}}
+                    'UUID': service.uuid.lower(), 'CHARS': {}}
 
             for char in service.characteristics:
                 if is_NUS:
@@ -429,11 +421,11 @@ class BASE_BLE_DEVICE:
                     if "write" in char.properties:
                         self.writeables[NUS[char.uuid]] = char.uuid
                     try:
-                        self.services[NUS[service.uuid]]['CHARS'][char.uuid] = {NUS[char.uuid]: ",".join(
+                        self.services[NUS[service.uuid.lower()]]['CHARS'][char.uuid] = {NUS[char.uuid]: ",".join(
                             char.properties), 'Descriptors': {descriptor.uuid: descriptor.handle for descriptor in char.descriptors}}
                     except Exception as e:
 
-                        self.services[NUS[service.uuid]]['CHARS'][char.uuid] = {char.description: ",".join(
+                        self.services[NUS[service.uuid.lower()]]['CHARS'][char.uuid] = {char.description: ",".join(
                             char.properties), 'Descriptors': {descriptor.uuid: descriptor.handle for descriptor in char.descriptors}}
                 else:
                     if "read" in char.properties:
@@ -902,6 +894,16 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                     except Exception as e:
                         pass
 
+    # AUTOBITMASKS
+
+    def complete_bytes(self, bb):
+        len_bytes = len(bb)
+        if (len_bytes % 2) == 0:
+            pass
+        else:
+            bb = b'\x00' + bb
+        return bb
+
     def _autobitmask(self, val, total_size, index, size, keymap):
         _bitmask = eval('0b{}'.format('0' * (total_size - (index + size)) + (size * '1') + '0' * index))
         key = (val & _bitmask) >> index
@@ -909,69 +911,507 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
         mapped_val = keymap[key_str]
         return mapped_val
 
-    def _autoformat(self, char, data):
+    def _autobitmask_req(self, val, total_size, index, size, keymap):
+        _bitmask = eval('0b{}'.format('0' * (total_size - (index + size)) + (size * '1') + '0' * index))
+        key = (val & _bitmask) >> index
+        key_str = str(key)
+        if key_str in keymap:
+            mapped_val = keymap[key_str]
+            return mapped_val
+        else:
+            return False
+
+    # AUTOFORMAT BITFIELDS
+    def _autoformat(self, char, data, field_to_unpack=None):
+        fields = {}
+        val = data
+        if not field_to_unpack:
+            for field in char.fields:
+                if 'Ctype' in char.fields[field]:
+                    ctype = char.fields[field]['Ctype']
+                    total_size = 0
+                    if 'BitField' in char.fields[field]:
+                        fields[field] = {}
+                        bitfield = char.fields[field]['BitField']
+                        for bitf in bitfield:
+                            total_size += int(bitfield[bitf]['size'])
+                        for bitf in bitfield:
+                            size = int(bitfield[bitf]["size"])
+                            index = int(bitfield[bitf]["index"])
+                            key_map = bitfield[bitf]["Enumerations"]
+                            fields[field][bitf] = self._autobitmask(val,
+                                                                   total_size=total_size,
+                                                                   index=index,
+                                                                   size=size,
+                                                                   keymap=key_map)
+
+            return fields
+        else:
+            field = field_to_unpack
+            if 'Ctype' in char.fields[field]:
+                ctype = char.fields[field]['Ctype']
+                total_size = 0
+                if 'BitField' in char.fields[field]:
+                    fields[field] = {}
+                    bitfield = char.fields[field]['BitField']
+                    for bitf in bitfield:
+                        total_size += int(bitfield[bitf]['size'])
+                    for bitf in bitfield:
+                        size = int(bitfield[bitf]["size"])
+                        index = int(bitfield[bitf]["index"])
+                        key_map = bitfield[bitf]["Enumerations"]
+                        fields[field][bitf] = self._autobitmask(val,
+                                                         total_size=total_size,
+                                                         index=index,
+                                                         size=size,
+                                                         keymap=key_map)
+
+            return fields
+
+    # FIELDS REQUIREMENTS
+    def _autoformat_reqs(self, char, val):
         fields = {}
         for field in char.fields:
-            fields[field] = {}
-            ctype = char.fields[field]['Ctype']
-            if isinstance(data, bytes):
-                try:
-                    val, = struct.unpack(ctype, data)
-                except Exception as e:
-                    print(char.name, e)
-            else:
-                val = data
-            total_size = 0
-            bitfield = char.fields[field]['BitField']
-            for bitf in bitfield:
-                total_size += int(bitfield[bitf]['size'])
-            for bitf in bitfield:
-                size = int(bitfield[bitf]["size"])
-                index = int(bitfield[bitf]["index"])
-                key_map = bitfield[bitf]["Enumerations"]
-                fields[field][bitf] = self._autobitmask(val,
-                                                       total_size=total_size,
-                                                       index=index,
-                                                       size=size,
-                                                       keymap=key_map)
+            if 'Ctype' in char.fields[field]:
+                ctype = char.fields[field]['Ctype']
+                total_size = 0
+                if 'BitField' in char.fields[field]:
+                    fields[field] = {}
+                    bitfield = char.fields[field]['BitField']
+                    for bitf in bitfield:
+                        total_size += int(bitfield[bitf]['size'])
+                    for bitf in bitfield:
+                        size = int(bitfield[bitf]["size"])
+                        index = int(bitfield[bitf]["index"])
+                        key_map = bitfield[bitf]["Enumerations"]
+                        if 'Requires' in key_map:
+                            fields[field][bitf] = self._autobitmask_req(val,
+                                                             total_size=total_size,
+                                                             index=index,
+                                                             size=size,
+                                                             keymap=key_map['Requires'])
 
         return fields
 
-    def get_char_value(self, char):
+    # GET FIELD REQUIREMENTS
+    def _get_req(self, char_field):
+        reqs = []
+        for key in char_field:
+            if 'Requirement' in key:
+                reqs.append(char_field[key])
+        return reqs
+
+    # GET FORMATTED VALUE
+
+    def get_char_value(self, char, rtn_flags=False, debug=False):
         char = self.chars_xml[char]
         if len(char.fields) == 1:
-            # CASE 1
+            # CASE 1: : ONLY ONE FIELD: SINGLE VALUE OR SINGLE BITFIELD
+            if debug:
+                print('CASE 1: ONE FIELD')
             for field in char.fields:
                 # print(char.name, char.fields[field].keys())
                 if 'Ctype' in char.fields[field]:
                     ctype = char.fields[field]['Ctype']
                     if 'BitField' in char.fields[field]:
-                        # print(char.name)
+                        if debug:
+                            print('CASE 1A: BITFIELD')
                         raw_data = self.read_char(
-                            key=char.name, data_fmt='raw')
+                            key=char.name, data_fmt=ctype)
                         data = list(self._autoformat(char, raw_data).values())[0]
-                        return data
+                        return {field: data}
                     else:
+                        if debug:
+                            print('CASE 1B: VALUE')
                         if 'Enumerations' in char.fields[field]:
-                            # print('Here')
+                            if debug:
+                                print('CASE 1B.1: MAPPED VALUE')
                             keymap = char.fields[field]['Enumerations']
                             if keymap:
                                 data = self.read_char(
                                     key=char.name, data_fmt=ctype)
-                                mapped_val = keymap[str(data)]
-                                return mapped_val
+                                try:
+                                    mapped_val = keymap[str(data)]
+                                    return {field: {'Value': mapped_val}}
+                                except Exception as e:
+                                    if debug:
+                                        print('Value not in keymap')
                             else:
                                 data = self.read_char(
                                     key=char.name, data_fmt=ctype)
-                                return data
                         else:
+                            if debug:
+                                print('CASE 1B.2: SINGLE VALUE')
+
                             data = self.read_char(
                                 key=char.name, data_fmt=ctype)
-                            return data
+
+                        # Format fields values according to field metadata: (DecimalExponent/Multiplier):
+                        _FIELDS_VALS = {}
+                        _FIELDS_VALS[field] = {}
+                        if 'Quantity' in char.fields[field]:
+                            _FIELDS_VALS[field]['Quantity'] = char.fields[field]['Quantity']
+                        if 'Unit' in char.fields[field]:
+                            _FIELDS_VALS[field]['Unit'] = char.fields[field]['Unit']
+                        if 'Symbol' in char.fields[field]:
+                            _FIELDS_VALS[field]['Symbol'] = char.fields[field]['Symbol']
+
+                        formatted_value = data
+                        if 'Multiplier' in char.fields[field]:
+                            formatted_value *= char.fields[field]['Multiplier']
+                        if 'DecimalExponent' in char.fields[field]:
+                            formatted_value *= 10**(char.fields[field]['DecimalExponent'])
+                        if 'BinaryExponent' in char.fields[field]:
+                            formatted_value *= 2**(char.fields[field]['BinaryExponent'])
+
+                        _FIELDS_VALS[field]['Value'] = formatted_value
+                        return _FIELDS_VALS
 
         else:
-            print('NOT IMPLEMENTED')
-            pass
+            # CASE 2: MULTIPLE FIELDS: 1º Field flags, Rest of Fields values
+            # check if Flags field exists
+            # get flags and fields requirements if any:
+            if debug:
+                print('CASE 2: MULTIPLE FIELDS')
+            _FLAGS = None
+            _REQS = None
+            if 'Flags' in char.fields:
+                if debug:
+                    print('CASE 2.A: Flags Field Present')
+                if 'Ctype' in char.fields['Flags']:
+                    ctype_flag = char.fields['Flags']['Ctype']
+                    if 'BitField' in char.fields['Flags']:
+                        val = self.read_char_raw(char.name)
+                        raw_data, = struct.unpack(ctype_flag, val[:struct.calcsize(ctype_flag)])
+                        _FLAGS = list(self._autoformat(char, raw_data).values())[0]
+                        _REQS = list(self._autoformat_reqs(char, raw_data).values())[0]
+
+            if _FLAGS:
+                # Get fields according to flags
+                if debug:
+                    print(_FLAGS)
+                    print(_REQS)
+                    print('Fields to read according to Flags:')
+                _FIELDS_TO_READ = []
+                for field in char.fields:
+                    if field != 'Flags':
+                        field_req = None
+                        # get requirements if any:
+                        field_req = self._get_req(char.fields[field])
+                        if 'Mandatory' in field_req:
+                            if debug:
+                                print("   - {}: {}".format(field, True))
+                            _FIELDS_TO_READ.append(field)
+                        else:
+                            _READ_FIELD = all([req in _REQS.values() for req in field_req])
+                            if _READ_FIELD:
+                                if debug:
+                                    print("   - {}: {}".format(field, field_req))
+                                _FIELDS_TO_READ.append(field)
+                if _FIELDS_TO_READ:
+                    # get global unpack format: ctype_flag += ctype_field_to_read
+                    ctype_global = ctype_flag
+                    # REFERENCE FIELDS
+                    _REFERENCE_FIELDS = {}
+                    copy_FIELDS_TO_READ = _FIELDS_TO_READ.copy()
+                    for field in copy_FIELDS_TO_READ:
+                        if 'Ctype' in char.fields[field]:
+                            ctype = char.fields[field]['Ctype']
+                            ctype_global += ctype
+
+                        # Get Reference if any and ctype/unit/symbol/decexp/multiplier
+
+                        if 'Reference' in char.fields[field]:
+                            reference = char.fields[field]['Reference']
+                            reference_char = get_XML_CHAR(reference)
+                            _LIST_REFERENCES = []
+                            for ref_field in reference_char.fields:
+                                # Add fields to _REFERENCE_FIELDS
+                                _LIST_REFERENCES.append(ref_field)
+                                _REFERENCE_FIELDS[ref_field] = reference_char.fields[ref_field]
+                                if 'Ctype' in reference_char.fields[ref_field]:
+                                    ctype = reference_char.fields[ref_field]['Ctype']
+                                    ctype_global += ctype
+
+                            # Substitute
+                            _LIST_REFERENCES.reverse()
+                            char_index = _FIELDS_TO_READ.index(field)
+                            _FIELDS_TO_READ.pop(char_index)
+                            for rf in _LIST_REFERENCES:
+                                _FIELDS_TO_READ.insert(char_index, rf)
+
+                    # Unpack data
+                    # First value is the flags value
+                    # Rest are field values
+                    if debug:
+                        print('Global Unpack Format: {}'.format(ctype_global))
+                    val = self.read_char_raw(char.name)
+                    val = self.complete_bytes(val)
+                    flag, *data = struct.unpack(ctype_global, val)
+                    _RAW_VALS = dict(zip(_FIELDS_TO_READ, data))
+                    _FIELDS_VALS = {}
+                    # Format fields values according to field metadata: (DecimalExponent/Multiplier):
+                    for field in _FIELDS_TO_READ:
+                        _FIELDS_VALS[field] = {}
+                        if field in char.fields:
+                            if 'Quantity' in char.fields[field]:
+                                _FIELDS_VALS[field]['Quantity'] = char.fields[field]['Quantity']
+                            if 'Unit' in char.fields[field]:
+                                _FIELDS_VALS[field]['Unit'] = char.fields[field]['Unit']
+                            if 'Symbol' in char.fields[field]:
+                                _FIELDS_VALS[field]['Symbol'] = char.fields[field]['Symbol']
+
+                            formatted_value = _RAW_VALS[field]
+                            if 'Multiplier' in char.fields[field]:
+                                formatted_value *= char.fields[field]['Multiplier']
+                            if 'DecimalExponent' in char.fields[field]:
+                                formatted_value *= 10**(char.fields[field]['DecimalExponent'])
+                            if 'BinaryExponent' in char.fields[field]:
+                                formatted_value *= 2**(char.fields[field]['BinaryExponent'])
+                            if 'BitField' in char.fields[field]:
+                                formatted_value = list(self._autoformat(char, formatted_value, field).values())[0]
+
+                            _FIELDS_VALS[field]['Value'] = formatted_value
+                        else:
+                            if _REFERENCE_FIELDS:
+                                if 'Quantity' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Quantity'] = _REFERENCE_FIELDS[field]['Quantity']
+                                if 'Unit' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Unit'] = _REFERENCE_FIELDS[field]['Unit']
+                                if 'Symbol' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Symbol'] = _REFERENCE_FIELDS[field]['Symbol']
+
+                                formatted_value = _RAW_VALS[field]
+                                if 'Multiplier' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= _REFERENCE_FIELDS[field]['Multiplier']
+                                if 'DecimalExponent' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= 10**(_REFERENCE_FIELDS[field]['DecimalExponent'])
+                                if 'BinaryExponent' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= 2**(_REFERENCE_FIELDS[field]['BinaryExponent'])
+                                if 'BitField' in _REFERENCE_FIELDS[field]:
+                                    # This exists ?
+                                    pass
+                                    # raw_data = struct.pack(_REFERENCE_FIELDS[field]['Ctype'], formatted_value)
+                                    # formatted_value = list(autoformat(char, raw_data).values())[0]
+
+                                _FIELDS_VALS[field]['Value'] = formatted_value
+
+                    if not rtn_flags:
+                        return _FIELDS_VALS
+                    else:
+                        return [_FIELDS_VALS, _FLAGS]
+            else:
+                if debug:
+                    print('CASE 2.B: Flags Field Not Present')
+                    print('Fields to read:')
+                _FIELDS_TO_READ = []
+                for field in char.fields:
+                    if field != 'Flags':
+                        field_req = None
+                        # get requirements if any:
+                        field_req = self._get_req(char.fields[field])
+                        if 'Mandatory' in field_req:
+                            if debug:
+                                print("   - {}: {}".format(field, True))
+                            _FIELDS_TO_READ.append(field)
+                        else:
+                            _READ_FIELD = all([req in _REQS.values() for req in field_req])
+                            if _READ_FIELD:
+                                if debug:
+                                    print("   - {}: {}".format(field, field_req))
+                                _FIELDS_TO_READ.append(field)
+
+                # REFERENCE FIELDS
+                _REFERENCE_FIELDS = {}
+                copy_FIELDS_TO_READ = _FIELDS_TO_READ.copy()
+                if _FIELDS_TO_READ:
+                    # get global unpack format: ctype_flag += ctype_field_to_read
+                    ctype_global = ''
+                    for field in copy_FIELDS_TO_READ:
+                        if 'Ctype' in char.fields[field]:
+                            ctype = char.fields[field]['Ctype']
+                            ctype_global += ctype
+
+                        # Get Reference if any and ctype/unit/symbol/decexp/multiplier
+
+                        if 'Reference' in char.fields[field]:
+                            reference = char.fields[field]['Reference']
+                            reference_char = get_XML_CHAR(reference)
+                            _LIST_REFERENCES = []
+                            for ref_field in reference_char.fields:
+                                # Add fields to _REFERENCE_FIELDS
+                                _LIST_REFERENCES.append(ref_field)
+                                _REFERENCE_FIELDS[ref_field] = reference_char.fields[ref_field]
+                                if 'Ctype' in reference_char.fields[ref_field]:
+                                    ctype = reference_char.fields[ref_field]['Ctype']
+                                    ctype_global += ctype
+
+                            # Substitute
+                            _LIST_REFERENCES.reverse()
+                            char_index = _FIELDS_TO_READ.index(field)
+                            _FIELDS_TO_READ.pop(char_index)
+                            for rf in _LIST_REFERENCES:
+                                _FIELDS_TO_READ.insert(char_index, rf)
+
+                    # Unpack data
+                    # There is no the flags value
+                    # All fields are values
+                    if debug:
+                        print('Global Unpack Format: {}'.format(ctype_global))
+                    val = self.read_char_raw(char.name)
+                    data = struct.unpack(ctype_global, val)
+                    _RAW_VALS = dict(zip(_FIELDS_TO_READ, data))
+                    _FIELDS_VALS = {}
+                    # Format fields values according to field metadata: (DecimalExponent/Multiplier):
+                    for field in _FIELDS_TO_READ:
+                        _FIELDS_VALS[field] = {}
+                        if field in char.fields:
+                            if 'Quantity' in char.fields[field]:
+                                _FIELDS_VALS[field]['Quantity'] = char.fields[field]['Quantity']
+                            if 'Unit' in char.fields[field]:
+                                _FIELDS_VALS[field]['Unit'] = char.fields[field]['Unit']
+                            if 'Symbol' in char.fields[field]:
+                                _FIELDS_VALS[field]['Symbol'] = char.fields[field]['Symbol']
+
+                            formatted_value = _RAW_VALS[field]
+                            if 'Multiplier' in char.fields[field]:
+                                formatted_value *= char.fields[field]['Multiplier']
+                            if 'DecimalExponent' in char.fields[field]:
+                                formatted_value *= 10**(char.fields[field]['DecimalExponent'])
+                            if 'BinaryExponent' in char.fields[field]:
+                                formatted_value *= 2**(char.fields[field]['BinaryExponent'])
+
+                            _FIELDS_VALS[field]['Value'] = formatted_value
+                        else:
+                            if _REFERENCE_FIELDS:
+                                if 'Quantity' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Quantity'] = _REFERENCE_FIELDS[field]['Quantity']
+                                if 'Unit' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Unit'] = _REFERENCE_FIELDS[field]['Unit']
+                                if 'Symbol' in _REFERENCE_FIELDS[field]:
+                                    _FIELDS_VALS[field]['Symbol'] = _REFERENCE_FIELDS[field]['Symbol']
+
+                                formatted_value = _RAW_VALS[field]
+                                if 'Multiplier' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= _REFERENCE_FIELDS[field]['Multiplier']
+                                if 'DecimalExponent' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= 10**(_REFERENCE_FIELDS[field]['DecimalExponent'])
+                                if 'BinaryExponent' in _REFERENCE_FIELDS[field]:
+                                    formatted_value *= 2**(_REFERENCE_FIELDS[field]['BinaryExponent'])
+
+                                _FIELDS_VALS[field]['Value'] = formatted_value
+
+                    if not rtn_flags:
+                        return _FIELDS_VALS
+                    else:
+                        return [_FIELDS_VALS, _FLAGS]
+
+    def pformat_char_value(self, data, char='', only_val=False, one_line=False,
+                           sep=',', custom=None, symbols=True, prnt=True,
+                           rtn=False):
+        if not custom:
+            if not one_line:
+                if char:
+                    print('{}:'.format(char))
+                if not only_val:
+                    for key in data:
+                        try:
+                            print('{}: {} {}'.format(key, data[key]['Value'], data[key]['Symbol']))
+                        except Exception as e:
+                            print('{}: {} '.format(key, data[key]['Value']))
+                else:
+                    for key in data:
+                        try:
+                            print('{} {}'.format(data[key]['Value'], data[key]['Symbol']))
+                        except Exception as e:
+                            print('{}'.format(data[key]['Value']))
+            else:
+
+                if not only_val:
+                    try:
+                        char_string_values = ["{}: {} {}".format(key, data[key]['Value'], data[key]['Symbol']) for key in data]
+                    except Exception as e:
+                        char_string_values = ["{}: {}".format(key, data[key]['Value']) for key in data]
+                    if char:
+                        if prnt:
+                            print('{}: {}'.format(char, sep.join(char_string_values)))
+                        elif rtn:
+                            return '{}: {}'.format(char, sep.join(char_string_values))
+                    else:
+                        if prnt:
+                            print(sep.join(char_string_values))
+                        elif rtn:
+                            return sep.join(char_string_values)
+                else:
+                    try:
+                        char_string_values = ["{} {}".format(data[key]['Value'], data[key]['Symbol']) for key in data]
+                    except Exception as e:
+                        char_string_values = ["{}".format(data[key]['Value']) for key in data]
+                    if char:
+                        if prnt:
+                            print('{}: {}'.format(char, sep.join(char_string_values)))
+                        elif rtn:
+                            return '{}: {}'.format(char, sep.join(char_string_values))
+                    else:
+                        if prnt:
+                            print(sep.join(char_string_values))
+                        elif rtn:
+                            return sep.join(char_string_values)
+        else:
+            if not symbols:
+                print(custom.format(*[data[k]['Value'] for k in data]))
+            else:
+                print(custom.format(*['{} {}'.format(data[k]['Value'], data[k]['Symbol']) for k in data]))
+
+    def map_char_value(self, data, keys=[], string_fmt=False, one_line=True, sep=', '):
+        if keys:
+            if not string_fmt:
+                return dict(zip(keys, data.values()))
+            else:
+                map_values = dict(zip(keys, data.values()))
+                if one_line:
+                    return sep.join([f"{k}: {v}" for k,v in map_values.items()])
+                else:
+                    sep += '\n'
+                    return sep.join([f"{k}: {v}" for k,v in map_values.items()])
+
+    def dict_char_value(self, data, raw=False):
+        try:
+            if raw:
+                values = {k: {'Value': data[k]['Value'], 'Symbol': data[k]['Symbol']} for k in data}
+            else:
+                values = {k: '{} {}'.format(data[k]['Value'], data[k]['Symbol']) for k in data}
+        except Exception as e:
+            values = {}
+            if raw:
+                for k in data:
+                    if 'Symbol' in data[k]:
+                        values[k] = {'Value' :data[k]['Value'], 'Symbol': data[k]['Symbol']}
+                    else:
+                        values[k] = {'Value' :data[k]['Value']}
+            else:
+                for k in data:
+                    if 'Symbol' in data[k]:
+                        values[k] = '{} {}'.format(data[k]['Value'], data[k]['Symbol'])
+                    else:
+                        values[k] = data[k]['Value']
+        return values
+
+    def pformat_char_flags(self, data, sep='\n', prnt=False, rtn=True):
+        try:
+            char_string_values = [["{}: {}".format(k, v) for k, v in data[key].items()] for key in data]
+            all_values = []
+            for values in char_string_values:
+                if prnt:
+                    print(sep.join(values))
+                elif rtn:
+                    all_values.append(sep.join(values))
+            if rtn:
+                return sep.join(all_values)
+
+        except Exception as e:
+            print(e)
+
 
     def get_appearance(self):
         APPR = 'Appearance'
@@ -1048,7 +1488,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 
     def unpack_batt_power_state(self):
         pow_skeys = self.get_char_value('Battery Power State')
-        self.batt_power_state = self.map_powstate(pow_skeys)
+        self.batt_power_state = self.map_powstate(pow_skeys['State'])
 
     def map_powstate(self, bp_state_dict):
         return dict(zip(['Battery Power Information',
