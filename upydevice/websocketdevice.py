@@ -56,6 +56,12 @@ class BASE_WS_DEVICE:
         self.connected = False
         self.repl_CONN = self.connected
 
+    def connect(self):
+        self.open_wconn()
+
+    def disconnect(self):
+        self.close_wconn()
+
     def write(self, cmd):
         n_bytes = len(bytes(cmd, 'utf-8'))
         self.ws.send(cmd)

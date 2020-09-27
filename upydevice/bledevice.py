@@ -141,7 +141,7 @@ class BASE_BLE_DEVICE:
             if log:
                 self.log.info("Disconnected successfully")
 
-    def connect(self, n_tries=3, show_servs=False, log=True):
+    def connect(self, n_tries=3, show_servs=False, log=False):
         self.loop.run_until_complete(self.connect_client(n_tries=n_tries,
                                                          log=log))
         self.get_services(log=show_servs)
@@ -149,7 +149,7 @@ class BASE_BLE_DEVICE:
     def is_connected(self):
         return self.loop.run_until_complete(self.ble_client.is_connected())
 
-    def disconnect(self, log=True, timeout=None):
+    def disconnect(self, log=False, timeout=None):
         self.loop.run_until_complete(self.disconnect_client(log=log,
                                                             timeout=timeout))
 

@@ -389,6 +389,12 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.serial.open()
         self.connected = True
 
+    def connect(self):
+        self.open_wconn()
+
+    def disconnect(self):
+        self.close_wconn()
+
     def paste_buff(self, long_command):
         self.paste_cmd = long_command
         self.serial.write(b'\x05')
