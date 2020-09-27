@@ -13,7 +13,7 @@ import ssl
 import os
 import io
 
-from upydevice.protocol import Websocket, urlparse
+from upydevice.wsprotocol import Websocket, urlparse
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
