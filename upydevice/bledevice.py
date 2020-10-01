@@ -47,9 +47,23 @@ def ble_scan(log=False):
     return loop.run_until_complete(run())
 
 
+class DeviceException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.message = args[0]
+        else:
+            self.message = None
+
+    def __str__(self):
+        if self.message:
+            return '[DeviceError]:\n{0} '.format(self.message)
+        else:
+            return 'DeviceError has been raised'
+
+
 class BASE_BLE_DEVICE:
     def __init__(self, scan_dev, init=False, name=None, lenbuff=100,
-                 rssi=None, log=None):
+                 rssi=None, conn_debug=None):
         # BLE
         self.ble_client = None
         if hasattr(scan_dev, 'address'):
@@ -95,17 +109,17 @@ class BASE_BLE_DEVICE:
         self.output = None
         self.platform = None
         self.break_flag = None
-        self.log = log
+        self.log = conn_debug
         #
         if init:
-            self.connect()
+            self.connect(debug=self.log)
             # do connect
 
     def set_event_loop(self, loop):
         self.loop = loop
         # self.ble_client.loop = loop
 
-    async def connect_client(self, n_tries=3, log=True):
+    async def connect_client(self, n_tries=3, debug=False):
         n = 0
         self.ble_client = BleakClient(self.UUID)
         while n < n_tries:
@@ -115,14 +129,14 @@ class BASE_BLE_DEVICE:
                 self.connected = await self.ble_client.is_connected()
                 if self.connected:
                     self.name = self.ble_client._device_info.name()
-                    if log:
-                        self.log.info("Connected to: {}".format(self.UUID))
+                    if self.log or debug:
+                        print("Connected to: {}".format(self.UUID))
                     break
             except Exception as e:
-                if log:
+                if debug:
                     if not self.break_flag:
-                        self.log.error(e)
-                        self.log.info('Trying again...')
+                        print(e)
+                        print('Trying again...')
                     else:
                         break
                 time.sleep(1)
@@ -138,12 +152,12 @@ class BASE_BLE_DEVICE:
             await self.ble_client.disconnect()
         self.connected = await self.ble_client.is_connected()
         if not self.connected:
-            if log:
-                self.log.info("Disconnected successfully")
+            if self.log or log:
+                print("Disconnected successfully")
 
-    def connect(self, n_tries=3, show_servs=False, log=False):
+    def connect(self, n_tries=3, show_servs=False, debug=False):
         self.loop.run_until_complete(self.connect_client(n_tries=n_tries,
-                                                         log=log))
+                                                         debug=debug))
         self.get_services(log=show_servs)
 
     def is_connected(self):
@@ -418,41 +432,41 @@ class BASE_BLE_DEVICE:
         #
 
     async def as_write_read_waitp(self, data, rtn_buff=False):
-        await self.ble_client.start_notify(self.readables['TX'], self.read_callback)
+        await self.ble_client.start_notify(self.readables['Nordic UART RX'], self.read_callback)
         if len(data) > self.len_buffer:
             for i in range(0, len(data), self.len_buffer):
-                await self.ble_client.write_gatt_char(self.writeables['RX'], data[i:i+self.len_buffer])
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data[i:i+self.len_buffer])
 
         else:
-            await self.ble_client.write_gatt_char(self.writeables['RX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
         while self.prompt not in self.raw_buff:
             await asyncio.sleep(0.01, loop=self.loop)
-        await self.ble_client.stop_notify(self.readables['TX'])
+        await self.ble_client.stop_notify(self.readables['Nordic UART RX'])
         if rtn_buff:
             return self.raw_buff
 
     async def as_write_read_follow(self, data, rtn_buff=False):
         if not self.is_notifying:
             try:
-                await self.ble_client.start_notify(self.readables['TX'], self.read_callback_follow)
+                await self.ble_client.start_notify(self.readables['Nordic UART RX'], self.read_callback_follow)
                 self.is_notifying = True
             except Exception as e:
                 pass
         if len(data) > self.len_buffer:
             for i in range(0, len(data), self.len_buffer):
-                await self.ble_client.write_gatt_char(self.writeables['RX'], data[i:i+self.len_buffer])
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data[i:i+self.len_buffer])
         else:
-            await self.ble_client.write_gatt_char(self.writeables['RX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
         while self.prompt not in self.raw_buff:
             try:
                 await asyncio.sleep(0.01, loop=self.loop)
             except KeyboardInterrupt:
                 print('Catch here1')
                 data = bytes(self._kbi, 'utf-8')
-                await self.ble_client.write_gatt_char(self.writeables['RX'], data)
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
         if self.is_notifying:
             try:
-                await self.ble_client.stop_notify(self.readables['TX'])
+                await self.ble_client.stop_notify(self.readables['Nordic UART RX'])
                 self.is_notifying = False
             except Exception as e:
                 pass
@@ -495,7 +509,7 @@ class BASE_BLE_DEVICE:
     def write(self, cmd):
         data = self.fmt_data(cmd, CR=False)  # make fmt_data
         n_bytes = len(data)
-        self.write_char_raw(key='RX', data=data)
+        self.write_char_raw(key='Nordic UART TX', data=data)
         return n_bytes
 
     def read_all(self):
@@ -510,6 +524,9 @@ class BASE_BLE_DEVICE:
         self.buff = self.read_all()
         flushed += 1
         self.buff = b''
+
+    def cmd(self, *args, **kargs):
+        return self.wr_cmd(*args, **kargs)
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
                long_string=False, follow=False, kb=False):
@@ -543,7 +560,14 @@ class BASE_BLE_DEVICE:
                 b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if not silent:
             if self.response != '\n' and self.response != '':
-                print(self.response)
+                try:
+                    if self._traceback.decode() in self.response:
+                        raise DeviceException(self.response)
+                    else:
+                        print(self.response)
+                except Exception as e:
+                    print(e)
+                    self.response = ''
             else:
                 self.response = ''
         if rtn:
@@ -623,7 +647,7 @@ class BASE_BLE_DEVICE:
             print('This is buff: {}'.format(self.raw_buff))
             await asyncio.sleep(1, loop=self.loop)
             data = bytes(self._kbi + '\r', 'utf-8')
-            await self.ble_client.write_gatt_char(self.writeables['RX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
 
     def banner(self, pipe=None, kb=False, follow=False):
         self.wr_cmd(self._banner, silent=True, long_string=True,
@@ -634,17 +658,21 @@ class BASE_BLE_DEVICE:
             if pipe:
                 pipe(self.response.replace('\n\n', '\n'))
 
-    def reset(self, silent=True):
+    def reset(self, silent=False, reconnect=True):
         if not silent:
             print('Rebooting device...')
-        self.write_char_raw(key='RX', data=self._reset)
+        self.write_char_raw(key='Nordic UART TX', data=self._reset)
+        self.connected = False
+        if reconnect:
+            time.sleep(2)
+            self.connect(n_tries=10, debug=self.log)
         if not silent:
             print('Done!')
 
     async def as_reset(self, silent=True):
         if not silent:
             print('Rebooting device...')
-        await self.as_write_char(self.writeables['RX'], bytes(self._reset, 'utf-8'))
+        await self.as_write_char(self.writeables['Nordic UART TX'], bytes(self._reset, 'utf-8'))
         if not silent:
             print('Done!')
         return None
@@ -672,9 +700,9 @@ class BASE_BLE_DEVICE:
 
 class BLE_DEVICE(BASE_BLE_DEVICE):
     def __init__(self, scan_dev, init=False, name=None, lenbuff=100,
-                 rssi=None, log=None):
+                 rssi=None, conn_debug=True, autodetect=False):
         super().__init__(scan_dev, init=init, name=name, lenbuff=lenbuff,
-                         rssi=rssi, log=log)
+                         rssi=rssi, conn_debug=conn_debug)
         self.dev_class = 'WIRELESS'
         self.appearance = 0
         self.appearance_tag = 'UNKNOWN'
@@ -697,17 +725,36 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
         self.batt_power_state = {'Charging': 'Unknown', 'Discharging': 'Unknown',
                                  'Level': 'Unknown', 'Present': 'Unknown'}
         self.get_batt_power_state()
+        if autodetect:
+            if not init:
+                self.connect(debug=self.log)
+            if self.connected:
+                repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+                (self.dev_platform, self._release,
+                 self._version, self._machine) = self.cmd(repr_cmd,
+                                                          silent=True,
+                                                          rtn_resp=True)
 
     def __repr__(self):
-        # if self.dev_platform or self.name:
-        #     return 'BleDevice @ {}, Type: {}, Class: {}'.format(self.UUID,
-        #                                                            self.dev_platform,
-        #                                                            self.dev_class)
-        # else:
-        return 'BleDevice @ {}, Type: {} , Class: {}, RSSI: {} dBm'.format(self.UUID,
-                                                     self.name,
-                                                     self.dev_class,
-                                                     self.get_RSSI())
+        if self.connected:
+            repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+            (self.dev_platform, self._release,
+             self._version, self._machine) = self.cmd(repr_cmd,
+                                                      silent=True,
+                                                      rtn_resp=True)
+
+            fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+            return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n({}, RSSI: {} dBm)'.format(self.UUID,
+                                                         self.dev_platform,
+                                                         self.dev_class,
+                                                         fw_str,
+                                                         self.name,
+                                                         self.get_RSSI())
+        else:
+            return 'BleDevice @ {}, (Disconnected)'.format(self.UUID)
+
+    def is_reachable(self):
+        return self.is_connected()  # Fix if disconnected
 
     def read_char_metadata(self):
         for serv in self.services_rsum.keys():
