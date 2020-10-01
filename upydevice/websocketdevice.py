@@ -171,8 +171,10 @@ class BASE_WS_DEVICE:
                     break
                 except Exception as e:
                     time.sleep(0.5)
+                    self.ws._close()
             if not silent:
                 print('Done!')
+            self.cmd('')
         else:
             self.open_wconn(ssl=self._ssl, auth=True)
             self.bytes_sent = self.write(self._reset)

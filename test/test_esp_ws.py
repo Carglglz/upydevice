@@ -8,7 +8,7 @@ import os
 
 _ESPDEV_WS = '192.168.1.40'
 _PASSW = 'zj8J9fMb'
-_SSL = True
+_SSL = False
 CHECK = '[\033[92m\u2714\x1b[0m]'
 XF = '[\u001b[31;1m\u2718\u001b[0m]'
 
@@ -29,6 +29,11 @@ handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
 # INIT DEV
+
+
+def test_wss(use_ssl):
+    global _SSL
+    _SSL = use_ssl
 
 
 def test_devname(devname):
@@ -78,10 +83,6 @@ def do_fail(test_name):
     log.error('{} TEST: {}'.format(test_name, XF))
 
 
-# BLINK TEST
-_ESP_LED = 13
-
-
 def test_platform():
     log.info('Running WebSocketDevice test...')
     log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
@@ -91,6 +92,10 @@ def test_platform():
 
 def test_blink_led():
     TEST_NAME = 'BLINK LED'
+    if dev.dev_platform == 'esp8266':
+        _ESP_LED = 2
+    elif dev.dev_platform == 'esp32':
+        _ESP_LED = 13
     dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
     for i in range(2):
         dev.cmd('led.on();print("LED: ON")')
