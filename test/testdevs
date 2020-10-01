@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+import subprocess
+
+print("Testing devices..")
+print("Pyboard SerialDevice Test:")
+subprocess.call("upydev pytest -G PYBS -f test_pyboard.py", shell=True)
+print("Esp32/8266 WebSocketDevice Test:")
+subprocess.call("upydev pytest -@ esp_ecg -f test_esp_ws.py", shell=True)
+print("Done!")

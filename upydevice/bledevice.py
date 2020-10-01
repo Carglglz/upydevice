@@ -675,6 +675,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                  rssi=None, log=None):
         super().__init__(scan_dev, init=init, name=name, lenbuff=lenbuff,
                          rssi=rssi, log=log)
+        self.dev_class = 'WIRELESS'
         self.appearance = 0
         self.appearance_tag = 'UNKNOWN'
         self.manufacturer = 'UNKNOWN'
@@ -696,6 +697,17 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
         self.batt_power_state = {'Charging': 'Unknown', 'Discharging': 'Unknown',
                                  'Level': 'Unknown', 'Present': 'Unknown'}
         self.get_batt_power_state()
+
+    def __repr__(self):
+        # if self.dev_platform or self.name:
+        #     return 'BleDevice @ {}, Type: {}, Class: {}'.format(self.UUID,
+        #                                                            self.dev_platform,
+        #                                                            self.dev_class)
+        # else:
+        return 'BleDevice @ {}, Type: {} , Class: {}, RSSI: {} dBm'.format(self.UUID,
+                                                     self.name,
+                                                     self.dev_class,
+                                                     self.get_RSSI())
 
     def read_char_metadata(self):
         for serv in self.services_rsum.keys():
@@ -1023,3 +1035,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                     print("{}: {}".format(field, val))
                 else:
                     return "{}: {}".format(field, val)
+
+
+class BleDevice(BLE_DEVICE):
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)

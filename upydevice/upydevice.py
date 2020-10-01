@@ -27,12 +27,12 @@ def check_device_type(dev_address):
     else:
         pass
 
-
-def init_dev_from_address(dev_address, password=None, **kargs):
+def Device(dev_address, password=None, **kargs):
+    """Returns Device class depending on dev_address type"""
     dev_type = check_device_type(dev_address)
     if dev_type == 'SerialDevice':
-        return SERIAL_DEVICE(dev_address, **kargs)
+        return SerialDevice(dev_address, **kargs)
     if dev_type == 'WebSocketDevice':
-        return WS_DEVICE(dev_address, password, **kargs)
+        return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
-        return BLE_DEVICE(dev_address, **kargs)
+        return BleDevice(dev_address, **kargs)

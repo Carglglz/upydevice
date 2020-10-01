@@ -5,11 +5,25 @@ import multiprocessing
 import shlex
 import subprocess
 from array import array
-from upydevice import wsclient, protocol
+from upydevice import wsclient, wsprotocol
 try:
     from upydev import __path__ as CA_PATH
 except Exception as e:
     pass
+
+
+class DeviceException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.message = args[0]
+        else:
+            self.message = None
+
+    def __str__(self):
+        if self.message:
+            return '[DeviceError]:\n{0} '.format(self.message)
+        else:
+            return 'DeviceError has been raised'
 
 
 class BASE_WS_DEVICE:
@@ -33,6 +47,7 @@ class BASE_WS_DEVICE:
         self.platform = None
         self.connected = False
         self.repl_CONN = self.connected
+        self._ssl = ssl
         if init:
             if not ssl:
                 self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
@@ -56,8 +71,8 @@ class BASE_WS_DEVICE:
         self.connected = False
         self.repl_CONN = self.connected
 
-    def connect(self):
-        self.open_wconn()
+    def connect(self, **kargs):
+        self.open_wconn(**kargs)
 
     def disconnect(self):
         self.close_wconn()
@@ -88,7 +103,7 @@ class BASE_WS_DEVICE:
                 self._flush += data
             except socket.timeout as e:
                 break
-            except protocol.NoDataException as e:
+            except wsprotocol.NoDataException as e:
                 break
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False, long_string=False):
@@ -128,19 +143,21 @@ class BASE_WS_DEVICE:
         if rtn_resp:
             return self.output
 
-    def cmd(self, cmd, silent=False, rtn=False, ssl=False, long_string=False):
+    def cmd(self, cmd, silent=False, rtn=False, long_string=False):
+        disconnect_on_end = not self.connected
         if not self.connected:
-            self.open_wconn(ssl=ssl, auth=True)
+            self.open_wconn(ssl=self._ssl, auth=True)
         self.wr_cmd(cmd, silent=True, long_string=long_string)
         if self.connected:
-            self.close_wconn()
+            if disconnect_on_end:
+                self.close_wconn()
         self.get_output()
         if not silent:
             print(self.response)
         if rtn:
             return self.output
 
-    def reset(self, silent=False, ssl=False):
+    def reset(self, silent=False):
         if not silent:
             print('Rebooting device...')
         if self.connected:
@@ -149,7 +166,7 @@ class BASE_WS_DEVICE:
             time.sleep(1)
             while True:
                 try:
-                    self.open_wconn()
+                    self.open_wconn(ssl=self._ssl, auth=True)
                     self.wr_cmd(self._banner, silent=True)
                     break
                 except Exception as e:
@@ -157,7 +174,7 @@ class BASE_WS_DEVICE:
             if not silent:
                 print('Done!')
         else:
-            self.open_wconn(ssl=ssl, auth=True)
+            self.open_wconn(ssl=self._ssl, auth=True)
             self.bytes_sent = self.write(self._reset)
             self.close_wconn()
             if not silent:
@@ -233,6 +250,32 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 self.wr_cmd("import sys; sys.platform", silent=True)
             self.dev_platform = self.output
             self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
+
+    def __repr__(self):
+        disconnect_on_end = False
+        if not self.connected:
+            disconnect_on_end = True
+            self.connect()
+        repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+        (self.dev_platform, self._release,
+         self._version, self._machine) = self.wr_cmd(repr_cmd,
+                                                     silent=True,
+                                                     rtn_resp=True)
+        fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+        if disconnect_on_end:
+            self.disconnect()
+        if self._ssl:
+            return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}'.format(self.ip,
+                                                                               self.port,
+                                                                               self.dev_platform,
+                                                                               self.dev_class,
+                                                                               fw_str)
+        else:
+            return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}'.format(self.ip,
+                                                                              self.port,
+                                                                              self.dev_platform,
+                                                                              self.dev_class,
+                                                                              fw_str)
 
     def readline(self):
         self.ws.sock.settimeout(None)
@@ -448,17 +491,29 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 temp_dict['u'] = units
             self.datalog = temp_dict
 
-    def cmd(self, cmd, silent=False, rtn=False, ssl=False, nb_queue=None,
+    def cmd(self, cmd, silent=False, rtn=True, rtn_resp=False, nb_queue=None,
             long_string=False):
+        disconnect_on_end = not self.connected
         if not self.connected:
-            self.open_wconn(ssl=ssl, auth=True)
-        self.wr_cmd(cmd, silent=True, long_string=long_string)
+            self.open_wconn(ssl=self._ssl, auth=True)
+        self.wr_cmd(cmd, rtn=rtn, silent=True, long_string=long_string)
         if self.connected:
-            self.close_wconn()
-        self.get_output()
+            if disconnect_on_end:
+                self.close_wconn()
         if not silent:
-            print(self.response)
-        if rtn:
+            if self.response != '\n' and self.response != '':
+                try:
+                    if self._traceback.decode() in self.response:
+                        raise DeviceException(self.response)
+                    else:
+                        print(self.response)
+                except Exception as e:
+                    print(e)
+                    self.response = ''
+                    self.output = ''
+            else:
+                self.response = ''
+        if rtn_resp:
             return self.output
         if nb_queue is not None:
             nb_queue.put((self.output), block=False)
@@ -475,8 +530,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.dev_process_raw.start()
         else:
             self.dev_process_raw = multiprocessing.Process(
-                target=self.cmd, args=(command, silent, False, False,
-                                          self.output_queue, long_string))
+                target=self.cmd, args=(command, silent, rtn, rtn_resp,
+                                       self.output_queue, long_string))
             self.dev_process_raw.start()
 
     def get_opt(self):
@@ -484,3 +539,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.output = self.output_queue.get(block=False)
         except Exception:
             pass
+
+
+class WebSocketDevice(WS_DEVICE):
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)

@@ -9,6 +9,20 @@ import glob
 import sys
 
 
+class DeviceException(Exception):
+    def __init__(self, *args):
+        if args:
+            self.message = args[0]
+        else:
+            self.message = None
+
+    def __str__(self):
+        if self.message:
+            return '[DeviceError]:\n{0} '.format(self.message)
+        else:
+            return 'DeviceError has been raised'
+
+
 # https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
 def serial_ports():
     """ Lists serial port names
@@ -132,7 +146,8 @@ class BASE_SERIAL_DEVICE:
 
 
 class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
-    def __init__(self, serial_port, baudrate=115200, name=None, dev_platf=None, autodetect=False):
+    def __init__(self, serial_port, baudrate=115200, name=None, dev_platf=None,
+                 autodetect=False, init=True):
         super().__init__(serial_port=serial_port, baudrate=baudrate)
         self.dev_class = 'SERIAL'
         self.dev_platform = dev_platf
@@ -158,6 +173,19 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.cmd("import sys; sys.platform", silent=True)
             self.dev_platform = self.output
             self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
+
+    def __repr__(self):
+        repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+        (self.dev_platform, self._release,
+         self._version, self._machine) = self.cmd(repr_cmd,
+                                                  silent=True,
+                                                  rtn_resp=True)
+
+        fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}'.format(self.serial_port,
+                                                                   self.dev_platform,
+                                                                   self.dev_class,
+                                                                   fw_str)
 
     def flush_conn(self):
         flushed = 0
@@ -236,7 +264,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         if not silent:
             if self.response != '\n' and self.response != '':
                 if pipe is None:
-                    print(self.response)
+                    try:
+                        if self._traceback.decode() in self.response:
+                            raise DeviceException(self.response)
+                        else:
+                            print(self.response)
+                    except Exception as e:
+                        print(e)
+                        self.response = ''
             else:
                 self.response = ''
         if rtn:
@@ -443,3 +478,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.output = self.output_queue.get(block=False)
         except Exception:
             pass
+
+
+class SerialDevice(SERIAL_DEVICE):
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
