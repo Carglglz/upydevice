@@ -53,9 +53,22 @@ def serial_ports():
     return result
 
 
+def get_serial_port_data(serialport):
+    serial_ports = serial.tools.list_ports.comports()
+    for port in serial_ports:
+        if port.device == serialport:
+            return (port.description, port.manufacturer)
+
+    print('Port Not Found in : {}'.format([port.device for port in serial_ports]))
+
+
+def list_comp_devices():
+    serial_ports = serial.tools.list_ports.comports()
+    return [port.device for port in serial_ports if port.vid]
+
+
 class BASE_SERIAL_DEVICE:
     def __init__(self, serial_port, baudrate):
-        self.serial = serial.Serial(serial_port, baudrate)
         self.bytes_sent = 0
         self.buff = b''
         self._kbi = '\x03'
@@ -66,6 +79,24 @@ class BASE_SERIAL_DEVICE:
         self.output = None
         self.wr_cmd = self.cmd
         self.prompt = b'>>> '
+        self.dev_description, self.manufacturer = self._get_serial_port_data(serial_port)
+        self.serial = serial.Serial(serial_port, baudrate)
+
+    def _get_serial_port_data(self, serialport):
+        serial_port_found = False
+        for port in serial.tools.list_ports.comports():
+            if port.device == serialport:
+                serial_port_found = True
+                return (port.description, port.manufacturer)
+
+        if not serial_port_found:
+            serialport = serialport.replace('tty', 'cu')
+        for port in serial.tools.list_ports.comports():
+            if port.device == serialport:
+                serial_port_found = True
+                return (port.description, port.manufacturer)
+
+        return ('Unkown', 'Unkown')
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False, rtn_resp=False):
         self.response = ''
@@ -182,10 +213,13 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
                                                   rtn_resp=True)
 
         fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
-        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}'.format(self.serial_port,
+        desc_str = '{}, Manufacturer: {})'.format(self.dev_description,
+                                                  self.manufacturer)
+        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}\n({}'.format(self.serial_port,
                                                                    self.dev_platform,
                                                                    self.dev_class,
-                                                                   fw_str)
+                                                                   fw_str,
+                                                                   desc_str)
 
     def flush_conn(self):
         flushed = 0

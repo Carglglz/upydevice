@@ -1,4 +1,4 @@
-from upydevice import Device, upy_code
+from upydevice import Device, upy_code, get_serial_port_data
 import unittest
 import time
 from upydevice.phantom import pyb_LED, pyb_Timer
@@ -41,7 +41,6 @@ log = logging.getLogger('pytest')
 
 
 # INIT DEV
-
 
 def test_devname(devname):
     global dev, log

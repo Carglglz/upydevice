@@ -27,9 +27,6 @@ handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
 # INIT DEV
-dev = Device(_ESPDEV_SERIAL, autodetect=True)
-extra = {'dev': dev.dev_platform.upper()}
-log = logging.LoggerAdapter(log, extra)
 
 
 def test_devname(devname):
@@ -51,7 +48,6 @@ def test_devname(devname):
         dev = Device(_ESPDEV_SERIAL, init=True, autodetect=True)
 
     else:
-
         dev = Device(dev_port, baudrate=dev_baud, init=True, autodetect=True)
 
     extra = {'dev': dev.dev_platform.upper()}
