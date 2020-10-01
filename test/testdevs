@@ -6,6 +6,8 @@ print("Testing devices..")
 print("Pyboard SerialDevice Test:")
 subprocess.call("upydev pytest -G PYBS -f test_pyboard.py", shell=True)
 print("Esp32/8266 WebSocketDevice Test:")
-subprocess.call("upydev pytest -G UPY_G -devs esp_ecg esp_solar -f test_esp_ws.py",
-                 shell=True)
+subprocess.call("upydev pytest -@ esp_solar -f test_esp_ws.py",
+                shell=True)
+subprocess.call("upydev pytest -f test_esp_ws.py",
+                shell=True)
 print("Done!")
