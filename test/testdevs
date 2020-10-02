@@ -12,4 +12,6 @@ subprocess.call("upydev pytest -f test_esp_ws.py",
                 shell=True)
 subprocess.call("upydev pytest -@ bledev -f test_esp_ble.py",
                 shell=True)
+subprocess.call("upydev pytest -@ sdev -f test_esp_serial.py",
+                shell=True)
 print("Done!")

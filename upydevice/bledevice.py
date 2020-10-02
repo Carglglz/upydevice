@@ -155,17 +155,19 @@ class BASE_BLE_DEVICE:
             if self.log or log:
                 print("Disconnected successfully")
 
-    def connect(self, n_tries=3, show_servs=False, debug=False):
+    def connect(self, n_tries=5, show_servs=False, debug=False):
         self.loop.run_until_complete(self.connect_client(n_tries=n_tries,
                                                          debug=debug))
         self.get_services(log=show_servs)
 
     def is_connected(self):
-        return self.loop.run_until_complete(self.ble_client.is_connected())
+        self.connected = self.loop.run_until_complete(self.ble_client.is_connected())
+        return self.connected
 
     def disconnect(self, log=False, timeout=None):
-        self.loop.run_until_complete(self.disconnect_client(log=log,
-                                                            timeout=timeout))
+        if self.connected:
+            self.loop.run_until_complete(self.disconnect_client(log=log,
+                                                                timeout=timeout))
 
     def set_disconnected_callback(self, callback):
         self.ble_client.set_disconnected_callback(callback)
@@ -744,7 +746,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                                                       rtn_resp=True)
 
             fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
-            return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n({}, RSSI: {} dBm)'.format(self.UUID,
+            return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n(Local Name: {}, RSSI: {} dBm)'.format(self.UUID,
                                                          self.dev_platform,
                                                          self.dev_class,
                                                          fw_str,

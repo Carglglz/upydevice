@@ -6,6 +6,7 @@ import serial.tools.list_ports  # BUG: This makes pyinstaller to fail
 import multiprocessing
 from array import array
 import glob
+from binascii import hexlify
 import sys
 
 
@@ -53,13 +54,20 @@ def serial_ports():
     return result
 
 
-def get_serial_port_data(serialport):
+def get_serial_port_data(serialport, debug=False):
     serial_ports = serial.tools.list_ports.comports()
-    for port in serial_ports:
-        if port.device == serialport:
-            return (port.description, port.manufacturer)
+    if not debug:
+        for port in serial_ports:
+            if port.device == serialport:
+                return (port.description, port.manufacturer)
 
-    print('Port Not Found in : {}'.format([port.device for port in serial_ports]))
+        print('Port Not Found in : {}'.format([port.device for port in serial_ports]))
+    else:
+        for port in serial_ports:
+            if port.device == serialport:
+                return (port)
+
+        print('Port Not Found in : {}'.format([port.device for port in serial_ports]))
 
 
 def list_comp_devices():
@@ -79,7 +87,7 @@ class BASE_SERIAL_DEVICE:
         self.output = None
         self.wr_cmd = self.cmd
         self.prompt = b'>>> '
-        self.dev_description, self.manufacturer = self._get_serial_port_data(serial_port)
+        self.dev_description, self.manufacturer, self._hwid = self._get_serial_port_data(serial_port)
         self.serial = serial.Serial(serial_port, baudrate)
 
     def _get_serial_port_data(self, serialport):
@@ -87,14 +95,14 @@ class BASE_SERIAL_DEVICE:
         for port in serial.tools.list_ports.comports():
             if port.device == serialport:
                 serial_port_found = True
-                return (port.description, port.manufacturer)
+                return (port.description, port.manufacturer, port.hwid)
 
         if not serial_port_found:
             serialport = serialport.replace('tty', 'cu')
         for port in serial.tools.list_ports.comports():
             if port.device == serialport:
                 serial_port_found = True
-                return (port.description, port.manufacturer)
+                return (port.description, port.manufacturer, port.hwid)
 
         return ('Unkown', 'Unkown')
 
@@ -206,20 +214,25 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
 
     def __repr__(self):
-        repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+        repr_cmd = "import os; from machine import unique_id; \
+        [os.uname().sysname, os.uname().release, os.uname().version, \
+        os.uname().machine, unique_id()]"
         (self.dev_platform, self._release,
-         self._version, self._machine) = self.cmd(repr_cmd,
+         self._version, self._machine, uuid) = self.cmd(repr_cmd,
                                                   silent=True,
                                                   rtn_resp=True)
-
+        vals = hexlify(uuid).decode()
+        self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
         fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
-        desc_str = '{}, Manufacturer: {})'.format(self.dev_description,
-                                                  self.manufacturer)
-        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}\n({}'.format(self.serial_port,
+        dev_str = '(MAC: {})'.format(self._mac)
+        desc_str = '{}, Manufacturer: {}'.format(self.dev_description,
+                                                   self.manufacturer)
+        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                                                                    self.dev_platform,
                                                                    self.dev_class,
                                                                    fw_str,
-                                                                   desc_str)
+                                                                   desc_str,
+                                                                   dev_str)
 
     def flush_conn(self):
         flushed = 0

@@ -5,6 +5,7 @@ import multiprocessing
 import shlex
 import subprocess
 from array import array
+from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 try:
     from upydev import __path__ as CA_PATH
@@ -258,26 +259,35 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if not self.connected:
             disconnect_on_end = True
             self.connect()
-        repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+        repr_cmd = "import os;from machine import unique_id; import network; \
+        [os.uname().sysname, os.uname().release, os.uname().version, \
+        os.uname().machine, unique_id(), network.WLAN(network.STA_IF).status('rssi')]"
         (self.dev_platform, self._release,
-         self._version, self._machine) = self.wr_cmd(repr_cmd,
+         self._version, self._machine, uuid, rssi) = self.wr_cmd(repr_cmd,
                                                      silent=True,
                                                      rtn_resp=True)
+        # uid = self.wr_cmd("from machine import unique_id; unique_id()",
+        #                   silent=True, rtn_resp=True)
+        vals = hexlify(uuid).decode()
+        self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
         fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+        dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
         if disconnect_on_end:
             self.disconnect()
         if self._ssl:
-            return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}'.format(self.ip,
+            return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
                                                                                self.port,
                                                                                self.dev_platform,
                                                                                self.dev_class,
-                                                                               fw_str)
+                                                                               fw_str,
+                                                                               dev_str)
         else:
-            return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}'.format(self.ip,
+            return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
                                                                               self.port,
                                                                               self.dev_platform,
                                                                               self.dev_class,
-                                                                              fw_str)
+                                                                              fw_str,
+                                                                              dev_str)
 
     def readline(self):
         self.ws.sock.settimeout(None)
@@ -541,6 +551,10 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.output = self.output_queue.get(block=False)
         except Exception:
             pass
+
+    def get_RSSI(self):
+        rssi_cmd = "import network;network.WLAN(network.STA_IF).status('rssi')"
+        return self.cmd(rssi_cmd, silent=True, rtn_resp=True)
 
 
 class WebSocketDevice(WS_DEVICE):
