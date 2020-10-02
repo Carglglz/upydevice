@@ -30,6 +30,7 @@ import ast
 from array import array
 import sys
 import traceback
+from binascii import hexlify
 
 
 def ble_scan(log=False):
@@ -442,7 +443,7 @@ class BASE_BLE_DEVICE:
         else:
             await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
         while self.prompt not in self.raw_buff:
-            await asyncio.sleep(0.01, loop=self.loop)
+            await asyncio.sleep(0, loop=self.loop)
         await self.ble_client.stop_notify(self.readables['Nordic UART RX'])
         if rtn_buff:
             return self.raw_buff
@@ -461,7 +462,7 @@ class BASE_BLE_DEVICE:
             await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
         while self.prompt not in self.raw_buff:
             try:
-                await asyncio.sleep(0.01, loop=self.loop)
+                await asyncio.sleep(0, loop=self.loop)
             except KeyboardInterrupt:
                 print('Catch here1')
                 data = bytes(self._kbi, 'utf-8')
@@ -739,17 +740,21 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 
     def __repr__(self):
         if self.connected:
-            repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+            repr_cmd = 'import os;from machine import unique_id;\
+            [os.uname().sysname, os.uname().release, os.uname().version, \
+            os.uname().machine, unique_id()]'
             (self.dev_platform, self._release,
-             self._version, self._machine) = self.cmd(repr_cmd,
+             self._version, self._machine, muuid) = self.cmd(repr_cmd,
                                                       silent=True,
                                                       rtn_resp=True)
-
+            vals = hexlify(muuid).decode()
+            self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
             fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
-            return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n(Local Name: {}, RSSI: {} dBm)'.format(self.UUID,
+            return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n(MAC: {}, Local Name: {}, RSSI: {} dBm)'.format(self.UUID,
                                                          self.dev_platform,
                                                          self.dev_class,
                                                          fw_str,
+                                                         self._mac,
                                                          self.name,
                                                          self.get_RSSI())
         else:
