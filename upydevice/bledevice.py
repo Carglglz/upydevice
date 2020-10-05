@@ -31,6 +31,7 @@ from array import array
 import sys
 import traceback
 from binascii import hexlify
+from .exceptions import DeviceException
 
 
 def ble_scan(log=False):
@@ -46,20 +47,6 @@ def ble_scan(log=False):
 
     loop = asyncio.get_event_loop()
     return loop.run_until_complete(run())
-
-
-class DeviceException(Exception):
-    def __init__(self, *args):
-        if args:
-            self.message = args[0]
-        else:
-            self.message = None
-
-    def __str__(self):
-        if self.message:
-            return '[DeviceError]:\n{0} '.format(self.message)
-        else:
-            return 'DeviceError has been raised'
 
 
 class BASE_BLE_DEVICE:
@@ -732,7 +719,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
             if not init:
                 self.connect(debug=self.log)
             if self.connected:
-                repr_cmd = 'import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
+                repr_cmd = 'import gc;import os; [os.uname().sysname, os.uname().release, os.uname().version, os.uname().machine]'
                 (self.dev_platform, self._release,
                  self._version, self._machine) = self.cmd(repr_cmd,
                                                           silent=True,

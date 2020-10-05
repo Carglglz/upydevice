@@ -8,20 +8,7 @@ from array import array
 import glob
 from binascii import hexlify
 import sys
-
-
-class DeviceException(Exception):
-    def __init__(self, *args):
-        if args:
-            self.message = args[0]
-        else:
-            self.message = None
-
-    def __str__(self):
-        if self.message:
-            return '[DeviceError]:\n{0} '.format(self.message)
-        else:
-            return 'DeviceError has been raised'
+from .exceptions import DeviceException, DeviceNotFound
 
 
 # https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
@@ -104,7 +91,7 @@ class BASE_SERIAL_DEVICE:
                 serial_port_found = True
                 return (port.description, port.manufacturer, port.hwid)
 
-        return ('Unkown', 'Unkown')
+        raise DeviceNotFound('Serial Port: {} is not available'.format(serialport))
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False, rtn_resp=False):
         self.response = ''
@@ -139,7 +126,7 @@ class BASE_SERIAL_DEVICE:
         if rtn_resp:
             return self.output
 
-    def reset(self, silent=False):
+    def reset(self, silent=False, reconnect=True):
         self.buff = b''
         if not silent:
             print('Rebooting device...')
@@ -206,12 +193,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
                           'tree', 'du']
         if name is None and self.dev_platform:
-            self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
+            self.name = '{}_{}'.format(
+                self.dev_platform, self.serial_port.split('/')[-1])
         if autodetect:
             self.cmd('\r', silent=True)
-            self.cmd("import sys; sys.platform", silent=True)
+            self.cmd("import gc;import sys; sys.platform", silent=True)
             self.dev_platform = self.output
-            self.name = '{}_{}'.format(self.dev_platform, self.serial_port.split('/')[-1])
+            self.name = '{}_{}'.format(
+                self.dev_platform, self.serial_port.split('/')[-1])
 
     def __repr__(self):
         repr_cmd = "import os; from machine import unique_id; \
@@ -226,13 +215,14 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
         dev_str = '(MAC: {})'.format(self._mac)
         desc_str = '{}, Manufacturer: {}'.format(self.dev_description,
-                                                   self.manufacturer)
-        return 'SerialDevice @ {}, Type: {}, Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
-                                                                   self.dev_platform,
-                                                                   self.dev_class,
-                                                                   fw_str,
-                                                                   desc_str,
-                                                                   dev_str)
+                                                 self.manufacturer)
+        return 'SerialDevice @ {}, Type: {}, \
+Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
+                                        self.dev_platform,
+                                        self.dev_class,
+                                        fw_str,
+                                        desc_str,
+                                        dev_str)
 
     def flush_conn(self):
         flushed = 0

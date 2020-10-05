@@ -4,6 +4,7 @@ from .websocketdevice import *
 from .devgroup import *
 from .decorators import *
 from .bledevice import *
+from .exceptions import *
 from ipaddress import ip_address
 
 
@@ -27,12 +28,17 @@ def check_device_type(dev_address):
     else:
         pass
 
+
 def Device(dev_address, password=None, **kargs):
     """Returns Device class depending on dev_address type"""
     dev_type = check_device_type(dev_address)
     if dev_type == 'SerialDevice':
-        return SerialDevice(dev_address, **kargs)
+        pop_args = ['ssl', 'auth', 'capath']
+        fkargs = {k: v for k, v in kargs.items() if k not in pop_args}
+        return SerialDevice(dev_address, **fkargs)
     if dev_type == 'WebSocketDevice':
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
-        return BleDevice(dev_address, **kargs)
+        pop_args = ['ssl', 'auth', 'capath']
+        fkargs = {k: v for k, v in kargs.items() if k not in pop_args}
+        return BleDevice(dev_address, **fkargs)

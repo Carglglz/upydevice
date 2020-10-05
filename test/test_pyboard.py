@@ -1,7 +1,7 @@
-from upydevice import Device, upy_code, get_serial_port_data
+from upydevice import Device, upy_code
 import unittest
 import time
-from upydevice.phantom import pyb_LED, pyb_Timer
+from upydevice.phantom import pyb_LED, pyb_Timer, pyb_Servo
 import logging
 import sys
 import pytest
@@ -98,7 +98,8 @@ def test_blink_leds():
             dev.cmd('pyb.LED({}).on();LED=True;print("LED: ON")'.format(led))
             dev.cmd('pyb.LED({}).off();LED=False;print("LED: OFF")'.format(led))
     try:
-        assert dev.cmd('not LED', rtn_resp=True, silent=True), 'LED is on, should be off'
+        assert dev.cmd('not LED', rtn_resp=True,
+                       silent=True), 'LED is on, should be off'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -195,10 +196,28 @@ def test_phantom_timer():
         raise e
 
 
+# SERVO TEST
+def test_servo():
+    TEST_NAME = 'SERVO X2'
+    pybservo = pyb_Servo(dev, name='s2', number=2, init=True)
+    pybservo.angle(90)
+    time.sleep(1)
+    pybservo.angle(-60, 3000)
+    time.sleep(3.5)
+    s2_att = dev.cmd("dir(s2)", silent=True, rtn_resp=True)
+    try:
+        assert isinstance(s2_att, list), 'Expected a list, receviced : {}'.format(type(s2_att))
+        do_pass(TEST_NAME)
+        print('Test Result: ', end='')
+    except Exception as e:
+        do_fail(TEST_NAME)
+        print('Test Result: ', end='')
+        raise e
+
+
 # OS TEST
 
 # Listdir
-
 def test_os_list_dir():
     TEST_NAME = 'OS LIST DIR'
     log.info('{} TEST: {}'.format(TEST_NAME, "import os;os.listdir()"))

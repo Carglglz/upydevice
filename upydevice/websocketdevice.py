@@ -11,20 +11,7 @@ try:
     from upydev import __path__ as CA_PATH
 except Exception as e:
     pass
-
-
-class DeviceException(Exception):
-    def __init__(self, *args):
-        if args:
-            self.message = args[0]
-        else:
-            self.message = None
-
-    def __str__(self):
-        if self.message:
-            return '[DeviceError]:\n{0} '.format(self.message)
-        else:
-            return 'DeviceError has been raised'
+from .exceptions import DeviceException
 
 
 class BASE_WS_DEVICE:
@@ -158,24 +145,25 @@ class BASE_WS_DEVICE:
         if rtn:
             return self.output
 
-    def reset(self, silent=False):
+    def reset(self, silent=False, reconnect=True):
         if not silent:
             print('Rebooting device...')
         if self.connected:
             self.bytes_sent = self.write(self._reset)
             self.close_wconn()
-            time.sleep(1)
-            while True:
-                try:
-                    self.open_wconn(ssl=self._ssl, auth=True)
-                    self.wr_cmd(self._banner, silent=True)
-                    break
-                except Exception as e:
-                    time.sleep(0.5)
-                    self.ws._close()
+            if reconnect:
+                time.sleep(1)
+                while True:
+                    try:
+                        self.open_wconn(ssl=self._ssl, auth=True)
+                        self.wr_cmd(self._banner, silent=True)
+                        break
+                    except Exception as e:
+                        time.sleep(0.5)
+                        self.ws._close()
+                self.cmd('')
             if not silent:
                 print('Done!')
-            self.cmd('')
         else:
             self.open_wconn(ssl=self._ssl, auth=True)
             self.bytes_sent = self.write(self._reset)
@@ -194,8 +182,10 @@ class BASE_WS_DEVICE:
                 pipe(traceback, std='stderr')
             else:
                 self.wr_cmd(self._kbi, silent=silent)
+                self.cmd('')
         else:
             self.cmd(self._kbi, silent=silent)
+            self.cmd('')
 
     def banner(self, pipe=None):
         self.wr_cmd(self._banner, silent=True, long_string=True)
@@ -248,9 +238,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
         if autodetect:
             if not self.connected:
-                self.cmd("import sys; sys.platform", silent=True)
+                self.cmd("import gc;import sys; sys.platform", silent=True)
             else:
-                self.wr_cmd("import sys; sys.platform", silent=True)
+                self.wr_cmd("import gc;mport sys; sys.platform", silent=True)
             self.dev_platform = self.output
             self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
 
@@ -264,8 +254,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         os.uname().machine, unique_id(), network.WLAN(network.STA_IF).status('rssi')]"
         (self.dev_platform, self._release,
          self._version, self._machine, uuid, rssi) = self.wr_cmd(repr_cmd,
-                                                     silent=True,
-                                                     rtn_resp=True)
+                                                                 silent=True,
+                                                                 rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
