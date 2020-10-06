@@ -25,8 +25,11 @@ def check_device_type(dev_address):
                 return 'BleDevice'
             except Exception as e:
                 print('uuid malformed')
+        elif ':' in dev_address:
+            return 'BleDevice'
     else:
-        pass
+        if hasattr(dev_address, 'address') and hasattr(dev_address, 'details'):
+            return 'BleDevice'
 
 
 def Device(dev_address, password=None, **kargs):

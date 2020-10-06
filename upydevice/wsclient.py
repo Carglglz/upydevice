@@ -14,6 +14,7 @@ import os
 import io
 
 from upydevice.wsprotocol import Websocket, urlparse
+from upydevice.exceptions import DeviceNotFound
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -47,6 +48,7 @@ def connect(uri, password, silent=True, auth=False, capath=None):
         LOGGER.debug("open connection %s:%s", uri.hostname, uri.port)
 
     sock = socket.socket()
+    sock.settimeout(10)
     addr = socket.getaddrinfo(uri.hostname, uri.port)
     if uri.protocol == 'wss':
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,9 +66,18 @@ def connect(uri, password, silent=True, auth=False, capath=None):
             context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
             # sock = context.wrap_socket(sock, server_hostname=hostname)
             sock = context.wrap_socket(sock)
-        sock.connect(addr[0][-1])
+        try:
+            sock.connect(addr[0][-1])
+        except socket.timeout as e:
+            print(e)
+            return
     else:
-        sock.connect(addr[0][4])
+        try:
+            sock.connect(addr[0][4])
+        except socket.timeout as e:
+            print(e)
+            return
+
 
     def send_header(header):
         # if __debug__: LOGGER.debug(str(header), *args)

@@ -62,6 +62,10 @@ def list_comp_devices():
     return [port.device for port in serial_ports if port.vid]
 
 
+def serial_scan():
+    return list_comp_devices()
+
+
 class BASE_SERIAL_DEVICE:
     def __init__(self, serial_port, baudrate):
         self.bytes_sent = 0
@@ -91,7 +95,7 @@ class BASE_SERIAL_DEVICE:
                 serial_port_found = True
                 return (port.description, port.manufacturer, port.hwid)
 
-        raise DeviceNotFound('Serial Port: {} is not available'.format(serialport))
+        raise DeviceNotFound('SerialDevice @ {} is not available'.format(serialport))
 
     def cmd(self, cmd, silent=False, rtn=True, long_string=False, rtn_resp=False):
         self.response = ''
@@ -201,6 +205,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.dev_platform = self.output
             self.name = '{}_{}'.format(
                 self.dev_platform, self.serial_port.split('/')[-1])
+        self.cmd('\r', silent=True)
 
     def __repr__(self):
         repr_cmd = "import os; from machine import unique_id; \

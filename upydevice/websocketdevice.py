@@ -5,13 +5,74 @@ import multiprocessing
 import shlex
 import subprocess
 from array import array
+import netifaces
+import nmap
+import sys
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 try:
     from upydev import __path__ as CA_PATH
 except Exception as e:
     pass
-from .exceptions import DeviceException
+from .exceptions import DeviceException, DeviceNotFound
+
+
+def get_ssid():
+    if sys.platform == "linux" or sys.platform == "linux2":
+        ssid = ''
+        try:
+            output = subprocess.check_output(['sudo', 'iwgetid'])
+            ssid = output.split('"')[1]
+        except Exception as e:
+            print(e)
+        return ssid
+    elif sys.platform == "darwin":
+        # MAC OS X
+        scanoutput = subprocess.check_output(["airport", "-I"])
+        wifi_info = [data.strip()
+                     for data in scanoutput.decode('utf-8').split('\n')]
+        wifi_info_dic = {data.split(':')[0]: data.split(
+            ':')[1].strip() for data in wifi_info[:-1]}
+        return wifi_info_dic['SSID']
+
+
+# find devices in wlan with port 8266/8833 open/listening
+def net_scan(n=None, debug=False, ssl=False):
+    WebREPL_port = 8266
+    if ssl:
+        WebREPL_port = 8833
+    if debug:
+        print('Scanning WLAN {} for upy devices...'.format(get_ssid()))
+    gws = netifaces.gateways()
+    host_range = "{}-255".format(gws['default'][netifaces.AF_INET][0])
+    nmScan = nmap.PortScanner()
+    n_scans = 1
+    netdevices = []
+    if n is not None:
+        n_scans = n
+    for i in range(n_scans):
+        if debug:
+            print('SCAN # {}'.format(i))
+        my_scan = nmScan.scan(
+            hosts=host_range, arguments='-p {}'.format(WebREPL_port))
+        hosts_list = [{'host': x, 'state': nmScan[x]['status']['state'], 'port':list(
+            nmScan[x]['tcp'].keys())[0], 'status':nmScan[x]['tcp'][WebREPL_port]['state']} for x in nmScan.all_hosts()]
+        devs = [host for host in hosts_list if host['status'] == 'open']
+        if debug:
+            print('FOUND {} device/s :'.format(len(devs)))
+        N = 1
+        if debug:
+            for dev in devs:
+                try:
+                    print('DEVICE {}: , IP: {} , STATE: {}, PORT: {}, STATUS: {}'.format(
+                        N, dev['host'], dev['state'], dev['port'], dev['status']))
+                    N += 1
+                except Exception as e:
+                    pass
+        for dev in devs:
+            if dev['host'] not in netdevices:
+                netdevices.append(dev['host'])
+    return netdevices
 
 
 class BASE_WS_DEVICE:
@@ -38,24 +99,44 @@ class BASE_WS_DEVICE:
         self._ssl = ssl
         if init:
             if not ssl:
-                self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
+                self._uriprotocol = 'ws'
+                self.ws = wsclient.connect(
+                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
             else:
                 self.port = 8833
-                self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
-            self.connected = True
-            self.repl_CONN = self.connected
+                self._uriprotocol = 'wss'
+                self.ws = wsclient.connect(
+                    'wss://{}:{}'.format(self.ip, self.port), self.pswd,
+                    auth=auth, capath=capath)
+            if self.ws:
+                self.connected = True
+                self.repl_CONN = self.connected
+            else:
+                raise DeviceNotFound("WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
 
     def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
-        if not ssl:
-            self.ws = wsclient.connect('ws://{}:{}'.format(self.ip, self.port), self.pswd)
-        else:
-            self.port = 8833
-            self.ws = wsclient.connect('wss://{}:{}'.format(self.ip, self.port), self.pswd, auth=auth, capath=capath)
-        self.connected = True
-        self.repl_CONN = self.connected
+        try:
+            if not ssl:
+                self._uriprotocol = 'ws'
+                self.ws = wsclient.connect(
+                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
+            else:
+                self._uriprotocol = 'wss'
+                self.port = 8833
+                self.ws = wsclient.connect(
+                    'wss://{}:{}'.format(self.ip, self.port),
+                    self.pswd, auth=auth, capath=capath)
+            if self.ws:
+                self.connected = True
+                self.repl_CONN = self.connected
+            else:
+                raise DeviceNotFound("WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+        except Exception as e:
+            print(e)
 
     def close_wconn(self):
-        self.ws.close()
+        if self.ws:
+            self.ws.close()
         self.connected = False
         self.repl_CONN = self.connected
 
@@ -94,7 +175,8 @@ class BASE_WS_DEVICE:
             except wsprotocol.NoDataException as e:
                 break
 
-    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False, long_string=False):
+    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
+               long_string=False):
         self.output = None
         self.response = ''
         self.buff = b''
@@ -113,9 +195,11 @@ class BASE_WS_DEVICE:
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+            self.response = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+            self.response = self.buff.replace(b'\r\n', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if not silent:
             if self.response != '\n' and self.response != '':
                 print(self.response)
@@ -235,14 +319,16 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
                           'tree', 'du']
         if name is None and self.dev_platform:
-            self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
+            self.name = '{}_{}'.format(
+                self.dev_platform, self.ip.split('.')[-1])
         if autodetect:
             if not self.connected:
                 self.cmd("import gc;import sys; sys.platform", silent=True)
             else:
                 self.wr_cmd("import gc;mport sys; sys.platform", silent=True)
             self.dev_platform = self.output
-            self.name = '{}_{}'.format(self.dev_platform, self.ip.split('.')[-1])
+            self.name = '{}_{}'.format(
+                self.dev_platform, self.ip.split('.')[-1])
 
     def __repr__(self):
         disconnect_on_end = False
@@ -266,18 +352,18 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.disconnect()
         if self._ssl:
             return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                               self.port,
-                                                                               self.dev_platform,
-                                                                               self.dev_class,
-                                                                               fw_str,
-                                                                               dev_str)
+                                                                                                 self.port,
+                                                                                                 self.dev_platform,
+                                                                                                 self.dev_class,
+                                                                                                 fw_str,
+                                                                                                 dev_str)
         else:
             return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                              self.port,
-                                                                              self.dev_platform,
-                                                                              self.dev_class,
-                                                                              fw_str,
-                                                                              dev_str)
+                                                                                                self.port,
+                                                                                                self.dev_platform,
+                                                                                                self.dev_class,
+                                                                                                fw_str,
+                                                                                                dev_str)
 
     def readline(self):
         self.ws.sock.settimeout(None)
@@ -335,13 +421,16 @@ class WS_DEVICE(BASE_WS_DEVICE):
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
         if dlog:
-            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+            self.data_buff = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+            self.response = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+            self.response = self.buff.replace(b'\r\n', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
         if not silent:
             if self.response != '\n' and self.response != '':
                 if pipe is None:
@@ -382,7 +471,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 if pipe:
                     cmd_filt = bytes(inp + '\r\n', 'utf-8')
                     self.message = self.message.replace(cmd_filt, b'', 1)
-                msg = self.message.replace(b'\r', b'').decode('utf-8', 'ignore')
+                msg = self.message.replace(
+                    b'\r', b'').decode('utf-8', 'ignore')
                 if 'cat' in inp:
                     if msg.endswith('>>> '):
                         msg = msg.replace('>>> ', '')
@@ -401,10 +491,12 @@ class WS_DEVICE(BASE_WS_DEVICE):
                             if 'Traceback (most' in pipe_out:
                                 self._is_traceback = True
                                 # catch before traceback:
-                                pipe_stdout = pipe_out.split('Traceback (most')[0]
+                                pipe_stdout = pipe_out.split(
+                                    'Traceback (most')[0]
                                 if pipe_stdout != '' and pipe_stdout != '\n':
                                     pipe(pipe_stdout)
-                                pipe_out = 'Traceback (most' + pipe_out.split('Traceback (most')[1]
+                                pipe_out = 'Traceback (most' + \
+                                    pipe_out.split('Traceback (most')[1]
                             if self._is_traceback:
                                 pipe(pipe_out, std='stderr')
                             else:
@@ -488,7 +580,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 fs = int((1/time_out)*1000)
             if fs is not None:
                 temp_dict['fs'] = fs
-                temp_dict['ts'] = [i/temp_dict['fs'] for i in range(len(temp_dict[dvars[0]]))]
+                temp_dict['ts'] = [i/temp_dict['fs']
+                                   for i in range(len(temp_dict[dvars[0]]))]
             if units is not None:
                 temp_dict['u'] = units
             self.datalog = temp_dict
@@ -526,7 +619,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         # do a
         if self.connected:
             self.dev_process_raw = multiprocessing.Process(
-                target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+                target=self.wr_cmd, args=(command, silent, rtn, long_string,
+                                          rtn_resp,
                                           follow, pipe, multiline, dlog,
                                           self.output_queue))
             self.dev_process_raw.start()

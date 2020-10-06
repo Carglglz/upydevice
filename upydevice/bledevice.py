@@ -31,7 +31,7 @@ from array import array
 import sys
 import traceback
 from binascii import hexlify
-from .exceptions import DeviceException
+from .exceptions import DeviceException, DeviceNotFound
 
 
 def ble_scan(log=False):
@@ -146,7 +146,10 @@ class BASE_BLE_DEVICE:
     def connect(self, n_tries=5, show_servs=False, debug=False):
         self.loop.run_until_complete(self.connect_client(n_tries=n_tries,
                                                          debug=debug))
-        self.get_services(log=show_servs)
+        if self.connected:
+            self.get_services(log=show_servs)
+        else:
+            raise DeviceNotFound('BleDevice @ {} is not reachable'.format(self.UUID))
 
     def is_connected(self):
         self.connected = self.loop.run_until_complete(self.ble_client.is_connected())
@@ -726,7 +729,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                                                           rtn_resp=True)
 
     def __repr__(self):
-        if self.connected:
+        if self.connected and 'Nordic UART RX' in self.writeables:
             repr_cmd = 'import os;from machine import unique_id;\
             [os.uname().sysname, os.uname().release, os.uname().version, \
             os.uname().machine, unique_id()]'
@@ -744,8 +747,12 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                                                          self._mac,
                                                          self.name,
                                                          self.get_RSSI())
-        else:
+        elif not self.connected:
             return 'BleDevice @ {}, (Disconnected)'.format(self.UUID)
+        else:
+            return 'BleDevice @ {}, Local Name: {}, RSSI: {} dBm'.format(self.UUID,
+                                                                     self.name,
+                                                                     self.get_RSSI())
 
     def is_reachable(self):
         return self.is_connected()  # Fix if disconnected
