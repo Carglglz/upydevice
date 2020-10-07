@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Pytest with devices
 - `__repr__` that returns device info
+- Raise `DeviceException` on raised Exception in device
+- Raise `DeviceNotFound` after connection attempt fail or if device is not reachable.
+- `ble_scan`, `net_scan`, `serial_scan`, to scan for devices
 ### Fix
 - Base code refactoring
 ## [0.2.4] Unreleased [Github repo]

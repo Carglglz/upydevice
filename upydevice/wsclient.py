@@ -99,21 +99,28 @@ def connect(uri, password, silent=True, auth=False, capath=None):
     )
     send_header('')
     # time.sleep(0.1)
-    header = sock.recv(2048)
-    assert header.startswith(b'HTTP/1.1 101 '), header
-    while b'Password: ' not in header:
+    try:
         header = sock.recv(2048)
 
-    ws = WebsocketClient(sock)
-    ws.send(password+'\r')
-    ws.send('\r')
-    fin, opcode, data = ws.read_frame()
-    if not silent:
-        print(data.replace(b'\r', b'').replace(b'>>> ', b'').decode())
-    ws.sock.settimeout(0.01)
-    while True:
-        try:
-            fin, opcode, data = ws.read_frame()
-        except socket.timeout as e:
-            break
-    return ws
+        assert header.startswith(b'HTTP/1.1 101 '), header
+
+        while b'Password: ' not in header:
+            header = sock.recv(2048)
+
+        ws = WebsocketClient(sock)
+        ws.send(password+'\r')
+        ws.send('\r')
+        fin, opcode, data = ws.read_frame()
+        if not silent:
+            print(data.replace(b'\r', b'').replace(b'>>> ', b'').decode())
+        ws.sock.settimeout(0.01)
+        while True:
+            try:
+                fin, opcode, data = ws.read_frame()
+            except socket.timeout as e:
+                break
+        return ws
+
+    except Exception as e:
+        print(e)
+        return
