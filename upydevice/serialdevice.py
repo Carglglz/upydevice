@@ -204,8 +204,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             self.cmd('\r', silent=True)
             self.cmd("import gc;import sys; sys.platform", silent=True)
             self.dev_platform = self.output
-            self.name = '{}_{}'.format(
-                self.dev_platform, self.serial_port.split('/')[-1])
+            if not self.name:
+                self.name = '{}_{}'.format(
+                    self.dev_platform, self.serial_port.split('/')[-1])
         self.cmd('\r', silent=True)
 
     def __repr__(self):

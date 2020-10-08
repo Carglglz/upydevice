@@ -327,8 +327,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
             else:
                 self.wr_cmd("import gc;import sys; sys.platform", silent=True)
             self.dev_platform = self.output
-            self.name = '{}_{}'.format(
-                self.dev_platform, self.ip.split('.')[-1])
+            if not self.name:
+                self.name = '{}_{}'.format(
+                    self.dev_platform, self.ip.split('.')[-1])
 
     def __repr__(self):
         disconnect_on_end = False
