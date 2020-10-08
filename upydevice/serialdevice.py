@@ -194,6 +194,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         self.repl_CONN = self.connected
         self._is_traceback = False
         self._is_first_line = True
+        self._machine = None
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
                           'tree', 'du']
         if name is None and self.dev_platform:

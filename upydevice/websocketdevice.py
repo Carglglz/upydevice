@@ -325,7 +325,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if not self.connected:
                 self.cmd("import gc;import sys; sys.platform", silent=True)
             else:
-                self.wr_cmd("import gc;mport sys; sys.platform", silent=True)
+                self.wr_cmd("import gc;import sys; sys.platform", silent=True)
             self.dev_platform = self.output
             self.name = '{}_{}'.format(
                 self.dev_platform, self.ip.split('.')[-1])

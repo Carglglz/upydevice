@@ -54,8 +54,8 @@ def test_devname(devname):
     devs = devices.keys()
     # NAME ENTRY POINT
     if devname in devs:
-        dev_baud = devices[devname][0]
-        dev_port = devices[devname][1]
+        dev_port = devices[devname][0]
+        dev_baud = devices[devname][1]
 
     else:
         if devname != 'default':
