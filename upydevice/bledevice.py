@@ -693,7 +693,7 @@ class BASE_BLE_DEVICE:
 
 class BLE_DEVICE(BASE_BLE_DEVICE):
     def __init__(self, scan_dev, init=False, name=None, lenbuff=100,
-                 rssi=None, conn_debug=True, autodetect=False):
+                 rssi=None, conn_debug=False, autodetect=False):
         super().__init__(scan_dev, init=init, name=name, lenbuff=lenbuff,
                          rssi=rssi, conn_debug=conn_debug)
         self.dev_class = 'WIRELESS'
@@ -729,17 +729,19 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                                                           rtn_resp=True)
 
     def __repr__(self):
-        if self.connected and 'Nordic UART RX' in self.writeables:
-            repr_cmd = 'import os;from machine import unique_id;\
+        if self.connected and 'Nordic UART TX' in self.writeables:
+            repr_cmd = 'import sys;import os;from machine import unique_id;\
             [os.uname().sysname, os.uname().release, os.uname().version, \
-            os.uname().machine, unique_id()]'
+            os.uname().machine, unique_id(), sys.implementation.name]'
             (self.dev_platform, self._release,
-             self._version, self._machine, muuid) = self.cmd(repr_cmd,
+             self._version, self._machine, muuid, imp) = self.cmd(repr_cmd,
                                                       silent=True,
                                                       rtn_resp=True)
             vals = hexlify(muuid).decode()
+            imp = imp[0].upper() + imp[1:]
+            imp = imp.replace('p', 'P')
             self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
-            fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+            fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
             return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n(MAC: {}, Local Name: {}, RSSI: {} dBm)'.format(self.UUID,
                                                          self.dev_platform,
                                                          self.dev_class,

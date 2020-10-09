@@ -336,18 +336,20 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if not self.connected:
             disconnect_on_end = True
             self.connect()
-        repr_cmd = "import os;from machine import unique_id; import network; \
+        repr_cmd = "import sys;import os;from machine import unique_id; import network; \
         [os.uname().sysname, os.uname().release, os.uname().version, \
-        os.uname().machine, unique_id(), network.WLAN(network.STA_IF).status('rssi')]"
+        os.uname().machine, unique_id(), sys.implementation.name, network.WLAN(network.STA_IF).status('rssi')]"
         (self.dev_platform, self._release,
-         self._version, self._machine, uuid, rssi) = self.wr_cmd(repr_cmd,
+         self._version, self._machine, uuid, imp, rssi) = self.wr_cmd(repr_cmd,
                                                                  silent=True,
                                                                  rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
+        imp = imp[0].upper() + imp[1:]
+        imp = imp.replace('p', 'P')
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
-        fw_str = 'MicroPython {}; {}'.format(self._version, self._machine)
+        fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
         dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
         if disconnect_on_end:
             self.disconnect()
