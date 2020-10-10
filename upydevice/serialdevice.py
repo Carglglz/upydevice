@@ -57,13 +57,17 @@ def get_serial_port_data(serialport, debug=False):
         print('Port Not Found in : {}'.format([port.device for port in serial_ports]))
 
 
-def list_comp_devices():
+def list_comp_devices(debug_info=False):
     serial_ports = serial.tools.list_ports.comports()
-    return [port.device for port in serial_ports if port.vid]
+    if not debug_info:
+        return [port.device for port in serial_ports if port.vid]
+    else:
+        return {port.device: [port.description, port.manufacturer]
+                for port in serial_ports if port.vid}
 
 
-def serial_scan():
-    return list_comp_devices()
+def serial_scan(debug_info=False):
+    return list_comp_devices(debug_info=debug_info)
 
 
 class BASE_SERIAL_DEVICE:

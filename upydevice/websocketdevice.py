@@ -37,7 +37,7 @@ def get_ssid():
 
 
 # find devices in wlan with port 8266/8833 open/listening
-def net_scan(n=None, debug=False, ssl=False):
+def net_scan(n=None, debug=False, ssl=False, debug_info=False):
     WebREPL_port = 8266
     if ssl:
         WebREPL_port = 8833
@@ -69,10 +69,13 @@ def net_scan(n=None, debug=False, ssl=False):
                     N += 1
                 except Exception as e:
                     pass
-        for dev in devs:
-            if dev['host'] not in netdevices:
-                netdevices.append(dev['host'])
-    return netdevices
+        if not debug_info:
+            for dev in devs:
+                if dev['host'] not in netdevices:
+                    netdevices.append(dev['host'])
+            return netdevices
+        else:
+            return devs
 
 
 class BASE_WS_DEVICE:
