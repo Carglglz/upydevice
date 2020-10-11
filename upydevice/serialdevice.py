@@ -296,7 +296,9 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                     self.paste_cmd = ''
                     if pipe is None:
                         print('')  # print Traceback under ^C
-                    self.kbi(pipe=pipe)  # KBI
+                        self.kbi(pipe=pipe, silent=False)  # KBI
+                    else:
+                        self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
                     for i in range(1):
                         self.serial.write(b'\r')

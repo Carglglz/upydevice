@@ -412,12 +412,14 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 try:
                     self.follow_output(cmd, pipe=pipe, multiline=multiline,
                                        silent=silent_pipe)
-                except KeyboardInterrupt:
+                except KeyboardInterrupt as e:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
                     if pipe is None:
                         print('')
-                    self.kbi(pipe=pipe)  # KBI
+                        self.kbi(pipe=pipe, silent=False)  # KBI
+                    else:
+                        self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
                     for i in range(1):
                         self.write('\r')
@@ -440,7 +442,17 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if not silent:
             if self.response != '\n' and self.response != '':
                 if pipe is None:
-                    print(self.response)
+                    try:
+                        if self._traceback.decode() in self.response:
+                            exception_msg = ' '.join(['Traceback',
+                                                      self.response.split('Traceback')[1]])
+                            raise DeviceException(exception_msg)
+                        else:
+                            print(self.response)
+                    except Exception as e:
+                        print(e)
+                        self.response = ''
+                        self.output = ''
             else:
                 self.response = ''
         if rtn:
