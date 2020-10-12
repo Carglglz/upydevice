@@ -41,8 +41,8 @@ def test_devname(devname):
     devs = devices.keys()
     # NAME ENTRY POINT
     if devname in devs:
-        dev_baud = devices[devname][0]
-        dev_port = devices[devname][1]
+        dev_baud = devices[devname][1]
+        dev_port = devices[devname][0]
 
     if devname == 'default':
         dev = Device(_ESPDEV_SERIAL, init=True, autodetect=True)

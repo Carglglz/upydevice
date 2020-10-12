@@ -211,7 +211,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
             if not self.name:
                 self.name = '{}_{}'.format(
                     self.dev_platform, self.serial_port.split('/')[-1])
-        self.cmd('\r', silent=True)
+        if init:
+            self.cmd(self._kbi+'\r', silent=True)
 
     def __repr__(self):
         repr_cmd = "import sys;import os; from machine import unique_id; \
@@ -518,12 +519,15 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
 
     def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
                rtn_resp=False, follow=False, pipe=None, multiline=False,
-               dlog=False):
-        self.dev_process_raw = multiprocessing.Process(
-            target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
-                                      follow, pipe, multiline, dlog,
-                                      self.output_queue))
-        self.dev_process_raw.start()
+               dlog=False, block_dev=True):
+        if block_dev:
+            self.dev_process_raw = multiprocessing.Process(
+                target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+                                          follow, pipe, multiline, dlog,
+                                          self.output_queue))
+            self.dev_process_raw.start()
+        else:
+            self.bytes_sent = self.serial.write(bytes(command+'\r', 'utf-8'))
 
     def get_opt(self):
         try:

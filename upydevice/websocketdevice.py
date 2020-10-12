@@ -633,20 +633,29 @@ class WS_DEVICE(BASE_WS_DEVICE):
 
     def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
                rtn_resp=False, follow=False, pipe=None, multiline=False,
-               dlog=False):
+               dlog=False, block_dev=True):
         # do a
         if self.connected:
-            self.dev_process_raw = multiprocessing.Process(
-                target=self.wr_cmd, args=(command, silent, rtn, long_string,
-                                          rtn_resp,
-                                          follow, pipe, multiline, dlog,
-                                          self.output_queue))
-            self.dev_process_raw.start()
+            if block_dev:
+                self.dev_process_raw = multiprocessing.Process(
+                    target=self.wr_cmd, args=(command, silent, rtn, long_string,
+                                              rtn_resp,
+                                              follow, pipe, multiline, dlog,
+                                              self.output_queue))
+                self.dev_process_raw.start()
+            else:
+                self.bytes_sent = self.write(command+'\r')
         else:
-            self.dev_process_raw = multiprocessing.Process(
-                target=self.cmd, args=(command, silent, rtn, rtn_resp,
-                                       self.output_queue, long_string))
-            self.dev_process_raw.start()
+            if block_dev:
+                self.dev_process_raw = multiprocessing.Process(
+                    target=self.cmd, args=(command, silent, rtn, rtn_resp,
+                                           self.output_queue, long_string))
+                self.dev_process_raw.start()
+            else:
+                self.open_wconn(ssl=self._ssl, auth=True)
+                self.bytes_sent = self.write(command+'\r')
+                time.sleep(1)
+                self.close_wconn()
 
     def get_opt(self):
         try:
