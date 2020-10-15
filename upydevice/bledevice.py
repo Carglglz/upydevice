@@ -116,7 +116,13 @@ class BASE_BLE_DEVICE:
                                        timeout=60)
                 self.connected = await self.ble_client.is_connected()
                 if self.connected:
-                    self.name = self.ble_client._device_info.name()
+                    try:
+                        if callable(self.ble_client._device_info.name):
+                            self.name = self.ble_client._device_info.name()
+                        else:
+                            self.name = self.ble_client._device_info.name
+                    except Exception as e:
+                        pass
                     if self.log or debug:
                         print("Connected to: {}".format(self.UUID))
                     break
