@@ -403,69 +403,78 @@ class BASE_BLE_DEVICE:
 
     def read_callback_follow(self, sender, data):
         try:
-            if not self._cmdfiltered:
-                cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
-                data = b'' + data
-                data = data.replace(cmd_filt, b'', 1)
-                # data = data.replace(b'\r\n>>> ', b'')
-                self._cmdfiltered = True
-            else:
-                try:
-                    data = b'' + data
-                    # data = data.replace(b'\r\n>>> ', b'')
-                except Exception as e:
-                    pass
+            cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
             self.raw_buff += data
-            if self.prompt in data:
-                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                    b'>>> ', b'').decode('utf-8', 'ignore')
-                if data != '':
-                    print(data, end='')
+            if not cmd_filt in self.raw_buff:
+                pass
             else:
-                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                    b'>>> ', b'').decode('utf-8', 'ignore')
-                print(data, end='')
+                if cmd_filt == self.raw_buff:
+                   data = b''
+                if not self._cmdfiltered:
+                    cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
+                    data = b'' + data
+                    if cmd_filt in data:
+                        data = data.replace(cmd_filt, b'', 1)
+                        # data = data.replace(b'\r\n>>> ', b'')
+                        self._cmdfiltered = True
+                else:
+                    try:
+                        data = b'' + data
+                        # data = data.replace(b'\r\n>>> ', b'')
+                    except Exception as e:
+                        pass
+                # self.raw_buff += data
+                # self._line_buff += data + b'-'
+                if self.prompt in data:
+                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                        b'>>> ', b'').decode('utf-8', 'ignore')
+                    if data != '':
+                        print(data, end='')
+                else:
+                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                        b'>>> ', b'').decode('utf-8', 'ignore')
+                    print(data, end='')
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
         #
 
     async def as_write_read_waitp(self, data, rtn_buff=False):
-        await self.ble_client.start_notify(self.readables['Nordic UART RX'], self.read_callback)
+        await self.ble_client.start_notify(self.readables['Nordic UART TX'], self.read_callback)
         if len(data) > self.len_buffer:
             for i in range(0, len(data), self.len_buffer):
-                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data[i:i+self.len_buffer])
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
 
         else:
-            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
         while self.prompt not in self.raw_buff:
             await asyncio.sleep(0, loop=self.loop)
-        await self.ble_client.stop_notify(self.readables['Nordic UART RX'])
+        await self.ble_client.stop_notify(self.readables['Nordic UART TX'])
         if rtn_buff:
             return self.raw_buff
 
     async def as_write_read_follow(self, data, rtn_buff=False):
         if not self.is_notifying:
             try:
-                await self.ble_client.start_notify(self.readables['Nordic UART RX'], self.read_callback_follow)
+                await self.ble_client.start_notify(self.readables['Nordic UART TX'], self.read_callback_follow)
                 self.is_notifying = True
             except Exception as e:
                 pass
         if len(data) > self.len_buffer:
             for i in range(0, len(data), self.len_buffer):
-                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data[i:i+self.len_buffer])
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
         else:
-            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
         while self.prompt not in self.raw_buff:
             try:
                 await asyncio.sleep(0, loop=self.loop)
             except KeyboardInterrupt:
                 print('Catch here1')
                 data = bytes(self._kbi, 'utf-8')
-                await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
         if self.is_notifying:
             try:
-                await self.ble_client.stop_notify(self.readables['Nordic UART RX'])
+                await self.ble_client.stop_notify(self.readables['Nordic UART TX'])
                 self.is_notifying = False
             except Exception as e:
                 pass
@@ -508,7 +517,7 @@ class BASE_BLE_DEVICE:
     def write(self, cmd):
         data = self.fmt_data(cmd, CR=False)  # make fmt_data
         n_bytes = len(data)
-        self.write_char_raw(key='Nordic UART TX', data=data)
+        self.write_char_raw(key='Nordic UART RX', data=data)
         return n_bytes
 
     def read_all(self):
@@ -646,7 +655,7 @@ class BASE_BLE_DEVICE:
             print('This is buff: {}'.format(self.raw_buff))
             await asyncio.sleep(1, loop=self.loop)
             data = bytes(self._kbi + '\r', 'utf-8')
-            await self.ble_client.write_gatt_char(self.writeables['Nordic UART TX'], data)
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
 
     def banner(self, pipe=None, kb=False, follow=False):
         self.wr_cmd(self._banner, silent=True, long_string=True,
@@ -660,7 +669,7 @@ class BASE_BLE_DEVICE:
     def reset(self, silent=False, reconnect=True):
         if not silent:
             print('Rebooting device...')
-        self.write_char_raw(key='Nordic UART TX', data=self._reset)
+        self.write_char_raw(key='Nordic UART RX', data=self._reset)
         self.connected = False
         if reconnect:
             time.sleep(2)
@@ -671,7 +680,7 @@ class BASE_BLE_DEVICE:
     async def as_reset(self, silent=True):
         if not silent:
             print('Rebooting device...')
-        await self.as_write_char(self.writeables['Nordic UART TX'], bytes(self._reset, 'utf-8'))
+        await self.as_write_char(self.writeables['Nordic UART RX'], bytes(self._reset, 'utf-8'))
         if not silent:
             print('Done!')
         return None
@@ -735,7 +744,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                                                           rtn_resp=True)
 
     def __repr__(self):
-        if self.connected and 'Nordic UART TX' in self.writeables:
+        if self.connected and 'Nordic UART RX' in self.writeables:
             repr_cmd = 'import sys;import os;from machine import unique_id;\
             [os.uname().sysname, os.uname().release, os.uname().version, \
             os.uname().machine, unique_id(), sys.implementation.name]'
