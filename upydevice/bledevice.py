@@ -111,6 +111,8 @@ class BASE_BLE_DEVICE:
         #
         if init:
             self.connect(debug=self.log)
+            if self.name == 'P8' or self.name == 'Pixl.js' or self.name == 'PineTime':
+                self.len_buffer = 20
             # do connect
 
     def set_event_loop(self, loop):
