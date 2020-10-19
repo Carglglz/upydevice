@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# @Author: carlosgilgonzalez
-# @Date:   2019-07-11T23:29:40+01:00
-# @Last modified by:   carlosgilgonzalez
-# @Last modified time: 2019-10-21T00:53:34+01:00
 
 from setuptools import setup
 
@@ -43,4 +39,4 @@ setup(name='upydevice',
       scripts=['upydevice_dir/bin/web_repl_conn'],
       include_package_data=True,
       install_requires=['upydev>=0.3.4', 'pyserial', 'dill', 'pexpect',
-                        'bleak>=0.8.0', 'bleak_sigspec>=0.0.3'])
+                        'bleak>=0.8.0', 'bleak_sigspec>=0.0.4'])

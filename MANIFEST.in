@@ -1,4 +1,1 @@
 
-include upydevice/manufacturer.csv
-include upydevice/chars_xml/*
-include upydevice/SI_units.csv
