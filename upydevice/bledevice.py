@@ -132,7 +132,7 @@ class BASE_BLE_DEVICE:
                         if callable(self.ble_client._device_info.name):
                             self.name = self.ble_client._device_info.name()
                         else:
-                            self.name = self.ble_client._device_info.name
+                            self.name = self.ble_client._device_info.get('Name')
                     except Exception as e:
                         pass
                     if self.log or debug:
