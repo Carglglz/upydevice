@@ -129,8 +129,9 @@ class BASE_BLE_DEVICE:
                 self.connected = await self.ble_client.is_connected()
                 if self.connected:
                     try:
-                        if callable(self.ble_client._device_info.name):
-                            self.name = self.ble_client._device_info.name()
+                        if hasattr(self.ble_client._device_info, 'name'):
+                            if callable(self.ble_client._device_info.name):
+                                self.name = self.ble_client._device_info.name()
                         else:
                             self.name = self.ble_client._device_info.get('Name')
                     except Exception as e:
