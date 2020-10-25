@@ -99,6 +99,7 @@ class BASE_SERIAL_DEVICE:
         self._kbi = '\x03'
         self._banner = '\x02'
         self._reset = '\x04'
+        self._hreset = 'import machine; machine.reset()\r'
         self.response = ''
         self._traceback = b'Traceback (most recent call last):'
         self.output = None
@@ -156,11 +157,14 @@ class BASE_SERIAL_DEVICE:
         if rtn_resp:
             return self.output
 
-    def reset(self, silent=False, reconnect=True):
+    def reset(self, silent=False, reconnect=True, hr=False):
         self.buff = b''
         if not silent:
             print('Rebooting device...')
-        self.bytes_sent = self.serial.write(bytes(self._reset, 'utf-8'))
+        if not hr:
+            self.bytes_sent = self.serial.write(bytes(self._reset, 'utf-8'))
+        else:
+            self.bytes_sent = self.serial.write(bytes(self._hreset, 'utf-8'))
         time.sleep(0.5)
         self.buff = self.serial.read_all()
         if not silent:

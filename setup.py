@@ -39,4 +39,4 @@ setup(name='upydevice',
       scripts=['upydevice_dir/bin/web_repl_conn'],
       include_package_data=True,
       install_requires=['upydev>=0.3.4', 'pyserial', 'dill', 'pexpect',
-                        'bleak>=0.8.0', 'bleak_sigspec>=0.0.4'])
+                        'bleak>=0.9.1', 'bleak_sigspec>=0.0.4'])

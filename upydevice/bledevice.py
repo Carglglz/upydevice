@@ -22,11 +22,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
-
-logging.getLogger(
-    "bleak.backends.corebluetooth.CentralManagerDelegate").setLevel(logging.ERROR)
-logging.getLogger('asyncio').setLevel(logging.WARNING)
+# import logging
+#
+# logging.getLogger(
+#     "bleak.backends.corebluetooth.CentralManagerDelegate").setLevel(logging.ERROR)
+# logging.getLogger('asyncio').setLevel(logging.WARNING)
 
 import asyncio
 import struct
@@ -42,6 +42,9 @@ import sys
 import traceback
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
+
+
+_WASPDEVS = ['P8', 'PineTime', 'Pixl.js']
 
 
 def ble_scan(log=False):
@@ -102,6 +105,7 @@ class BASE_BLE_DEVICE:
         self._kbi = '\x03'
         self._banner = '\x02'
         self._reset = '\x04'
+        self._hreset = "import machine; machine.reset()\r"
         self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
         self.output = None
@@ -111,7 +115,7 @@ class BASE_BLE_DEVICE:
         #
         if init:
             self.connect(debug=self.log)
-            if self.name == 'P8' or self.name == 'Pixl.js' or self.name == 'PineTime':
+            if self.name in _WASPDEVS:
                 self.len_buffer = 20
             # do connect
 
@@ -679,11 +683,15 @@ class BASE_BLE_DEVICE:
             if pipe:
                 pipe(self.response.replace('\n\n', '\n'))
 
-    def reset(self, silent=False, reconnect=True):
+    def reset(self, silent=False, reconnect=True, hr=False):
         if not silent:
             print('Rebooting device...')
-        self.write_char_raw(key='Nordic UART RX', data=self._reset)
-        self.connected = False
+        if not hr:
+            self.write_char_raw(key='Nordic UART RX', data=self._reset)
+        else:
+            self.write_char_raw(key='Nordic UART RX', data=self._hreset)
+
+        self.connected = self.is_connected()
         if reconnect:
             time.sleep(2)
             self.connect(n_tries=10, debug=self.log)
@@ -734,6 +742,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
         self.MAC_addrs = ''
         self.device_info = {}
         self.chars_xml = {}
+        self.dev_platform = ''
         self.read_char_metadata()
         self.get_appearance()
         self.get_MAC_addrs()

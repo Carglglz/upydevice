@@ -116,6 +116,7 @@ class BASE_WS_DEVICE:
         self._kbi = '\x03'
         self._banner = '\x02'
         self._reset = '\x04'
+        self._hreset = "import machine; machine.reset()\r"
         self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
         self.output = None
@@ -255,11 +256,14 @@ class BASE_WS_DEVICE:
         if rtn:
             return self.output
 
-    def reset(self, silent=False, reconnect=True):
+    def reset(self, silent=False, reconnect=True, hr=False):
         if not silent:
             print('Rebooting device...')
         if self.connected:
-            self.bytes_sent = self.write(self._reset)
+            if not hr:
+                self.bytes_sent = self.write(self._reset)
+            else:
+                self.bytes_sent = self.write(self._hreset)
             self.close_wconn()
             if reconnect:
                 time.sleep(1)
@@ -276,7 +280,10 @@ class BASE_WS_DEVICE:
                 print('Done!')
         else:
             self.open_wconn(ssl=self._ssl, auth=True)
-            self.bytes_sent = self.write(self._reset)
+            if not hr:
+                self.bytes_sent = self.write(self._reset)
+            else:
+                self.bytes_sent = self.write(self._hreset)
             self.close_wconn()
             if not silent:
                 print('Done!')
