@@ -113,14 +113,16 @@ class BASE_SERIAL_DEVICE:
         for port in serial.tools.list_ports.comports():
             if port.device == serialport:
                 serial_port_found = True
-                return (port.description, port.manufacturer, port.hwid)
+                desc = port.description.split('-')[0].strip()
+                return (desc, port.manufacturer, port.hwid)
 
         if not serial_port_found:
             serialport = serialport.replace('tty', 'cu')
         for port in serial.tools.list_ports.comports():
             if port.device == serialport:
                 serial_port_found = True
-                return (port.description, port.manufacturer, port.hwid)
+                desc = port.description.split('-')[0].strip()
+                return (desc, port.manufacturer, port.hwid)
 
         raise DeviceNotFound('SerialDevice @ {} is not available'.format(serialport))
 
