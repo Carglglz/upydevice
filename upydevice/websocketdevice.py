@@ -183,8 +183,11 @@ class BASE_WS_DEVICE:
         try:
             self.raw_buff = b''
             while self.prompt not in self.raw_buff:
-                fin, opcode, data = self.ws.read_frame()
-                self.raw_buff += data
+                try:
+                    fin, opcode, data = self.ws.read_frame()
+                    self.raw_buff += data
+                except AttributeError as e:
+                    pass
 
             return self.raw_buff
         except socket.timeout as e:
@@ -406,10 +409,13 @@ class WS_DEVICE(BASE_WS_DEVICE):
         try:
             self.raw_buff = b''
             while b'\r\n' not in self.raw_buff:
-                fin, opcode, data = self.ws.read_frame()
-                self.raw_buff += data
-                if self.prompt in self.raw_buff:
-                    break
+                try:
+                    fin, opcode, data = self.ws.read_frame()
+                    self.raw_buff += data
+                    if self.prompt in self.raw_buff:
+                        break
+                except AttributeError as e:
+                    pass
 
             return self.raw_buff
         except socket.timeout as e:
