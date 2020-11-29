@@ -341,7 +341,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
                  autodetect=False):
         super().__init__(target=target, password=password, init=init, ssl=ssl,
                          auth=auth, capath=capath)
-        self.dev_class = 'WIRELESS'
+        self.dev_class = 'WebSocketDevice'
         self.dev_platform = dev_platf
         self.name = name
         self.raw_buff = b''

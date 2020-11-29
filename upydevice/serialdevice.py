@@ -211,7 +211,7 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
     def __init__(self, serial_port, baudrate=115200, name=None, dev_platf=None,
                  autodetect=False, init=True):
         super().__init__(serial_port=serial_port, baudrate=baudrate)
-        self.dev_class = 'SERIAL'
+        self.dev_class = 'SerialDevice'
         self.dev_platform = dev_platf
         self.serial_port = serial_port
         self.baudrate = baudrate

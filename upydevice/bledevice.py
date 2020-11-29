@@ -732,7 +732,7 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                  rssi=None, conn_debug=False, autodetect=False):
         super().__init__(scan_dev, init=init, name=name, lenbuff=lenbuff,
                          rssi=rssi, conn_debug=conn_debug)
-        self.dev_class = 'WIRELESS'
+        self.dev_class = 'BleDevice'
         self.appearance = 0
         self.appearance_tag = 'UNKNOWN'
         self.manufacturer = 'UNKNOWN'
