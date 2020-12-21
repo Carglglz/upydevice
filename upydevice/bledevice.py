@@ -32,7 +32,7 @@ import asyncio
 import struct
 from datetime import datetime
 from bleak import BleakClient
-from bleak import discover
+from bleak import BleakScanner
 from bleak_sigspec.utils import get_char_value, get_xml_char
 import uuid as U_uuid
 import time
@@ -51,7 +51,7 @@ def ble_scan(log=False):
     devs = []
 
     async def run():
-        devices = await discover()
+        devices = await BleakScanner.discover()
         for d in devices:
             if log:
                 print(d)
