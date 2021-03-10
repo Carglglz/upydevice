@@ -60,9 +60,12 @@ def Device(dev_address, password=None, **kargs):
     """Returns Device class depending on dev_address type"""
     dev_type = check_device_type(dev_address)
     if dev_type == 'SerialDevice':
+        baudrt = 115200
         pop_args = ['ssl', 'auth', 'capath']
         fkargs = {k: v for k, v in kargs.items() if k not in pop_args}
-        return SerialDevice(dev_address, **fkargs)
+        if password:
+            baudrt = password
+        return SerialDevice(dev_address, baudrate=baudrt, **fkargs)
     if dev_type == 'WebSocketDevice':
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
