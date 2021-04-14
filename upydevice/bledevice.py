@@ -130,7 +130,7 @@ class BASE_BLE_DEVICE:
             try:
                 await asyncio.wait_for(self.ble_client.connect(timeout=3),
                                        timeout=60)
-                self.connected = await self.ble_client.is_connected()
+                self.connected = self.ble_client.is_connected
                 if self.connected:
                     try:
                         if hasattr(self.ble_client._device_info, 'name'):
@@ -161,7 +161,7 @@ class BASE_BLE_DEVICE:
 
         else:
             await self.ble_client.disconnect()
-        self.connected = await self.ble_client.is_connected()
+        self.connected = self.ble_client.is_connected
         if not self.connected:
             if self.log or log:
                 print("Disconnected successfully")
@@ -175,7 +175,7 @@ class BASE_BLE_DEVICE:
             raise DeviceNotFound('BleDevice @ {} is not reachable'.format(self.UUID))
 
     def is_connected(self):
-        self.connected = self.loop.run_until_complete(self.ble_client.is_connected())
+        self.connected = self.ble_client.is_connected
         return self.connected
 
     def disconnect(self, log=False, timeout=None):
