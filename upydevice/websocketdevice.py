@@ -267,6 +267,10 @@ class BASE_WS_DEVICE:
                 self.bytes_sent = self.write(self._reset)
             else:
                 self.bytes_sent = self.write(self._hreset)
+            if self._uriprotocol == 'ws':
+                time.sleep(0.2)
+            else:
+                time.sleep(1)
             self.close_wconn()
             if reconnect:
                 time.sleep(1)
@@ -287,6 +291,10 @@ class BASE_WS_DEVICE:
                 self.bytes_sent = self.write(self._reset)
             else:
                 self.bytes_sent = self.write(self._hreset)
+            if self._uriprotocol == 'ws':
+                time.sleep(0.2)
+            else:
+                time.sleep(1)
             self.close_wconn()
             if not silent:
                 print('Done!')
