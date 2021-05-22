@@ -65,6 +65,8 @@ def Device(dev_address, password=None, **kargs):
         fkargs = {k: v for k, v in kargs.items() if k not in pop_args}
         if password:
             baudrt = password
+        if 'baudrate' in fkargs:
+            baudrt = fkargs.pop('baudrate')
         return SerialDevice(dev_address, baudrate=baudrt, **fkargs)
     if dev_type == 'WebSocketDevice':
         return WebSocketDevice(dev_address, password, **kargs)
