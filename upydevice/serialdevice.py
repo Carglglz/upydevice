@@ -379,7 +379,7 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
             if any(_kw in inp for _kw in self.stream_kw):
                 self._is_first_line = False
             if self.paste_cmd != '':
-                if self.dev_platform != 'pyboard':
+                if self.dev_platform != 'pyboard' and self._devplatform != 'rp2':
                     while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode():
                         self.read_until(exp=b'\n')
 

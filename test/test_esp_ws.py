@@ -96,14 +96,17 @@ def test_blink_led():
         _ESP_LED = 2
     elif dev.dev_platform == 'esp32':
         _ESP_LED = 13
-    dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
+    _led = dev.cmd("'led' in globals()", silent=True, rtn_resp=True)
+    if not _led:
+        dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
     for i in range(2):
         dev.cmd('led.on();print("LED: ON")')
         time.sleep(0.2)
         dev.cmd('led.off();print("LED: OFF")')
         time.sleep(0.2)
     try:
-        assert dev.cmd('not led.value()', silent=True, rtn_resp=True), 'LED is on, should be off'
+        assert dev.cmd('not led.value()', silent=True,
+                       rtn_resp=True), 'LED is on, should be off'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -117,7 +120,8 @@ def test_run_script():
     log.info('{} TEST: test_code.py'.format(TEST_NAME))
     dev.wr_cmd('import test_code', follow=True)
     try:
-        assert dev.cmd('test_code.RESULT', silent=True, rtn_resp=True) is True, 'Script did NOT RUN'
+        assert dev.cmd('test_code.RESULT', silent=True,
+                       rtn_resp=True) is True, 'Script did NOT RUN'
         dev.cmd("import sys,gc;del(sys.modules['test_code']);gc.collect()")
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
