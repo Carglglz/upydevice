@@ -4,7 +4,7 @@ rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevi
 collected 11 items
 
 test_pyboard.py::test_devname PASSED
-test_pyboard.py::test_platform 
+test_pyboard.py::test_platform
 -------------------------------- live log call ---------------------------------
 19:35:59 [pytest] [PYBOARD] : Running SerialDevice test...
 19:35:59 [pytest] [PYBOARD] : DEV PLATFORM: pyboard
@@ -24,17 +24,17 @@ LED: OFF
 -------------------------------- live log call ---------------------------------
 19:36:01 [pytest] [PYBOARD] : BLINK LEDS TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_user_sw 
+test_pyboard.py::test_user_sw
 -------------------------------- live log call ---------------------------------
 19:36:01 [pytest] [PYBOARD] : USER SWITCH TEST: please press and hold the switch now
 Time out in 9 sTime out in 8 s19:36:05 [pytest] [PYBOARD] : USER SWITCH TEST: [[92m✔[0m]
 19:36:05 [pytest] [PYBOARD] : USER SWITCH TEST: you can release the switch now.
 Test Result: PASSED
-test_pyboard.py::test_phantom_led 
+test_pyboard.py::test_phantom_led
 -------------------------------- live log call ---------------------------------
 19:36:07 [pytest] [PYBOARD] : PHANTOM LED TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_phantom_timer 
+test_pyboard.py::test_phantom_timer
 -------------------------------- live log call ---------------------------------
 19:36:07 [pytest] [PYBOARD] : TIMER TEST at 2 Hz: LED CALLBACK:
     @upy_code
@@ -45,13 +45,13 @@ test_pyboard.py::test_phantom_timer
 
 19:36:11 [pytest] [PYBOARD] : TIMER TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_os_list_dir 
+test_pyboard.py::test_os_list_dir
 -------------------------------- live log call ---------------------------------
 19:36:11 [pytest] [PYBOARD] : OS LIST DIR TEST: import os;os.listdir()
 ['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', 'udummy.py', '.Trashes', 'servo_serial.py', '._servo_serial.py', 'lsm9ds1.py', 'mpy_test.py', 'DIR_TEST', 'README.md', 'lib', 'git_main.py', 'new_dir', 'test_file.txt', 'test_code.py', 'main_test.py', '.gitlog', '.githash', 'error.log']
 19:36:11 [pytest] [PYBOARD] : OS LIST DIR TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_run_script 
+test_pyboard.py::test_run_script
 -------------------------------- live log call ---------------------------------
 19:36:11 [pytest] [PYBOARD] : RUN SCRIPT TEST: test_code.py
 2015-01-01 00:45:02 [log_test] [INFO] Test message2: 100(foobar)
@@ -70,24 +70,24 @@ ZeroDivisionError: divide by zero
 True
 19:36:14 [pytest] [PYBOARD] : RUN SCRIPT TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_raise_device_exception 
+test_pyboard.py::test_raise_device_exception
 -------------------------------- live log call ---------------------------------
 19:36:14 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: b = 1/0
 [DeviceError]:
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ZeroDivisionError: divide by zero
- 
+
 19:36:14 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_reset 
+test_pyboard.py::test_reset
 -------------------------------- live log call ---------------------------------
 19:36:14 [pytest] [PYBOARD] : DEVICE RESET TEST
 Rebooting device...
 Done!
 19:36:15 [pytest] [PYBOARD] : DEVICE RESET TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_disconnect 
+test_pyboard.py::test_disconnect
 -------------------------------- live log call ---------------------------------
 19:36:15 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST
 19:36:15 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST: [[92m✔[0m]
@@ -100,7 +100,7 @@ rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevi
 collected 11 items
 
 test_pyboard.py::test_devname PASSED
-test_pyboard.py::test_platform 
+test_pyboard.py::test_platform
 -------------------------------- live log call ---------------------------------
 19:36:16 [pytest] [PYBOARD] : Running SerialDevice test...
 19:36:16 [pytest] [PYBOARD] : DEV PLATFORM: pyboard
@@ -120,17 +120,17 @@ LED: OFF
 -------------------------------- live log call ---------------------------------
 19:36:18 [pytest] [PYBOARD] : BLINK LEDS TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_user_sw 
+test_pyboard.py::test_user_sw
 -------------------------------- live log call ---------------------------------
 19:36:18 [pytest] [PYBOARD] : USER SWITCH TEST: please press and hold the switch now
 Time out in 9 sTime out in 8 sTime out in 7 sTime out in 6 sTime out in 5 sTime out in 4 s19:36:28 [pytest] [PYBOARD] : USER SWITCH TEST: [[92m✔[0m]
 19:36:28 [pytest] [PYBOARD] : USER SWITCH TEST: you can release the switch now.
 Test Result: PASSED
-test_pyboard.py::test_phantom_led 
+test_pyboard.py::test_phantom_led
 -------------------------------- live log call ---------------------------------
 19:36:29 [pytest] [PYBOARD] : PHANTOM LED TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_phantom_timer 
+test_pyboard.py::test_phantom_timer
 -------------------------------- live log call ---------------------------------
 19:36:29 [pytest] [PYBOARD] : TIMER TEST at 2 Hz: LED CALLBACK:
     @upy_code
@@ -141,13 +141,13 @@ test_pyboard.py::test_phantom_timer
 
 19:36:33 [pytest] [PYBOARD] : TIMER TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_os_list_dir 
+test_pyboard.py::test_os_list_dir
 -------------------------------- live log call ---------------------------------
 19:36:33 [pytest] [PYBOARD] : OS LIST DIR TEST: import os;os.listdir()
 ['error.log', 'pybcdc.inf', 'README.txt', 'boot.py', 'lib', '._boot.py', 'main.py', 'main_old.py', '._main_old.py', 'dummy_time.py', 'test_code.py']
 19:36:33 [pytest] [PYBOARD] : OS LIST DIR TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_run_script 
+test_pyboard.py::test_run_script
 -------------------------------- live log call ---------------------------------
 19:36:33 [pytest] [PYBOARD] : RUN SCRIPT TEST: test_code.py
 2015-01-01 02:58:59 [log_test] [INFO] Test message2: 100(foobar)
@@ -166,24 +166,24 @@ ZeroDivisionError: divide by zero
 True
 19:36:36 [pytest] [PYBOARD] : RUN SCRIPT TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_raise_device_exception 
+test_pyboard.py::test_raise_device_exception
 -------------------------------- live log call ---------------------------------
 19:36:36 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: b = 1/0
 [DeviceError]:
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ZeroDivisionError: divide by zero
- 
+
 19:36:36 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_reset 
+test_pyboard.py::test_reset
 -------------------------------- live log call ---------------------------------
 19:36:36 [pytest] [PYBOARD] : DEVICE RESET TEST
 Rebooting device...
 Done!
 19:36:36 [pytest] [PYBOARD] : DEVICE RESET TEST: [[92m✔[0m]
 Test Result: PASSED
-test_pyboard.py::test_disconnect 
+test_pyboard.py::test_disconnect
 -------------------------------- live log call ---------------------------------
 19:36:36 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST
 19:36:36 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST: [[92m✔[0m]
@@ -200,7 +200,7 @@ collected 8 items
 
 test_esp_ws.py::test_wss PASSED
 test_esp_ws.py::test_devname PASSED
-test_esp_ws.py::test_platform 
+test_esp_ws.py::test_platform
 -------------------------------- live log call ---------------------------------
 19:36:39 [pytest] [ESP8266] : Running WebSocketDevice test...
 19:36:39 [pytest] [ESP8266] : DEV PLATFORM: esp8266
@@ -215,7 +215,7 @@ LED: OFF
 -------------------------------- live log call ---------------------------------
 19:36:42 [pytest] [ESP8266] : BLINK LED TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_run_script 
+test_esp_ws.py::test_run_script
 -------------------------------- live log call ---------------------------------
 19:36:42 [pytest] [ESP8266] : RUN SCRIPT TEST: test_code.py
 2000-01-01 00:46:23 [log_test] [INFO] Test message2: 100(foobar)
@@ -233,24 +233,24 @@ Traceback (most recent call last):
 ZeroDivisionError: divide by zero
 19:36:45 [pytest] [ESP8266] : RUN SCRIPT TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_raise_device_exception 
+test_esp_ws.py::test_raise_device_exception
 -------------------------------- live log call ---------------------------------
 19:36:45 [pytest] [ESP8266] : DEVICE EXCEPTION TEST: b = 1/0
 [DeviceError]:
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ZeroDivisionError: divide by zero
- 
+
 19:36:45 [pytest] [ESP8266] : DEVICE EXCEPTION TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_reset 
+test_esp_ws.py::test_reset
 -------------------------------- live log call ---------------------------------
 19:36:45 [pytest] [ESP8266] : DEVICE RESET TEST
 Rebooting device...
 Done!
 19:36:49 [pytest] [ESP8266] : DEVICE RESET TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_disconnect 
+test_esp_ws.py::test_disconnect
 -------------------------------- live log call ---------------------------------
 19:36:49 [pytest] [ESP8266] : DEVICE DISCONNECT TEST
 19:36:49 [pytest] [ESP8266] : DEVICE DISCONNECT TEST: [[92m✔[0m]
@@ -265,7 +265,7 @@ collected 8 items
 
 test_esp_ws.py::test_wss PASSED
 test_esp_ws.py::test_devname PASSED
-test_esp_ws.py::test_platform 
+test_esp_ws.py::test_platform
 -------------------------------- live log call ---------------------------------
 19:36:51 [pytest] [ESP32] : Running WebSocketDevice test...
 19:36:51 [pytest] [ESP32] : DEV PLATFORM: esp32
@@ -280,7 +280,7 @@ LED: OFF
 -------------------------------- live log call ---------------------------------
 19:36:55 [pytest] [ESP32] : BLINK LED TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_run_script 
+test_esp_ws.py::test_run_script
 -------------------------------- live log call ---------------------------------
 19:36:55 [pytest] [ESP32] : RUN SCRIPT TEST: test_code.py
 2000-01-01 02:30:47 [log_test] [INFO] Test message2: 100(foobar)
@@ -298,24 +298,24 @@ Traceback (most recent call last):
 ZeroDivisionError: divide by zero
 19:36:57 [pytest] [ESP32] : RUN SCRIPT TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_raise_device_exception 
+test_esp_ws.py::test_raise_device_exception
 -------------------------------- live log call ---------------------------------
 19:36:57 [pytest] [ESP32] : DEVICE EXCEPTION TEST: b = 1/0
 [DeviceError]:
 Traceback (most recent call last):
   File "<stdin>", line 1, in <module>
 ZeroDivisionError: divide by zero
- 
+
 19:36:57 [pytest] [ESP32] : DEVICE EXCEPTION TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_reset 
+test_esp_ws.py::test_reset
 -------------------------------- live log call ---------------------------------
 19:36:57 [pytest] [ESP32] : DEVICE RESET TEST
 Rebooting device...
 Done!
 19:37:00 [pytest] [ESP32] : DEVICE RESET TEST: [[92m✔[0m]
 Test Result: PASSED
-test_esp_ws.py::test_disconnect 
+test_esp_ws.py::test_disconnect
 -------------------------------- live log call ---------------------------------
 19:37:00 [pytest] [ESP32] : DEVICE DISCONNECT TEST
 19:37:00 [pytest] [ESP32] : DEVICE DISCONNECT TEST: [[92m✔[0m]

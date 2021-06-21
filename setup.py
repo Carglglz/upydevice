@@ -38,5 +38,5 @@ setup(name='upydevice',
       zip_safe=False,
       scripts=[],
       include_package_data=True,
-      install_requires=['upydev>=0.3.3', 'pyserial', 'dill', 'pexpect',
+      install_requires=['pyserial', 'dill', 'pexpect',
                         'bleak>=0.9.1', 'bleak_sigspec>=0.0.4'])
