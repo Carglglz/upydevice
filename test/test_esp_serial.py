@@ -79,7 +79,11 @@ def test_blink_led():
         _ESP_LED = 2
     elif dev.dev_platform == 'esp32':
         _ESP_LED = 13
-    dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
+
+    _led = dev.cmd("'led' in globals()", silent=True, rtn_resp=True)
+    if not _led:
+        dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
+        
     for i in range(2):
         dev.cmd('led.on();print("LED: ON")')
         time.sleep(0.2)
