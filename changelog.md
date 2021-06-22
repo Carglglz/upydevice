@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] Unreleased [Github repo]
 #### Bump to version 0.3.0
 ### Added
-- Tests with `pytest` tested with esp32 (websocket, serial, ble), esp8266(websocket, serial), pyboard (serial) and nrf52832 (ble)
+- Tests with `pytest` tested with esp32 (websocket, serial, ble), esp8266(websocket, serial), pyboard (serial) and nrf52832 (colmi p8 with wasp-os) (ble)
 - `Device` function that returns Device class based on address type
 - Pytest with devices
 - `__repr__` that returns device info

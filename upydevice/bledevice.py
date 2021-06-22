@@ -133,11 +133,14 @@ class BASE_BLE_DEVICE:
                 self.connected = self.ble_client.is_connected
                 if self.connected:
                     try:
-                        if hasattr(self.ble_client._device_info, 'name'):
-                            if callable(self.ble_client._device_info.name):
-                                self.name = self.ble_client._device_info.name()
+                        if hasattr(self.ble_client._peripheral, 'name'):
+                            if callable(self.ble_client._peripheral.name):
+                                self.name = self.ble_client._peripheral.name()
                         else:
                             self.name = self.ble_client._device_info.get('Name')
+                        if hasattr(self.ble_client, 'mtu_size'):
+                            pass
+                            # self.len_buffer = self.ble_client.mtu_size - 3
                     except Exception as e:
                         pass
                     if self.log or debug:
@@ -461,6 +464,7 @@ class BASE_BLE_DEVICE:
         if len(data) > self.len_buffer:
             for i in range(0, len(data), self.len_buffer):
                 await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+                await asyncio.sleep(0.1, loop=self.loop)
 
         else:
             await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
@@ -767,9 +771,9 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 
     def __repr__(self):
         if self.connected and 'Nordic UART RX' in self.writeables:
-            repr_cmd = 'import sys;import os;from machine import unique_id;\
-            [os.uname().sysname, os.uname().release, os.uname().version, \
-            os.uname().machine, unique_id(), sys.implementation.name]'
+            repr_cmd = 'import sys;import os;from machine import unique_id;' +\
+            '[os.uname().sysname, os.uname().release, os.uname().version,' +\
+            'os.uname().machine, unique_id(), sys.implementation.name]'
             (self.dev_platform, self._release,
              self._version, self._machine, muuid, imp) = self.cmd(repr_cmd,
                                                       silent=True,
