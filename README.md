@@ -5,7 +5,7 @@
 Python library to interface with MicroPython devices through:
 
 -  Websockets (WebREPL protocol)
-- Bluetooth Low Energy (BleREPL protocol)
+-  Bluetooth Low Energy (BleREPL protocol)
 -  Serial connection (USB)
 
 ### Install
@@ -114,8 +114,8 @@ from upydevice import SerialDevice
     Done!
 ```
 
-#### To see more info about dependencies, tested devices, etc see [ABOUT](https://github.com/Carglglz/upydevice/blob/master/DOCS/ABOUT.md) doc
-
+### Testing devices with Pytest:
+Under `test` directory there are example tests to run with devices. This allows to test MicroPython code in devices interactively, e.g. button press, screen swipes, sensor calibration, servo/motors...
 ### Made with upydevice:
 
 - [upydev](https://github.com/Carglglz/upydev)

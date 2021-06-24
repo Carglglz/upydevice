@@ -84,10 +84,17 @@ _PYBOARD_LED = 1
 
 
 def test_platform():
-    log.info('Running SerialDevice test...')
-    log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
-    print(dev)
-    print('Test Result: ', end='')
+    TEST_NAME = 'DEV PLATFORM'
+    try:
+        log.info('Running SerialDevice test...')
+        log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
+        print(dev)
+        do_pass(TEST_NAME)
+        print('Test Result: ', end='')
+    except Exception as e:
+        do_fail(TEST_NAME)
+        print('Test Result: ', end='')
+        raise e
 
 
 def test_blink_leds():

@@ -66,10 +66,17 @@ def do_fail(test_name):
 
 
 def test_platform():
-    log.info('Running SerialDevice test...')
-    log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
-    print(dev)
-    print('Test Result: ', end='')
+    TEST_NAME = 'DEV PLATFORM'
+    try:
+        log.info('Running SerialDevice test...')
+        log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
+        print(dev)
+        do_pass(TEST_NAME)
+        print('Test Result: ', end='')
+    except Exception as e:
+        do_fail(TEST_NAME)
+        print('Test Result: ', end='')
+        raise e
 
 
 # BLINK LED TEST
@@ -83,7 +90,7 @@ def test_blink_led():
     _led = dev.cmd("'led' in globals()", silent=True, rtn_resp=True)
     if not _led:
         dev.cmd('from machine import Pin; led = Pin({}, Pin.OUT)'.format(_ESP_LED))
-        
+
     for i in range(2):
         dev.cmd('led.on();print("LED: ON")')
         time.sleep(0.2)

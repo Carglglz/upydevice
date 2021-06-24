@@ -76,10 +76,17 @@ def do_fail(test_name):
 
 
 def test_platform():
-    log.info('Running BleDevice test...')
-    log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
-    print(dev)
-    print('Test Result: ', end='')
+    TEST_NAME = 'DEV PLATFORM'
+    try:
+        log.info('Running BleDevice test...')
+        log.info('DEV PLATFORM: {}'.format(dev.dev_platform))
+        print(dev)
+        do_pass(TEST_NAME)
+        print('Test Result: ', end='')
+    except Exception as e:
+        do_fail(TEST_NAME)
+        print('Test Result: ', end='')
+        raise e
 
 
 def test_blink_led():
