@@ -299,7 +299,7 @@ class BASE_WS_DEVICE:
             if not silent:
                 print('Done!')
 
-    def kbi(self, silent=True, pipe=None):
+    def kbi(self, silent=True, pipe=None, long_string=False):
         if self.connected:
             if pipe is not None:
                 self.wr_cmd(self._kbi, silent=silent)
@@ -309,7 +309,7 @@ class BASE_WS_DEVICE:
                     pipe(bf_output)
                 pipe(traceback, std='stderr')
             else:
-                self.wr_cmd(self._kbi, silent=silent)
+                self.wr_cmd(self._kbi, silent=silent, long_string=long_string)
                 self.cmd('')
         else:
             self.cmd(self._kbi, silent=silent)
@@ -461,7 +461,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                     self.paste_cmd = ''
                     if pipe is None:
                         print('')
-                        self.kbi(pipe=pipe, silent=False)  # KBI
+                        self.kbi(pipe=pipe, silent=False,
+                                 long_string=long_string)  # KBI
                     else:
                         self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
