@@ -96,6 +96,7 @@ def test_platform():
         print('Test Result: ', end='')
         raise e
 
+
 def test_blink_led():
     TEST_NAME = 'BLINK LED'
     if dev.dev_platform == 'esp8266':

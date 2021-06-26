@@ -116,10 +116,14 @@ from upydevice import SerialDevice
 
 ### Testing devices with Pytest:
 Under `test` directory there are example tests to run with devices. This allows to test MicroPython code in devices interactively, e.g. button press, screen swipes, sensor calibration, servo/motors...
+e.g.
+```
+$ pytest test_esp_serial.py -s 
+```
+
 ### Made with upydevice:
 
 - [upydev](https://github.com/Carglglz/upydev)
-- [upyble](https://github.com/Carglglz/upyble)
 - [Jupyter_upydevice_kernel](https://github.com/Carglglz/jupyter_upydevice_kernel)
 
 ## More advanced examples:
