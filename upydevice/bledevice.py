@@ -42,6 +42,7 @@ import sys
 import traceback
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
+from unsync import unsync
 
 
 _WASPDEVS = ['P8', 'PineTime', 'Pixl.js']
@@ -1134,3 +1135,236 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 class BleDevice(BLE_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
+
+
+class AsyncBleDevice(BLE_DEVICE):
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
+        # self.loop = asyncio.new_event_loop()
+        self.pipe = None
+
+    @unsync
+    async def as_connect(self, n_tries=5, show_servs=False, debug=False):
+        await self.connect_client(n_tries=n_tries, debug=debug)
+        if self.connected:
+            self.get_services(log=True)
+        else:
+            raise DeviceNotFound('BleDevice @ {} is not reachable'.format(self.UUID))
+
+    def connect(self, **kargs):
+        return self.as_connect(**kargs).result()
+
+    @unsync
+    async def as_disconnect(self, log=False, timeout=None):
+        if self.connected:
+            await self.disconnect_client(log=log, timeout=timeout)
+
+    def disconnect(self, **kargs):
+        return self.as_disconnect(**kargs).result()
+
+    @unsync
+    async def un_wr_cmd(self, cmd, **kargs):
+        output = await self.as_wr_cmd(cmd, **kargs)
+        return output
+
+    def wr_cmd(self, cmd, **kargs):
+        return self.un_wr_cmd(cmd, **kargs).result()
+
+    def banner(self, pipe=None, kb=False, follow=False):
+        self.wr_cmd(self._banner, silent=True, long_string=True,
+                    kb=kb, follow=follow)
+        if pipe is None and not follow:
+            print(self.response.replace('\n\n', '\n'))
+        else:
+            if pipe:
+                pipe(self.response.replace('\n\n', '\n'))
+
+    async def as_paste_buff(self, cmd, **kargs):
+        # print('Here')
+        long_command = cmd
+        await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], b'\x05')
+        await asyncio.sleep(1)
+        # await self.dev.ble_client.write_gatt_char(self.dev.writeables['Nordic UART RX'], b'\x04')
+        # print(long_command)
+        lines = long_command.split('\n')
+        # print(lines)
+        for line in lines:
+            self.flush()
+            await asyncio.sleep(0.2)
+            data = bytes(line + '\n', 'utf-8')
+            if len(data) > self.len_buffer:
+                for i in range(0, len(data), self.len_buffer):
+                    await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+            else:
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+            if line == lines[-1]:
+                self._cmdstr = line
+        # print(self._cmdstr)
+        # output = await self.as_wr_cmd('\x04', **kargs)
+
+        # return output
+
+    @unsync
+    async def un_paste_buff(self, cmd, **kargs):
+        await self.as_paste_buff(cmd, **kargs)
+
+    def paste_buff(self, cmd, **kargs):
+        return self.un_paste_buff(cmd, **kargs).result()
+
+    # TODO: use a different callback pipe compatible
+
+    def read_callback_follow(self, sender, data):
+        try:
+            cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
+            self.raw_buff += data
+            # self.pipe(data)
+            # if not cmd_filt in self.raw_buff:
+            #     pass
+            # else:
+            if not self._cmdfiltered:
+                cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
+                cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
+                data = b'' + data
+                if cmd_filt in data:
+                    data = data.replace(cmd_filt, b'', 1)
+                    # data = data.replace(b'\r\n>>> ', b'')
+                    self._cmdfiltered = True
+                if cmd_filt_pipe in data:
+                    data = data.replace(cmd_filt_pipe, b'', 1)
+                    self._cmdfiltered = True
+            else:
+                try:
+                    data = b'' + data
+                    # data = data.replace(b'\r\n>>> ', b'')
+                except Exception as e:
+                    pass
+            # self.raw_buff += data
+            # self._line_buff += data + b'-'
+            if self.prompt in data:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if data != '':
+                    if not self.pipe:
+                        print(data, end='')
+                    else:
+                        self.pipe(data)
+            else:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if not self.pipe:
+                    print(data, end='')
+                else:
+                    self.pipe(data)
+        except KeyboardInterrupt:
+            print('CALLBACK_KBI')
+            pass
+
+    async def as_write_read_waitp(self, data, rtn_buff=False):
+        await self.ble_client.start_notify(self.readables['Nordic UART TX'], self.read_callback)
+        if len(data) > self.len_buffer:
+            for i in range(0, len(data), self.len_buffer):
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+                await asyncio.sleep(0.1)
+
+        else:
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+        while self.prompt not in self.raw_buff:
+            await asyncio.sleep(0)
+        await self.ble_client.stop_notify(self.readables['Nordic UART TX'])
+        if rtn_buff:
+            return self.raw_buff
+
+    async def as_write_read_follow(self, data, rtn_buff=False):
+        if not self.is_notifying:
+            try:
+                await self.ble_client.start_notify(self.readables['Nordic UART TX'], self.read_callback_follow)
+                self.is_notifying = True
+            except Exception as e:
+                pass
+        if len(data) > self.len_buffer:
+            for i in range(0, len(data), self.len_buffer):
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+        else:
+            await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+        while self.prompt not in self.raw_buff:
+            try:
+                await asyncio.sleep(0)
+            except KeyboardInterrupt:
+                print('Catch here1')
+                data = bytes(self._kbi, 'utf-8')
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+        if self.is_notifying:
+            try:
+                await self.ble_client.stop_notify(self.readables['Nordic UART TX'])
+                self.is_notifying = False
+            except Exception as e:
+                pass
+        self._cmdfiltered = False
+        if rtn_buff:
+            return self.raw_buff
+
+    async def as_wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
+                        long_string=False, follow=False, pipe=None, multiline=False,
+                        dlog=False, kb=False):
+        self.output = None
+        self.response = ''
+        self.raw_buff = b''
+        self.buff = b''
+        if cmd != self._reset:
+            self._cmdstr = cmd
+        self.cmd_finished = False
+        self.pipe = pipe
+        # self.flush()
+        data = self.fmt_data(cmd)  # make fmt_data
+        n_bytes = len(data)
+        self.bytes_sent = n_bytes
+        # time.sleep(0.1)
+        # self.buff = self.read_all()[self.bytes_sent:]
+        if follow:
+            self.buff = await self.as_write_read_follow(data, rtn_buff=True)
+        else:
+            self.buff = await self.as_write_read_waitp(data, rtn_buff=True)
+        if self.buff == b'':
+            # time.sleep(0.1)
+            self.buff = self.read_all()
+        # print(self.buff)
+        # filter command
+        if follow:
+            silent = True
+        cmd_filt = bytes(cmd + '\r\n', 'utf-8')
+        self.buff = self.buff.replace(cmd_filt, b'', 1)
+        if self._traceback in self.buff:
+            long_string = True
+        if long_string:
+            self.response = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+        else:
+            self.response = self.buff.replace(b'\r\n', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode('utf-8', 'ignore')
+        if not silent:
+            if self.response != '\n' and self.response != '':
+                print(self.response)
+            else:
+                self.response = ''
+        if rtn:
+            self.get_output()
+            if self.output == '\n' and self.output == '':
+                self.output = None
+            if self.output is None:
+                if self.response != '' and self.response != '\n':
+                    self.output = self.response
+        self.cmd_finished = True
+        if rtn_resp:
+            return self.output
+
+    # RSSI
+    @unsync
+    async def as_get_RSSI(self):
+        if hasattr(self.ble_client, 'get_rssi'):
+            self.rssi = await self.ble_client.get_rssi()
+        else:
+            self.rssi = 0
+        return self.rssi
+
+    def get_RSSI(self):
+        return self.as_get_RSSI().result()
