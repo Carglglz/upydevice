@@ -557,8 +557,9 @@ class BASE_BLE_DEVICE:
     def cmd(self, *args, **kargs):
         return self.wr_cmd(*args, **kargs)
 
-    def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
-               long_string=False, follow=False, kb=False):
+    def wr_cmd(self, cmd, silent=False, rtn=True, long_string=False,
+               rtn_resp=False, follow=False, pipe=None, multiline=False,
+               dlog=False, nb_queue=None, kb=False):
         self.output = None
         self.response = ''
         self.raw_buff = b''
@@ -606,6 +607,8 @@ class BASE_BLE_DEVICE:
             if self.output is None:
                 if self.response != '' and self.response != '\n':
                     self.output = self.response
+            if nb_queue is not None:
+                nb_queue.put((self.output), block=False)
         if rtn_resp:
             return self.output
 

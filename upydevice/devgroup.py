@@ -54,7 +54,7 @@ class DEVGROUP:
         if not id:
             self.dev_process_raw_dict = {dev: multiprocessing.Process(target=self.devs[dev].wr_cmd, args=(
                 command, dev_silent, rtn, long_string, rtn_resp, follow, pipe,
-                multiline, dlog, self.output_queue[dev])) for dev in self.devs.keys()}
+                multiline, dlog, self.output_queue[dev])) for dev in self.devs.keys() if self.devs[dev].dev_class != 'BleDevice'}
             if len(include) == 0:
                 include = [dev for dev in self.devs.keys()]
             for dev in ignore:
@@ -63,7 +63,8 @@ class DEVGROUP:
                 print('Sending command to: {}'.format(', '.join(include)))
             for dev in include:
                 # self.devs[dev].cmd(command, silent=dev_silent)
-                self.dev_process_raw_dict[dev].start()
+                if self.devs[dev].dev_class != 'BleDevice':
+                    self.dev_process_raw_dict[dev].start()
 
             while blocking:
                 dev_proc_state = [self.dev_process_raw_dict[dev].is_alive(
