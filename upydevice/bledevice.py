@@ -1148,6 +1148,13 @@ class AsyncBleDevice(BLE_DEVICE):
         await self.connect_client(n_tries=n_tries, debug=debug)
         if self.connected:
             self.get_services(log=True)
+            if hasattr(self.ble_client._peripheral, 'name'):
+                if callable(self.ble_client._peripheral.name):
+                    self.name = self.ble_client._peripheral.name()
+            else:
+                self.name = self.ble_client._device_info.get('Name')
+            if self.name in _WASPDEVS:
+                self.len_buffer = 20
         else:
             raise DeviceNotFound('BleDevice @ {} is not reachable'.format(self.UUID))
 
