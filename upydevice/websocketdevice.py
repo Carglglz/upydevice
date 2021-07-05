@@ -508,7 +508,11 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 if self.response != '' and self.response != '\n':
                     self.output = self.response
             if nb_queue is not None:
-                nb_queue.put((self.output), block=False)
+                if nb_queue.empty():
+                    nb_queue.put((self.output), block=False)
+                else:
+                    nb_queue.get_nowait()
+                    nb_queue.put((self.output), block=False)
         if rtn_resp:
             return self.output
 
@@ -674,7 +678,11 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if rtn_resp:
             return self.output
         if nb_queue is not None:
-            nb_queue.put((self.output), block=False)
+            if nb_queue.empty():
+                nb_queue.put((self.output), block=False)
+            else:
+                nb_queue.get_nowait()
+                nb_queue.put((self.output), block=False)
 
     def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
                rtn_resp=False, follow=False, pipe=None, multiline=False,

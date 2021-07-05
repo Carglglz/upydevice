@@ -363,7 +363,11 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                 if self.response != '' and self.response != '\n':
                     self.output = self.response
             if nb_queue is not None:
-                nb_queue.put((self.output), block=False)
+                if nb_queue.empty():
+                    nb_queue.put((self.output), block=False)
+                else:
+                    nb_queue.get_nowait()
+                    nb_queue.put((self.output), block=False)
         if rtn_resp:
             return self.output
 
