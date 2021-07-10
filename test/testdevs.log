@@ -1,6 +1,6 @@
 ============================= test session starts ==============================
 platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
-rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
 collected 11 items
 
 test_pyboard.py::test_devname PASSED
@@ -96,7 +96,7 @@ Test Result: PASSED
 ============================= 11 passed in 16.72s ==============================
 ============================= test session starts ==============================
 platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
-rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
 collected 11 items
 
 test_pyboard.py::test_devname PASSED
@@ -195,7 +195,7 @@ Running pytest with Device: pybV1.1
 Running pytest with Device: fanpy
 ============================= test session starts ==============================
 platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
-rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
 collected 8 items
 
 test_esp_ws.py::test_wss PASSED
@@ -260,7 +260,7 @@ Test Result: PASSED
 Running pytest with Device: esp_solar
 ============================= test session starts ==============================
 platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
-rootdir: /Users/carlosgilgonzalez/Desktop/IBM_PROJECTS/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
 collected 8 items
 
 test_esp_ws.py::test_wss PASSED

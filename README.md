@@ -2,18 +2,14 @@
 
 [![PyPI version](https://badge.fury.io/py/upydevice.svg)](https://badge.fury.io/py/upydevice)[![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
 
-Python library to interface with MicroPython devices through:
+Python library to interface with MicroPython devices through REPL:
 
--  Websockets (WebREPL protocol)
--  Bluetooth Low Energy (BleREPL protocol)
--  Serial connection (USB)
+-  Websockets/WebREPL (WiFi)
+-  BleREPL (Bluetooth Low Energy)
+-  Serial REPL (USB)
 
 ### Install
 `pip install upydevice`  or `pip install --upgrade upydevice`
-
-#### Documentation:
-
-See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md)
 
 #### Example usage:
 
@@ -66,7 +62,7 @@ This requires [WebREPL](http://docs.micropython.org/en/latest/esp8266/tutorial/r
 
 ### BLE DEVICE (BleREPL Protocol): `BleDevice`
 
-This requires [BleREPL](https://github.com/Carglglz/upyble#getting-started) to be enabled in the device. (This is experimental, only tested on MacOS)
+This requires [BleREPL](https://upydev.readthedocs.io/en/latest/gettingstarted.html) to be enabled in the device. (This is still experimental and performance may be platform and device dependent)
 
 ```
 >>> from upydevice import BleDevice
@@ -115,10 +111,10 @@ from upydevice import SerialDevice
 ```
 
 ### Testing devices with Pytest:
-Under `test` directory there are example tests to run with devices. This allows to test MicroPython code in devices interactively, e.g. button press, screen swipes, sensor calibration, servo/motors...
+Under `test` directory there are example tests to run with devices. This allows to test MicroPython code in devices interactively, e.g. button press, screen swipes, sensor calibration, actuators, servo/stepper/dc motors ...
 e.g.
 ```
-$ pytest test_esp_serial.py -s 
+$ pytest test_esp_serial.py -s
 ```
 
 ### Made with upydevice:
@@ -130,7 +126,7 @@ $ pytest test_esp_serial.py -s
 
 ### Phantom module
 
-This module has some python 'phantom' classes to make easier the interaction with the same classes in the upydevice. These classes are made using a series of decorators described in [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md#PARSER-AND-DECORATORS)
+This module has some python 'phantom' classes to make easier the interaction with the same classes in the upydevice.
 
 Available classes:
 

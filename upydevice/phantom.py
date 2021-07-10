@@ -204,7 +204,7 @@ class UOS:
     def remove(self, file):
         return self.dev_dict
 
-    @upy_cmd_c_raw_r()
+    @upy_cmd_c_r()
     def uname(self):
         return self.dev_dict
 

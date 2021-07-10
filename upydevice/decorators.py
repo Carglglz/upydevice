@@ -339,35 +339,6 @@ def upy_wrcmd_c_r(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
-# def upy_wrcmd_c_raw_r(out=False):
-#     def decorator_cmd_str(func):
-#         @functools.wraps(func)
-#         def wrapper_cmd(*args, **kwargs):
-#             flags = ['>', '<', 'object', 'at', '0x']
-#             args_repr = [repr(a) for a in args if any(
-#                 f not in repr(a) for f in flags)]
-#             kwargs_repr = [f"{k}={v!r}" if not callable(
-#                 v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
-#             signature = ", ".join(args_repr + kwargs_repr)
-#             cmd_ = f"{func.__name__}({signature})"
-#             dev_dict = func(*args, **kwargs)
-#             cmd = "{}.{}".format(dev_dict['name'], cmd_)
-#             dev_dict['dev'].output = None
-#             if out:
-#                 cmd = "{}".format(cmd_)
-#             else:
-#                 pass
-#             dev_dict['dev'].wr_cmd(cmd, capture_output=True)
-#             try:
-#                 dev_dict['dev'].output = dev_dict['dev'].long_output[0].strip()
-#             except Exception as e:
-#                 print(e)
-#                 pass
-#             return None
-#         return wrapper_cmd
-#     return decorator_cmd_str
-
-
 def upy_wrcmd_c_r_in_callback(debug=False, rtn=True, out=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
