@@ -197,7 +197,7 @@ imu_st = U_IMU_STREAMER(LSM9DS1, i2c)
 
 ```
 from upydevice import WebSocketDevice
-esp32 = W_UPYDEVICE('192.168.1.73', 'mypass')
+esp32 = WebSocketDevice('192.168.1.73', 'mypass')
 from upydevice.phantom import IMU_STREAMER
 imu_st = IMU_STREAMER(esp32, name='imu_st', init_soc=True)
 	192.168.1.43  # (This prints host ip)
