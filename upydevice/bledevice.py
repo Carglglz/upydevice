@@ -1364,6 +1364,19 @@ class AsyncBleDevice(BLE_DEVICE):
         if rtn_resp:
             return self.output
 
+    # KBI
+
+    def kbi(self, silent=True, pipe=None):
+        if pipe is not None:
+            self.wr_cmd(self._kbi, silent=silent, follow=True)
+            bf_output = self.response.split('Traceback')[0]
+            traceback = 'Traceback' + self.response.split('Traceback')[1]
+            if bf_output != '' and bf_output != '\n':
+                pipe(bf_output)
+            pipe(traceback, std='stderr')
+        else:
+            self.wr_cmd(self._kbi, silent=silent, follow=True)
+
     # RSSI
     @unsync
     async def as_get_RSSI(self):
