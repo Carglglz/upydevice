@@ -29,7 +29,7 @@ def main():
 
 
     widget.setGeometry(50,50,320,200)
-    widget.setWindowTitle("PyQt5-upydevice Button Led Toggle")
+    widget.setWindowTitle("Upydevice Button Led Toggle")
     widget.show()
     sys.exit(app.exec_())
 

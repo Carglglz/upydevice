@@ -1,4 +1,4 @@
-### PyQt5 - upydevice minimal GUI example
+### PyQt5 - upydevice minimal GUI examples
 
 To run:
 
