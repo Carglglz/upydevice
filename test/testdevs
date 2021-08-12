@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+
+import subprocess
+
+print("Testing devices..")
+print("Pyboard SerialDevice Test:")
+# subprocess.call("upydev pytest -gg -f test_pyboard.py -devs pybV1.1", shell=True)
+subprocess.call("upydev pytest -f test_pyboard.py -@ pybV1.1", shell=True)
+print("Esp32/8266 WebSocketDevice Test:")
+# subprocess.call("upydev pytest -@ esp_solar -f test_esp_ws.py",
+#                 shell=True)
+subprocess.call("upydev pytest -f test_esp_ws.py -@ esp_ecg",
+                shell=True)
+print("Esp32/Nrf52832 Bledevice Test:")
+subprocess.call("upydev pytest -@ bledev -f test_esp_ble.py",
+                shell=True)
+
+subprocess.call("upydev pytest -@ p8 -f test_nrf_ble.py",
+                shell=True)
+print("Esp32 SerialDevice Test:")
+subprocess.call("upydev pytest -@ sdev -f test_esp_serial.py",
+                shell=True)
+print("Done!")

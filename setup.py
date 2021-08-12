@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# @Author: carlosgilgonzalez
-# @Date:   2019-07-11T23:29:40+01:00
-# @Last modified by:   carlosgilgonzalez
-# @Last modified time: 2019-10-21T00:53:34+01:00
 
 from setuptools import setup
 
@@ -13,7 +9,7 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.2.4',
+      version='0.3.0',
       description='Python library to interface with wireless/serial MicroPython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -40,7 +36,7 @@ setup(name='upydevice',
       license='MIT',
       packages=['upydevice'],
       zip_safe=False,
+      scripts=[],
       include_package_data=True,
-      scripts=['upydevice_dir/bin/web_repl_conn'],
-      install_requires=['upydev>=0.3.2', 'pyserial', 'dill', 'pexpect',
-                        'bleak'])
+      install_requires=['pyserial', 'dill', 'unsync',
+                        'bleak>=0.11.0', 'bleak_sigspec>=0.0.4'])

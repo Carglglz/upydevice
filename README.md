@@ -2,28 +2,50 @@
 
 [![PyPI version](https://badge.fury.io/py/upydevice.svg)](https://badge.fury.io/py/upydevice)[![PyPI license](https://img.shields.io/pypi/l/ansicolortags.svg)](https://pypi.python.org/pypi/ansicolortags/)
 
-Python library to interface with MicroPython devices through:
+Python library to interface with MicroPython devices through REPL:
 
--  Websockets (WebREPL protocol) 
-- Bluetooth Low Energy (BleREPL protocol)
--  Serial connection (USB)
+-  Websockets/WebREPL (WiFi)
+-  BleREPL (Bluetooth Low Energy)
+-  Serial REPL (USB)
 
 ### Install
-`pip install upydevice`  or `pip install --upgrade upydevice` 
-
-#### Documentation:
-
-See [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md)
+`pip install upydevice`  or `pip install --upgrade upydevice`
 
 #### Example usage:
 
-### WIRELESS DEVICE (WebREPL Protocol): `WS_DEVICE`
+### ANY DEVICE: `Device`
+
+This will return a Device based on address (first argument) type.
+
+e.g.
+
+```
+>>> from upydevice import Device
+>>> esp32_ws = Device('192.168.1.56', 'mypass', init=True, autodetect=True)
+>>> esp32_ws
+WebSocketDevice @ ws://192.168.1.53:8266, Type: esp32, Class: WebSocketDevice
+Firmware: MicroPython v1.16 on 2021-06-19; ESP32 module with ESP32
+(MAC: 30:ae:a4:23:35:64, RSSI: -43 dBm)
+>>> esp32_sr = Device('/dev/tty.SLAB_USBtoUART', init=True)
+>>> esp32_sr
+SerialDevice @ /dev/tty.SLAB_USBtoUART, Type: esp32, Class: SerialDevice
+Firmware: MicroPython v1.16 on 2021-06-19; ESP32 module with ESP32
+CP2104 USB to UART Bridge Controller, Manufacturer: Silicon Labs
+(MAC: 30:ae:a4:23:35:64)
+>>> esp32_ble = Device('F53EDB2E-25A2-45A7-95A5-4D775DFE51D2', init=True)
+>>> esp32_ble
+BleDevice @ F53EDB2E-25A2-45A7-95A5-4D775DFE51D2, Type: esp32 , Class: BleDevice
+Firmware: MicroPython v1.16 on 2021-06-19; ESP32 module with ESP32
+(MAC: 30:ae:a4:23:35:64, Local Name: esp_ble, RSSI: -70 dBm)
+```
+
+### WIRELESS DEVICE (WebREPL Protocol): `WebSocketDevice`
 
 This requires [WebREPL](http://docs.micropython.org/en/latest/esp8266/tutorial/repl.html#webrepl-a-prompt-over-wifi)  to be enabled in the device.
 
 ```
->>> from upydevice import WS_DEVICE
->>> esp32 = WS_DEVICE('192.168.1.56', 'mypass', init=True, autodetect=True)
+>>> from upydevice import WebSocketDevice
+>>> esp32 = WebSocketDevice('192.168.1.56', 'mypass', init=True, autodetect=True)
 >>> esp32.wr_cmd('led.on()')
 >>> esp32.wr_cmd("uos.listdir()")
 ['boot.py', 'webrepl_cfg.py', 'main.py'] # this output is stored in [upydevice].output
@@ -38,13 +60,13 @@ This requires [WebREPL](http://docs.micropython.org/en/latest/esp8266/tutorial/r
     Done!
 ```
 
-### BLE DEVICE (BleREPL Protocol): `BLE_DEVICE`
+### BLE DEVICE (BleREPL Protocol): `BleDevice`
 
-This requires [BleREPL](https://github.com/Carglglz/upyble#getting-started) to be enabled in the device. (This is experimental, only tested on MacOS)
+This requires [BleREPL](https://upydev.readthedocs.io/en/latest/gettingstarted.html) to be enabled in the device. (This is still experimental and performance may be platform and device dependent)
 
 ```
->>> from upydevice import BLE_DEVICE
->>> esp32 = BLE_DEVICE("9998175F-9A91-4CA2-B5EA-482AFC3453B9", init=True)
+>>> from upydevice import BleDevice
+>>> esp32 = BleDevice("9998175F-9A91-4CA2-B5EA-482AFC3453B9", init=True)
 Device with address 9998175F-9A91-4CA2-B5EA-482AFC3453B9 was not found
 Trying again...
 Device with address 9998175F-9A91-4CA2-B5EA-482AFC3453B9 was not found
@@ -67,13 +89,13 @@ Connected to: 9998175F-9A91-4CA2-B5EA-482AFC3453B9
 
 
 
-### SERIAL DEVICE (USB) : `SERIAL_DEVICE`
+### SERIAL DEVICE (USB) : `SerialDevice`
 
 Works for any serial device (esp, pyboard, circuitplayground...)
 
 ```
-from upydevice import SERIAL_DEVICE
->>> esp32 = SERIAL_DEVICE('/dev/tty.SLAB_USBtoUART', autodetect=True) # baudrate default is 115200
+from upydevice import SerialDevice
+>>> esp32 = SerialDevice('/dev/tty.SLAB_USBtoUART', autodetect=True) # baudrate default is 115200
 >>> esp32.wr_cmd('led.on()')
 >>> esp32.wr_cmd("uos.listdir()")
 ['boot.py', 'webrepl_cfg.py', 'main.py'] # this output is stored in [upydevice].output
@@ -88,19 +110,23 @@ from upydevice import SERIAL_DEVICE
     Done!
 ```
 
-#### To see more info about dependencies, tested devices, etc see [ABOUT](https://github.com/Carglglz/upydevice/blob/master/DOCS/ABOUT.md) doc
+### Testing devices with Pytest:
+Under `test` directory there are example tests to run with devices. This allows to test MicroPython code in devices interactively, e.g. button press, screen swipes, sensor calibration, actuators, servo/stepper/dc motors ...
+e.g.
+```
+$ pytest test_esp_serial.py -s
+```
 
 ### Made with upydevice:
 
 - [upydev](https://github.com/Carglglz/upydev)
-- [upyble](https://github.com/Carglglz/upyble)
 - [Jupyter_upydevice_kernel](https://github.com/Carglglz/jupyter_upydevice_kernel)
 
 ## More advanced examples:
 
 ### Phantom module
 
-This module has some python 'phantom' classes to make easier the interaction with the same classes in the upydevice. These classes are made using a series of decorators described in [DOCS](https://github.com/Carglglz/upydevice/blob/master/DOCS/Documentation.md#PARSER-AND-DECORATORS) 
+This module has some python 'phantom' classes to make easier the interaction with the same classes in the upydevice.
 
 Available classes:
 
@@ -131,9 +157,9 @@ Examples:
 **UOS**
 
 ```
-from upydevice import W_UPYDEVICE
+from upydevice import WebSocketDevice
 from upydevice.phantom import UOS
-esp32 = W_UPYDEVICE('192.168.1.73', 'mypass')
+esp32 = WebSocketDevice('192.168.1.73', 'mypass')
 uos = UOS(esp32)
 uos.listdir('/')
  ['boot.py', 'webrepl_cfg.py', 'main.py']
@@ -170,8 +196,8 @@ imu_st = U_IMU_STREAMER(LSM9DS1, i2c)
 *In Python3*
 
 ```
-from upydevice import W_UPYDEVICE
-esp32 = W_UPYDEVICE('192.168.1.73', 'mypass')
+from upydevice import WebSocketDevice
+esp32 = WebSocketDevice('192.168.1.73', 'mypass')
 from upydevice.phantom import IMU_STREAMER
 imu_st = IMU_STREAMER(esp32, name='imu_st', init_soc=True)
 	192.168.1.43  # (This prints host ip)
@@ -222,3 +248,4 @@ imu_st.get_stream_test()
 imu_st.stop_server()
 ```
 
+## [Examples (scripts, GUI ...)](https://github.com/Carglglz/upydevice/tree/develop/examples)

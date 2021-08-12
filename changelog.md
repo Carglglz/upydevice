@@ -4,10 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
-## [0.2.4] Unreleased [Github repo]
+## [0.3.0] Unreleased [Github repo]
+#### Bump to version 0.3.0
+### Added
+- Tests with `pytest` tested with esp32 (websocket, serial, ble), esp8266(websocket, serial), pyboard (serial) and nrf52832 (colmi p8 with wasp-os) (ble)
+- `Device` function that returns Device class based on address type
+- Pytest with devices
+- `__repr__` that returns device info
+- Raise `DeviceException` on raised Exception in device
+- Raise `DeviceNotFound` after connection attempt fail or if device is not reachable.
+- `ble_scan`, `net_scan`, `serial_scan`, to scan for devices
+### Fix
+- Base code refactoring
+## [0.2.3] - 2020-05-25
 ### Added
 - `BLE_DEVICE` for bluetooth low energy devices
-## [0.2.3] - 2020-05-25
 ### Fix
 - Serial device `is_reachable` method fix
 ## [0.2.2] - 2020-02-24

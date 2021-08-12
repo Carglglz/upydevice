@@ -1,3 +1,26 @@
+#!/usr/bin/env python3
+# MIT License
+#
+# Copyright (c) 2020 Carlos Gil Gonzalez
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
 Websockets client for micropython
 
@@ -13,7 +36,8 @@ import ssl
 import os
 import io
 
-from upydevice.protocol import Websocket, urlparse
+from upydevice.wsprotocol import Websocket, urlparse
+from upydevice.exceptions import DeviceNotFound
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -47,6 +71,7 @@ def connect(uri, password, silent=True, auth=False, capath=None):
         LOGGER.debug("open connection %s:%s", uri.hostname, uri.port)
 
     sock = socket.socket()
+    sock.settimeout(10)
     addr = socket.getaddrinfo(uri.hostname, uri.port)
     if uri.protocol == 'wss':
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -64,9 +89,18 @@ def connect(uri, password, silent=True, auth=False, capath=None):
             context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
             # sock = context.wrap_socket(sock, server_hostname=hostname)
             sock = context.wrap_socket(sock)
-        sock.connect(addr[0][-1])
+        try:
+            sock.connect(addr[0][-1])
+        except socket.timeout as e:
+            print(e)
+            return
     else:
-        sock.connect(addr[0][4])
+        try:
+            sock.connect(addr[0][4])
+        except socket.timeout as e:
+            print(e)
+            return
+
 
     def send_header(header):
         # if __debug__: LOGGER.debug(str(header), *args)
@@ -88,21 +122,28 @@ def connect(uri, password, silent=True, auth=False, capath=None):
     )
     send_header('')
     # time.sleep(0.1)
-    header = sock.recv(2048)
-    assert header.startswith(b'HTTP/1.1 101 '), header
-    while b'Password: ' not in header:
+    try:
         header = sock.recv(2048)
 
-    ws = WebsocketClient(sock)
-    ws.send(password+'\r')
-    ws.send('\r')
-    fin, opcode, data = ws.read_frame()
-    if not silent:
-        print(data.replace(b'\r', b'').replace(b'>>> ', b'').decode())
-    ws.sock.settimeout(0.01)
-    while True:
-        try:
-            fin, opcode, data = ws.read_frame()
-        except socket.timeout as e:
-            break
-    return ws
+        assert header.startswith(b'HTTP/1.1 101 '), header
+
+        while b'Password: ' not in header:
+            header = sock.recv(2048)
+
+        ws = WebsocketClient(sock)
+        ws.send(password+'\r')
+        ws.send('\r')
+        fin, opcode, data = ws.read_frame()
+        if not silent:
+            print(data.replace(b'\r', b'').replace(b'>>> ', b'').decode())
+        ws.sock.settimeout(0.01)
+        while True:
+            try:
+                fin, opcode, data = ws.read_frame()
+            except socket.timeout as e:
+                break
+        return ws
+
+    except Exception as e:
+        print(e)
+        return

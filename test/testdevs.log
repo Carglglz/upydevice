@@ -1,0 +1,329 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+collected 11 items
+
+test_pyboard.py::test_devname PASSED
+test_pyboard.py::test_platform
+-------------------------------- live log call ---------------------------------
+19:35:59 [pytest] [PYBOARD] : Running SerialDevice test...
+19:35:59 [pytest] [PYBOARD] : DEV PLATFORM: pyboard
+SerialDevice @ /dev/tty.usbmodem3370377430372, Type: pyboard, Class: SERIAL
+Firmware: MicroPython v1.13-4-g3ff707927 on 2020-09-06; PYBv1.1 with STM32F405RG
+(Pyboard Virtual Comm Port in FS Mode, Manufacturer: MicroPython)
+Test Result: PASSED
+test_pyboard.py::test_blink_leds LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+
+-------------------------------- live log call ---------------------------------
+19:36:01 [pytest] [PYBOARD] : BLINK LEDS TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_user_sw
+-------------------------------- live log call ---------------------------------
+19:36:01 [pytest] [PYBOARD] : USER SWITCH TEST: please press and hold the switch now
+Time out in 9 sTime out in 8 s19:36:05 [pytest] [PYBOARD] : USER SWITCH TEST: [[92m✔[0m]
+19:36:05 [pytest] [PYBOARD] : USER SWITCH TEST: you can release the switch now.
+Test Result: PASSED
+test_pyboard.py::test_phantom_led
+-------------------------------- live log call ---------------------------------
+19:36:07 [pytest] [PYBOARD] : PHANTOM LED TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_phantom_timer
+-------------------------------- live log call ---------------------------------
+19:36:07 [pytest] [PYBOARD] : TIMER TEST at 2 Hz: LED CALLBACK:
+    @upy_code
+    def led_toggle(x):
+        for led in range(1, 5):
+            pyb.LED(led).toggle()
+            pyb.delay(50)
+
+19:36:11 [pytest] [PYBOARD] : TIMER TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_os_list_dir
+-------------------------------- live log call ---------------------------------
+19:36:11 [pytest] [PYBOARD] : OS LIST DIR TEST: import os;os.listdir()
+['main.py', 'pybcdc.inf', 'README.txt', 'boot.py', '.fseventsd', 'udummy.py', '.Trashes', 'servo_serial.py', '._servo_serial.py', 'lsm9ds1.py', 'mpy_test.py', 'DIR_TEST', 'README.md', 'lib', 'git_main.py', 'new_dir', 'test_file.txt', 'test_code.py', 'main_test.py', '.gitlog', '.githash', 'error.log']
+19:36:11 [pytest] [PYBOARD] : OS LIST DIR TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_run_script
+-------------------------------- live log call ---------------------------------
+19:36:11 [pytest] [PYBOARD] : RUN SCRIPT TEST: test_code.py
+2015-01-01 00:45:02 [log_test] [INFO] Test message2: 100(foobar)
+2015-01-01 00:45:02 [log_test] [WARN] Test message3: %d(%s)
+2015-01-01 00:45:02 [log_test] [ERROR] Test message4
+2015-01-01 00:45:02 [log_test] [CRIT] Test message5
+2015-01-01 00:45:02 [None] [INFO] Test message6
+2015-01-01 00:45:02 [log_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 14, in <module>
+ZeroDivisionError: divide by zero
+2015-01-01 00:45:02 [errorlog_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 20, in <module>
+ZeroDivisionError: divide by zero
+True
+19:36:14 [pytest] [PYBOARD] : RUN SCRIPT TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_raise_device_exception
+-------------------------------- live log call ---------------------------------
+19:36:14 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: b = 1/0
+[DeviceError]:
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ZeroDivisionError: divide by zero
+
+19:36:14 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_reset
+-------------------------------- live log call ---------------------------------
+19:36:14 [pytest] [PYBOARD] : DEVICE RESET TEST
+Rebooting device...
+Done!
+19:36:15 [pytest] [PYBOARD] : DEVICE RESET TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_disconnect
+-------------------------------- live log call ---------------------------------
+19:36:15 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST
+19:36:15 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST: [[92m✔[0m]
+Test Result: PASSED
+
+============================= 11 passed in 16.72s ==============================
+============================= test session starts ==============================
+platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+collected 11 items
+
+test_pyboard.py::test_devname PASSED
+test_pyboard.py::test_platform
+-------------------------------- live log call ---------------------------------
+19:36:16 [pytest] [PYBOARD] : Running SerialDevice test...
+19:36:16 [pytest] [PYBOARD] : DEV PLATFORM: pyboard
+SerialDevice @ /dev/tty.usbmodem387E386731342, Type: pyboard, Class: SERIAL
+Firmware: MicroPython v1.13-4-g3ff707927 on 2020-09-06; PYBLITEv1.0 with STM32F411RE
+(Pyboard Virtual Comm Port in FS Mode, Manufacturer: MicroPython)
+Test Result: PASSED
+test_pyboard.py::test_blink_leds LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+
+-------------------------------- live log call ---------------------------------
+19:36:18 [pytest] [PYBOARD] : BLINK LEDS TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_user_sw
+-------------------------------- live log call ---------------------------------
+19:36:18 [pytest] [PYBOARD] : USER SWITCH TEST: please press and hold the switch now
+Time out in 9 sTime out in 8 sTime out in 7 sTime out in 6 sTime out in 5 sTime out in 4 s19:36:28 [pytest] [PYBOARD] : USER SWITCH TEST: [[92m✔[0m]
+19:36:28 [pytest] [PYBOARD] : USER SWITCH TEST: you can release the switch now.
+Test Result: PASSED
+test_pyboard.py::test_phantom_led
+-------------------------------- live log call ---------------------------------
+19:36:29 [pytest] [PYBOARD] : PHANTOM LED TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_phantom_timer
+-------------------------------- live log call ---------------------------------
+19:36:29 [pytest] [PYBOARD] : TIMER TEST at 2 Hz: LED CALLBACK:
+    @upy_code
+    def led_toggle(x):
+        for led in range(1, 5):
+            pyb.LED(led).toggle()
+            pyb.delay(50)
+
+19:36:33 [pytest] [PYBOARD] : TIMER TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_os_list_dir
+-------------------------------- live log call ---------------------------------
+19:36:33 [pytest] [PYBOARD] : OS LIST DIR TEST: import os;os.listdir()
+['error.log', 'pybcdc.inf', 'README.txt', 'boot.py', 'lib', '._boot.py', 'main.py', 'main_old.py', '._main_old.py', 'dummy_time.py', 'test_code.py']
+19:36:33 [pytest] [PYBOARD] : OS LIST DIR TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_run_script
+-------------------------------- live log call ---------------------------------
+19:36:33 [pytest] [PYBOARD] : RUN SCRIPT TEST: test_code.py
+2015-01-01 02:58:59 [log_test] [INFO] Test message2: 100(foobar)
+2015-01-01 02:58:59 [log_test] [WARN] Test message3: %d(%s)
+2015-01-01 02:58:59 [log_test] [ERROR] Test message4
+2015-01-01 02:58:59 [log_test] [CRIT] Test message5
+2015-01-01 02:58:59 [None] [INFO] Test message6
+2015-01-01 02:58:59 [log_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 14, in <module>
+ZeroDivisionError: divide by zero
+2015-01-01 02:58:59 [errorlog_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 20, in <module>
+ZeroDivisionError: divide by zero
+True
+19:36:36 [pytest] [PYBOARD] : RUN SCRIPT TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_raise_device_exception
+-------------------------------- live log call ---------------------------------
+19:36:36 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: b = 1/0
+[DeviceError]:
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ZeroDivisionError: divide by zero
+
+19:36:36 [pytest] [PYBOARD] : DEVICE EXCEPTION TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_reset
+-------------------------------- live log call ---------------------------------
+19:36:36 [pytest] [PYBOARD] : DEVICE RESET TEST
+Rebooting device...
+Done!
+19:36:36 [pytest] [PYBOARD] : DEVICE RESET TEST: [[92m✔[0m]
+Test Result: PASSED
+test_pyboard.py::test_disconnect
+-------------------------------- live log call ---------------------------------
+19:36:36 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST
+19:36:36 [pytest] [PYBOARD] : DEVICE DISCONNECT TEST: [[92m✔[0m]
+Test Result: PASSED
+
+============================= 11 passed in 21.35s ==============================
+Running pytest in group: PYBS
+Running pytest with Device: pybV1.1
+Running pytest with Device: fanpy
+============================= test session starts ==============================
+platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+collected 8 items
+
+test_esp_ws.py::test_wss PASSED
+test_esp_ws.py::test_devname PASSED
+test_esp_ws.py::test_platform
+-------------------------------- live log call ---------------------------------
+19:36:39 [pytest] [ESP8266] : Running WebSocketDevice test...
+19:36:39 [pytest] [ESP8266] : DEV PLATFORM: esp8266
+WebSocketDevice @ ws://192.168.1.51:8266, Type: esp8266, Class: WIRELESS
+Firmware: MicroPython v1.13-4-g3ff707927 on 2020-09-04; ESP module with ESP8266
+Test Result: PASSED
+test_esp_ws.py::test_blink_led LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+
+-------------------------------- live log call ---------------------------------
+19:36:42 [pytest] [ESP8266] : BLINK LED TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_run_script
+-------------------------------- live log call ---------------------------------
+19:36:42 [pytest] [ESP8266] : RUN SCRIPT TEST: test_code.py
+2000-01-01 00:46:23 [log_test] [INFO] Test message2: 100(foobar)
+2000-01-01 00:46:23 [log_test] [WARN] Test message3: %d(%s)
+2000-01-01 00:46:23 [log_test] [ERROR] Test message4
+2000-01-01 00:46:23 [log_test] [CRIT] Test message5
+2000-01-01 00:46:23 [None] [INFO] Test message6
+2000-01-01 00:46:24 [log_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 14, in <module>
+ZeroDivisionError: divide by zero
+2000-01-01 00:424 [errorlog_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 20, in <module>
+ZeroDivisionError: divide by zero
+19:36:45 [pytest] [ESP8266] : RUN SCRIPT TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_raise_device_exception
+-------------------------------- live log call ---------------------------------
+19:36:45 [pytest] [ESP8266] : DEVICE EXCEPTION TEST: b = 1/0
+[DeviceError]:
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ZeroDivisionError: divide by zero
+
+19:36:45 [pytest] [ESP8266] : DEVICE EXCEPTION TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_reset
+-------------------------------- live log call ---------------------------------
+19:36:45 [pytest] [ESP8266] : DEVICE RESET TEST
+Rebooting device...
+Done!
+19:36:49 [pytest] [ESP8266] : DEVICE RESET TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_disconnect
+-------------------------------- live log call ---------------------------------
+19:36:49 [pytest] [ESP8266] : DEVICE DISCONNECT TEST
+19:36:49 [pytest] [ESP8266] : DEVICE DISCONNECT TEST: [[92m✔[0m]
+Test Result: PASSED
+
+============================== 8 passed in 11.30s ==============================
+Running pytest with Device: esp_solar
+============================= test session starts ==============================
+platform darwin -- Python 3.7.6, pytest-6.1.0, py-1.9.0, pluggy-0.13.1
+rootdir: /Users/carlosgilgonzalez/Desktop/MICROPYTHON/TOOLS/upydevice/test, configfile: pytest.ini
+collected 8 items
+
+test_esp_ws.py::test_wss PASSED
+test_esp_ws.py::test_devname PASSED
+test_esp_ws.py::test_platform
+-------------------------------- live log call ---------------------------------
+19:36:51 [pytest] [ESP32] : Running WebSocketDevice test...
+19:36:51 [pytest] [ESP32] : DEV PLATFORM: esp32
+WebSocketDevice @ ws://192.168.1.40:8266, Type: esp32, Class: WIRELESS
+Firmware: MicroPython v1.12-63-g1c849d63a on 2020-01-14; ESP32 module with ESP32
+Test Result: PASSED
+test_esp_ws.py::test_blink_led LED: ON
+LED: OFF
+LED: ON
+LED: OFF
+
+-------------------------------- live log call ---------------------------------
+19:36:55 [pytest] [ESP32] : BLINK LED TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_run_script
+-------------------------------- live log call ---------------------------------
+19:36:55 [pytest] [ESP32] : RUN SCRIPT TEST: test_code.py
+2000-01-01 02:30:47 [log_test] [INFO] Test message2: 100(foobar)
+2000-01-01 02:30:47 [log_test] [WARN] Test message3: %d(%s)
+2000-01-01 02:30:47 [log_test] [ERROR] Test message4
+2000-01-01 02:30:47 [log_test] [CRIT] Test message5
+2000-01-01 02:30:47 [None] [INFO] Test message6
+2000-01-01 02:30:47 [log_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 14, in <module>
+ZeroDivisionError: divide by zero
+2000-01-01 02:30:47 [errorlog_test] [ERROR] Exception Ocurred
+Traceback (most recent call last):
+  File "test_code.py", line 20, in <module>
+ZeroDivisionError: divide by zero
+19:36:57 [pytest] [ESP32] : RUN SCRIPT TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_raise_device_exception
+-------------------------------- live log call ---------------------------------
+19:36:57 [pytest] [ESP32] : DEVICE EXCEPTION TEST: b = 1/0
+[DeviceError]:
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ZeroDivisionError: divide by zero
+
+19:36:57 [pytest] [ESP32] : DEVICE EXCEPTION TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_reset
+-------------------------------- live log call ---------------------------------
+19:36:57 [pytest] [ESP32] : DEVICE RESET TEST
+Rebooting device...
+Done!
+19:37:00 [pytest] [ESP32] : DEVICE RESET TEST: [[92m✔[0m]
+Test Result: PASSED
+test_esp_ws.py::test_disconnect
+-------------------------------- live log call ---------------------------------
+19:37:00 [pytest] [ESP32] : DEVICE DISCONNECT TEST
+19:37:00 [pytest] [ESP32] : DEVICE DISCONNECT TEST: [[92m✔[0m]
+Test Result: PASSED
+
+============================== 8 passed in 10.32s ==============================
+Running pytest with Device: esp_ecg
+Testing devices..
+Pyboard SerialDevice Test:
+Esp32/8266 WebSocketDevice Test:
+Done!
