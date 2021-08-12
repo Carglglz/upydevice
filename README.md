@@ -247,3 +247,5 @@ imu_st.get_stream_test()
 
 imu_st.stop_server()
 ```
+
+## [Examples (scripts, GUI ...)](https://github.com/Carglglz/upydevice/tree/develop/examples)
