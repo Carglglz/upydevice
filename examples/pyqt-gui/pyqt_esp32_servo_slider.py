@@ -1,8 +1,10 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton
+from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QSlider, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from upydevice import Device
+
+_SERVO_PIN = 14
 
 
 class Slider(QWidget):
@@ -22,8 +24,8 @@ class Slider(QWidget):
         self.sl.setValue(10)
         self.sl.setTickPosition(QSlider.TicksBelow)
         self.sl.setTickInterval(10)
-        self.sl.valueChanged.connect(self.updateLabel)
-        self.sl.sliderReleased.connect(self.valuechange)
+        self.sl.valueChanged.connect(self.move_servo)
+        # self.sl.sliderReleased.connect(self.valuechange)
 
         layout.addWidget(self.sl)
         layout.addSpacing(15)
@@ -34,27 +36,25 @@ class Slider(QWidget):
 
         self.device = device
 
-    def valuechange(self):
-        angle = self.sl.value()
-        self.device.wr_cmd("s1.angle({}, 1000)".format(angle))
-        print(f"Setting angle to {angle}")
-
-    def updateLabel(self, value):
-
-        self.label.setText(str(value))
+    def move_servo(self, value):
+        # self.device.cmd_nb(f"s1.angle({value}, 1000)", block_dev=False)
+        self.device.cmd_nb(f"s1.write_angle({value})", block_dev=False)
+        print(f"Setting angle to {value}")
+        self.label.setText(f"{value}")
 
 
 def main():
 
     # SerialDevice
     print("Connecting to device...")
-    mydev = Device("/dev/tty.usbmodem3370377430372", init=True)
-    mydev.wr_cmd("from pyb import Servo;s1 = Servo(1)")
+    # mydev = Device("/dev/tty.usbmodem3370377430372", init=True)
     # # WebSocketDevice
     # mydev = Device('192.168.1.73', 'keyespw', init=True)
 
     # # BleDevice
-    # mydev = Device('9998175F-9A91-4CA2-B5EA-482AFC3453B9', init=True)
+
+    mydev = Device('9998175F-9A91-4CA2-B5EA-482AFC3453B9', init=True)
+    mydev.wr_cmd(f"from servo import Servo;s1 = Servo(Pin({_SERVO_PIN}))")
     print("Connected")
 
     app = QApplication(sys.argv)

@@ -1,22 +1,31 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget
-from PyQt5.QtWidgets import QHBoxLayout, QLabel
+from PyQt5.QtWidgets import QSlider, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from upydevice import Device
 
 
-class KeyController(QWidget):
+class Slider(QWidget):
     def __init__(self, parent=None, device=None):
-        super(KeyController, self).__init__(parent)
+        super(Slider, self).__init__(parent)
 
         layout = QHBoxLayout()
-        self.l1 = QLabel("Press UP,DOWN keys to move servo angle: ")
+        self.l1 = QLabel("Angle")
         self.l1.setAlignment(Qt.AlignCenter)
         self.label = QLabel("0", self)
         self.label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
         self.label.setMinimumWidth(80)
-        self.angle = 0
 
+        self.sl = QSlider(Qt.Horizontal, self)
+        self.sl.setRange(-30, 90)
+        self.sl.setPageStep(5)
+        self.sl.setValue(10)
+        self.sl.setTickPosition(QSlider.TicksBelow)
+        self.sl.setTickInterval(10)
+        self.sl.valueChanged.connect(self.move_servo)
+        # self.sl.sliderReleased.connect(self.valuechange)
+
+        layout.addWidget(self.sl)
         layout.addSpacing(15)
         layout.addWidget(self.l1)
         layout.addWidget(self.label)
@@ -25,21 +34,10 @@ class KeyController(QWidget):
 
         self.device = device
 
-    def move_servo(self):
-        self.device.cmd_nb(f"s1.angle({self.angle}, 100)", block_dev=False)
-        print(f"Setting angle to {self.angle}")
-        self.label.setText(f"{self.angle}")
-
-    def keyPressEvent(self, e):
-        if e.key() == Qt.Key_Up:
-            if self.angle < 90:
-                self.angle += 4
-                self.move_servo()
-
-        elif e.key() == Qt.Key_Down:
-            if self.angle > -90:
-                self.angle -= 4
-                self.move_servo()
+    def move_servo(self, value):
+        self.device.cmd_nb(f"s1.angle({value}, 1000)", block_dev=False)
+        print(f"Setting angle to {value}")
+        self.label.setText(f"{value}")
 
 
 def main():
@@ -56,11 +54,14 @@ def main():
     print("Connected")
 
     app = QApplication(sys.argv)
+    widget = QWidget()
 
-    Keycontroller = KeyController(device=mydev)
+    angle_slider = Slider(parent=widget, device=mydev)
+    # angle_slider.show()
 
-    Keycontroller.show()
-
+    # widget.setGeometry(300,300,350,250)
+    widget.setWindowTitle("Pyboard Servo slider")
+    widget.show()
     sys.exit(app.exec_())
 
 

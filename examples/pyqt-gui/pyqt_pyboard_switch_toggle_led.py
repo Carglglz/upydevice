@@ -5,7 +5,7 @@ import os
 from upydevice import Device
 import traceback
 from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, pyqtSignal,
-                          pyqtSlot, Qt, QUrl)
+                          pyqtSlot)
 import time
 
 ICON_RED_LED_OFF = os.path.join(os.getcwd(), "icons/xsled-red-off.png")
@@ -167,7 +167,7 @@ class LED_Widget(QWidget):
                 time.sleep(0.5)
                 print("shutdown...")
         except Exception as e:
-            pass
+            print(e)
         print("SHUTDOWN COMPLETE")
         sys.exit()
 
@@ -200,7 +200,7 @@ def toggle_led():
     led_widget.setWindowTitle("Upydevice Button Led Toggle")
     led_widget.show()
 
-    QApplication.instance().exec_()
+    app.exec_()
 
 
 if __name__ == "__main__":

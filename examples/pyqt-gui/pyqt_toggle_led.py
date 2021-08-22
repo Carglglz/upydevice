@@ -1,7 +1,6 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel
 from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
 import os
 from upydevice import Device
 
@@ -13,8 +12,8 @@ class LED_Label(QLabel):
     def __init__(self, parent=None):
         super(LED_Label, self).__init__(parent)
         self._value = 0
-        self.off = QPixmap(ICON_RED_LED_OFF)  #.scaled(64, 64, Qt.KeepAspectRatio)
-        self.on = QPixmap(ICON_RED_LED_ON)  #.scaled(64, 64, Qt.KeepAspectRatio)
+        self.off = QPixmap(ICON_RED_LED_OFF)  # .scaled(64, 64, Qt.KeepAspectRatio)
+        self.on = QPixmap(ICON_RED_LED_ON)  # .scaled(64, 64, Qt.KeepAspectRatio)
         self.setPixmap(self.off)
 
     @property
@@ -32,7 +31,6 @@ class LED_Label(QLabel):
             print('off')
         self.repaint()
 
-
     def toggle(self):
         self.value = not self._value
 
@@ -49,13 +47,9 @@ class LED_Widget(QWidget):
         self.led.move(140, 50)
         self.button.clicked.connect(self.toggle_led)
 
-
-
     def toggle_led(self):
         self.dev.wr_cmd("led.value(not led.value())")
         self.led.toggle()
-
-
 
 
 def main():
@@ -65,12 +59,11 @@ def main():
     mydev = Device("/dev/tty.SLAB_USBtoUART", init=True)
 
     # # WebSocketDevice
-    # mydev = Device('192.168.1.73', 'keyespw', init=True)
+    # mydev = Device('192.168.1.51', 'keyespw', init=True)
 
     # # BleDevice
     # mydev = Device('9998175F-9A91-4CA2-B5EA-482AFC3453B9', init=True)
     print("Connected")
-
 
     app = QApplication(sys.argv)
     led_widget = LED_Widget(dev=mydev)
@@ -78,7 +71,7 @@ def main():
     led_widget.setWindowTitle("Upydevice Button Led Toggle")
     led_widget.show()
 
-    QApplication.instance().exec_()
+    app.exec_()
 
 
 if __name__ == "__main__":
