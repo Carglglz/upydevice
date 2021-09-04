@@ -24,3 +24,4 @@ test_ref.py
 _DOCS/*
 _DOCS
 TODO.*
+.nosync
