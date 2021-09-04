@@ -1173,6 +1173,8 @@ class AsyncBleDevice(BLE_DEVICE):
         super().__init__(*args, **kargs)
         # self.loop = asyncio.new_event_loop()
         self.pipe = None
+        self.pipe_mode = "stdout"  # "stderr"
+        # std="stdout"
 
     @unsync
     async def as_connect(self, n_tries=5, show_servs=False, debug=False):
@@ -1285,14 +1287,14 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        self.pipe(data)
+                        self.pipe(data, std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    self.pipe(data)
+                    self.pipe(data, std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -1397,16 +1399,33 @@ class AsyncBleDevice(BLE_DEVICE):
 
     # KBI
 
-    def kbi(self, silent=True, pipe=None):
-        if pipe is not None:
-            self.wr_cmd(self._kbi, silent=silent, follow=True)
-            bf_output = self.response.split('Traceback')[0]
-            traceback = 'Traceback' + self.response.split('Traceback')[1]
-            if bf_output != '' and bf_output != '\n':
-                pipe(bf_output)
-            pipe(traceback, std='stderr')
-        else:
-            self.wr_cmd(self._kbi, silent=silent, follow=True)
+    async def as_kbi(self, silent=True, pipe=None):
+        data = bytes(self._kbi + '\r', 'utf-8')
+        self.pipe_mode = "stderr"
+        await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+        while not self.cmd_finished:
+            await asyncio.sleep(0)
+        self.pipe_mode = "stdout"
+
+    @unsync
+    async def un_kbi(self, **kargs):
+        await self.as_kbi(**kargs)
+
+    def kbi(self, **kargs):
+        return self.un_kbi(**kargs).result()
+
+    # async def as_kbi(self, silent=True, pipe=None):
+    #     data = bytes(self._kbi + '\r', 'utf-8')
+    #     await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+    #     # if pipe is not None:
+    #     #     self.wr_cmd(self._kbi, silent=silent, follow=True)
+    #     #     bf_output = self.response.split('Traceback')[0]
+    #     #     traceback = 'Traceback' + self.response.split('Traceback')[1]
+    #     #     if bf_output != '' and bf_output != '\n':
+    #     #         pipe(bf_output)
+    #     #     pipe(traceback, std='stderr')
+    #     # else:
+    #     #     self.wr_cmd(self._kbi, silent=silent, follow=True)
 
     # RSSI
     @unsync
