@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
-## [0.3.0] Unreleased [Github repo]
+## [0.3.0] - 2021-08-12
 #### Bump to version 0.3.0
 ### Added
 - Tests with `pytest` tested with esp32 (websocket, serial, ble), esp8266(websocket, serial), pyboard (serial) and nrf52832 (colmi p8 with wasp-os) (ble)
