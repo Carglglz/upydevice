@@ -40,6 +40,7 @@ import ast
 from array import array
 import sys
 import traceback
+import multiprocessing
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
 from unsync import unsync
@@ -358,7 +359,8 @@ class BASE_BLE_DEVICE:
     def read_char(self, key=None, uuid=None, data_fmt="<h", handle=None):
         try:
             if data_fmt == 'utf8':  # Here function that handles format and unpack properly
-                data = self.read_char_raw(key=key, uuid=uuid, handle=handle).decode('utf8')
+                data = self.read_char_raw(
+                    key=key, uuid=uuid, handle=handle).decode('utf8')
                 return data
             else:
                 if data_fmt == 'raw':
@@ -539,7 +541,7 @@ class BASE_BLE_DEVICE:
     def write(self, cmd):
         data = self.fmt_data(cmd, CR=False)  # make fmt_data
         n_bytes = len(data)
-        self.write_char_raw(key='Nordic UART RX', data=data)
+        self.write_char_raw(key='Nordic UART RX', data=cmd)
         return n_bytes
 
     def read_all(self):
@@ -714,6 +716,19 @@ class BASE_BLE_DEVICE:
             print('Done!')
         return None
 
+    def cmd_nb(self, command, silent=False, rtn=True, long_string=False,
+               rtn_resp=False, follow=False, pipe=None, multiline=False,
+               dlog=False, block_dev=True):
+        if block_dev:
+            pass  # Not possible in multiprocessing
+            # self.dev_process_raw = multiprocessing.Process(
+            #     target=self.wr_cmd, args=(command, silent, rtn, long_string, rtn_resp,
+            #                               follow, pipe, multiline, dlog,
+            #                               self.output_queue))
+            # self.dev_process_raw.start()
+        else:
+            self.bytes_sent = self.write(command+'\r')
+
     def get_output(self):
         try:
             self.output = ast.literal_eval(self.response)
@@ -776,30 +791,30 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
     def __repr__(self):
         if self.connected and 'Nordic UART RX' in self.writeables:
             repr_cmd = 'import sys;import os;from machine import unique_id;' +\
-            '[os.uname().sysname, os.uname().release, os.uname().version,' +\
-            'os.uname().machine, unique_id(), sys.implementation.name]'
+                '[os.uname().sysname, os.uname().release, os.uname().version,' +\
+                'os.uname().machine, unique_id(), sys.implementation.name]'
             (self.dev_platform, self._release,
              self._version, self._machine, muuid, imp) = self.cmd(repr_cmd,
-                                                      silent=True,
-                                                      rtn_resp=True)
+                                                                  silent=True,
+                                                                  rtn_resp=True)
             vals = hexlify(muuid).decode()
             imp = imp[0].upper() + imp[1:]
             imp = imp.replace('p', 'P')
             self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
             fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
             return 'BleDevice @ {}, Type: {} , Class: {}\nFirmware: {}\n(MAC: {}, Local Name: {}, RSSI: {} dBm)'.format(self.UUID,
-                                                         self.dev_platform,
-                                                         self.dev_class,
-                                                         fw_str,
-                                                         self._mac,
-                                                         self.name,
-                                                         self.get_RSSI())
+                                                                                                                        self.dev_platform,
+                                                                                                                        self.dev_class,
+                                                                                                                        fw_str,
+                                                                                                                        self._mac,
+                                                                                                                        self.name,
+                                                                                                                        self.get_RSSI())
         elif not self.connected:
             return 'BleDevice @ {}, (Disconnected)'.format(self.UUID)
         else:
             return 'BleDevice @ {}, Local Name: {}, RSSI: {} dBm'.format(self.UUID,
-                                                                     self.name,
-                                                                     self.get_RSSI())
+                                                                         self.name,
+                                                                         self.get_RSSI())
 
     def is_reachable(self):
         return self.is_connected()  # Fix if disconnected
@@ -825,7 +840,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 
         if not timestamp:
             try:
-                field_string_values = ["{} {}".format(field_data['Value'], field_data['Symbol'])]
+                field_string_values = ["{} {}".format(
+                    field_data['Value'], field_data['Symbol'])]
             except Exception as e:
                 if 'RR-Interval' in field_data:
                     field_interval_data = field_data['RR-Interval']
@@ -853,7 +869,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                     val = field_data[dt]['Value']
                 field_values.append(val)
             try:
-                date_string = datetime.strftime(datetime(*field_values), "%Y-%m-%d %H:%M:%S")
+                date_string = datetime.strftime(
+                    datetime(*field_values), "%Y-%m-%d %H:%M:%S")
                 if prnt:
                     print(date_string)
                 elif rtn:
@@ -872,22 +889,26 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                 if not only_val:
                     for key in data:
                         try:
-                            print('{}: {} {}'.format(key, data[key]['Value'], data[key]['Symbol']))
+                            print('{}: {} {}'.format(
+                                key, data[key]['Value'], data[key]['Symbol']))
                         except Exception as e:
                             print('{}: {} '.format(key, data[key]['Value']))
                 else:
                     for key in data:
                         try:
-                            print('{} {}'.format(data[key]['Value'], data[key]['Symbol']))
+                            print('{} {}'.format(
+                                data[key]['Value'], data[key]['Symbol']))
                         except Exception as e:
                             print('{}'.format(data[key]['Value']))
             else:
 
                 if not only_val:
                     try:
-                        char_string_values = ["{}: {} {}".format(key, data[key]['Value'], data[key]['Symbol']) for key in data]
+                        char_string_values = ["{}: {} {}".format(
+                            key, data[key]['Value'], data[key]['Symbol']) for key in data]
                     except Exception as e:
-                        char_string_values = ["{}: {}".format(key, data[key]['Value']) for key in data]
+                        char_string_values = ["{}: {}".format(
+                            key, data[key]['Value']) for key in data]
                     if char:
                         if prnt:
                             print('{}: {}'.format(char, sep.join(char_string_values)))
@@ -900,9 +921,11 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                             return sep.join(char_string_values)
                 else:
                     try:
-                        char_string_values = ["{} {}".format(data[key]['Value'], data[key]['Symbol']) for key in data]
+                        char_string_values = ["{} {}".format(
+                            data[key]['Value'], data[key]['Symbol']) for key in data]
                     except Exception as e:
-                        char_string_values = ["{}".format(data[key]['Value']) for key in data]
+                        char_string_values = ["{}".format(
+                            data[key]['Value']) for key in data]
                     if char:
                         if prnt:
                             print('{}: {}'.format(char, sep.join(char_string_values)))
@@ -917,7 +940,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
             if not symbols:
                 print(custom.format(*[data[k]['Value'] for k in data]))
             else:
-                print(custom.format(*['{} {}'.format(data[k]['Value'], data[k]['Symbol']) for k in data]))
+                print(custom.format(
+                    *['{} {}'.format(data[k]['Value'], data[k]['Symbol']) for k in data]))
 
     def map_char_value(self, data, keys=[], string_fmt=False, one_line=True, sep=', '):
         if keys:
@@ -926,25 +950,28 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
             else:
                 map_values = dict(zip(keys, data.values()))
                 if one_line:
-                    return sep.join([f"{k}: {v}" for k,v in map_values.items()])
+                    return sep.join([f"{k}: {v}" for k, v in map_values.items()])
                 else:
                     sep += '\n'
-                    return sep.join([f"{k}: {v}" for k,v in map_values.items()])
+                    return sep.join([f"{k}: {v}" for k, v in map_values.items()])
 
     def dict_char_value(self, data, raw=False):
         try:
             if raw:
-                values = {k: {'Value': data[k]['Value'], 'Symbol': data[k]['Symbol']} for k in data}
+                values = {k: {'Value': data[k]['Value'],
+                              'Symbol': data[k]['Symbol']} for k in data}
             else:
-                values = {k: '{} {}'.format(data[k]['Value'], data[k]['Symbol']) for k in data}
+                values = {k: '{} {}'.format(
+                    data[k]['Value'], data[k]['Symbol']) for k in data}
         except Exception as e:
             values = {}
             if raw:
                 for k in data:
                     if 'Symbol' in data[k]:
-                        values[k] = {'Value' :data[k]['Value'], 'Symbol': data[k]['Symbol']}
+                        values[k] = {'Value': data[k]['Value'],
+                                     'Symbol': data[k]['Symbol']}
                     else:
-                        values[k] = {'Value' :data[k]['Value']}
+                        values[k] = {'Value': data[k]['Value']}
             else:
                 for k in data:
                     if 'Symbol' in data[k]:
@@ -955,7 +982,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 
     def pformat_char_flags(self, data, sep='\n', prnt=False, rtn=True):
         try:
-            char_string_values = [["{}: {}".format(k, v) for k, v in data[key].items()] for key in data]
+            char_string_values = [
+                ["{}: {}".format(k, v) for k, v in data[key].items()] for key in data]
             all_values = []
             for values in char_string_values:
                 if prnt:
@@ -975,7 +1003,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
                 try:
                     appearance_info = self.get_char_value(APPR)
                     self.appearance = appearance_info['Category']['Value']
-                    self.appearance_tag = '_'.join([tag.upper().replace(':', '') for tag in self.appearance.split()])
+                    self.appearance_tag = '_'.join(
+                        [tag.upper().replace(':', '') for tag in self.appearance.split()])
                     self.device_info[APPR] = self.appearance
                 except Exception as e:
                     print(traceback.format_exc())
@@ -1080,7 +1109,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
             if SID in self.chars_xml.keys():
                 try:
                     sys_id = self.get_char_value(SID)
-                    self.device_info[SID] = '{}-{}'.format(*[val['Value'] for val in list(sys_id.values())])
+                    self.device_info[SID] = '{}-{}'.format(*[val['Value']
+                                                             for val in list(sys_id.values())])
                 except Exception as e:
                     print(e)
 
@@ -1108,7 +1138,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
         for k in field:
             if 'Value' in field[k]:
                 try:
-                    val += "{}: {} {} ; ".format(k, field[k]['Value'],  field[k]['Symbol'])
+                    val += "{}: {} {} ; ".format(k,
+                                                 field[k]['Value'],  field[k]['Symbol'])
                 except Exception as e:
                     val += "{}: {} ; ".format(k, field[k]['Value'])
             else:
@@ -1142,6 +1173,8 @@ class AsyncBleDevice(BLE_DEVICE):
         super().__init__(*args, **kargs)
         # self.loop = asyncio.new_event_loop()
         self.pipe = None
+        self.pipe_mode = "stdout"  # "stderr"
+        # std="stdout"
 
     @unsync
     async def as_connect(self, n_tries=5, show_servs=False, debug=False):
@@ -1254,14 +1287,14 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        self.pipe(data)
+                        self.pipe(data, std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    self.pipe(data)
+                    self.pipe(data, std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -1366,16 +1399,33 @@ class AsyncBleDevice(BLE_DEVICE):
 
     # KBI
 
-    def kbi(self, silent=True, pipe=None):
-        if pipe is not None:
-            self.wr_cmd(self._kbi, silent=silent, follow=True)
-            bf_output = self.response.split('Traceback')[0]
-            traceback = 'Traceback' + self.response.split('Traceback')[1]
-            if bf_output != '' and bf_output != '\n':
-                pipe(bf_output)
-            pipe(traceback, std='stderr')
-        else:
-            self.wr_cmd(self._kbi, silent=silent, follow=True)
+    async def as_kbi(self, silent=True, pipe=None):
+        data = bytes(self._kbi + '\r', 'utf-8')
+        self.pipe_mode = "stderr"
+        await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+        while not self.cmd_finished:
+            await asyncio.sleep(0)
+        self.pipe_mode = "stdout"
+
+    @unsync
+    async def un_kbi(self, **kargs):
+        await self.as_kbi(**kargs)
+
+    def kbi(self, **kargs):
+        return self.un_kbi(**kargs).result()
+
+    # async def as_kbi(self, silent=True, pipe=None):
+    #     data = bytes(self._kbi + '\r', 'utf-8')
+    #     await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+    #     # if pipe is not None:
+    #     #     self.wr_cmd(self._kbi, silent=silent, follow=True)
+    #     #     bf_output = self.response.split('Traceback')[0]
+    #     #     traceback = 'Traceback' + self.response.split('Traceback')[1]
+    #     #     if bf_output != '' and bf_output != '\n':
+    #     #         pipe(bf_output)
+    #     #     pipe(traceback, std='stderr')
+    #     # else:
+    #     #     self.wr_cmd(self._kbi, silent=silent, follow=True)
 
     # RSSI
     @unsync
