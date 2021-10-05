@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
+## [0.3.2] Unreleased Github Repo [develop]
+### Added
+- mDNS `.local`/`dhcp_hostname` compatibility, so device configuration works across networks
 ## [0.3.1] - 2021-09-09
 ### Fix
 - KeyboardInterrupt in AsyncBleDevice for jupyter_upydevice_kernel

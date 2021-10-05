@@ -22,7 +22,6 @@
 # SOFTWARE.
 
 
-
 from .serialdevice import *
 from .websocketdevice import *
 from .devgroup import *
@@ -30,6 +29,7 @@ from .decorators import *
 from .bledevice import *
 from .exceptions import *
 from ipaddress import ip_address
+import socket
 
 
 def check_device_type(dev_address):
@@ -41,11 +41,17 @@ def check_device_type(dev_address):
                 return 'WebSocketDevice'
             except Exception as e:
                 print(e)
+        elif dev_address.endswith('.local'):
+            try:
+                return check_device_type(socket.gethostbyname(dev_address))
+            except Exception as e:
+                print(e)
         elif 'COM' in dev_address or '/dev/' in dev_address:
             return 'SerialDevice'
         elif len(dev_address.split('-')) == 5:
             try:
-                assert [len(s) for s in dev_address.split('-')] == [8, 4, 4, 4, 12], dev_address
+                assert [len(s) for s in dev_address.split(
+                    '-')] == [8, 4, 4, 4, 12], dev_address
                 return 'BleDevice'
             except Exception as e:
                 print('uuid malformed')
@@ -69,6 +75,8 @@ def Device(dev_address, password=None, **kargs):
             baudrt = fkargs.pop('baudrate')
         return SerialDevice(dev_address, baudrate=baudrt, **fkargs)
     if dev_type == 'WebSocketDevice':
+        if dev_address.endswith('.local'):
+            dev_address = socket.gethostbyname(dev_address)
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
         pop_args = ['ssl', 'auth', 'capath']
