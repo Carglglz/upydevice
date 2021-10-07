@@ -32,7 +32,7 @@ from ipaddress import ip_address
 import socket
 
 
-def check_device_type(dev_address):
+def check_device_type(dev_address, resolve_name=False):
     if isinstance(dev_address, str):
         if '.' in dev_address and dev_address.count('.') == 3:
             # check IP
@@ -43,7 +43,10 @@ def check_device_type(dev_address):
                 print(e)
         elif dev_address.endswith('.local'):
             try:
-                return check_device_type(socket.gethostbyname(dev_address))
+                if resolve_name:
+                    return check_device_type(socket.gethostbyname(dev_address))
+                else:
+                    return 'WebSocketDevice'
             except Exception as e:
                 print(e)
         elif 'COM' in dev_address or '/dev/' in dev_address:
