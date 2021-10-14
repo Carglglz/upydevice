@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.2] Unreleased Github Repo [develop]
 ### Added
 - mDNS `.local`/`dhcp_hostname` compatibility, so device configuration works across networks
+### Fix
+- `check -i`, `info` commands in `-apmd`, if connected to AP of the device.
 ## [0.3.1] - 2021-09-09
 ### Fix
 - KeyboardInterrupt in AsyncBleDevice for jupyter_upydevice_kernel
