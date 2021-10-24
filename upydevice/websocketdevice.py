@@ -139,7 +139,8 @@ class BASE_WS_DEVICE:
                 self.connected = True
                 self.repl_CONN = self.connected
             else:
-                raise DeviceNotFound("WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+                raise DeviceNotFound(
+                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
 
     def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
         try:
@@ -157,7 +158,8 @@ class BASE_WS_DEVICE:
                 self.connected = True
                 self.repl_CONN = self.connected
             else:
-                raise DeviceNotFound("WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+                raise DeviceNotFound(
+                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
         except Exception as e:
             print(e)
 
@@ -382,11 +384,19 @@ class WS_DEVICE(BASE_WS_DEVICE):
             self.connect()
         repr_cmd = "import sys;import os;from machine import unique_id; import network; \
         [os.uname().sysname, os.uname().release, os.uname().version, \
-        os.uname().machine, unique_id(), sys.implementation.name, network.WLAN(network.STA_IF).status('rssi')]"
-        (self.dev_platform, self._release,
-         self._version, self._machine, uuid, imp, rssi) = self.wr_cmd(repr_cmd,
-                                                                 silent=True,
-                                                                 rtn_resp=True)
+        os.uname().machine, unique_id(), sys.implementation.name, {}]"
+        if self.ip == '192.168.4.1':
+            rssi = 0
+            (self.dev_platform, self._release,
+             self._version, self._machine, uuid, imp, _) = self.wr_cmd(repr_cmd,
+                                                                       silent=True,
+                                                                       rtn_resp=True)
+        else:
+            repr_cmd = repr_cmd.format("network.WLAN(network.STA_IF).status('rssi')")
+            (self.dev_platform, self._release,
+             self._version, self._machine, uuid, imp, rssi) = self.wr_cmd(repr_cmd,
+                                                                          silent=True,
+                                                                          rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
