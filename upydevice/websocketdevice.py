@@ -418,9 +418,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
         fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
         if self.hostname:
-            dev_str = '(MAC: {}, Hostname: {}, RSSI: {} dBm)'.format(self._mac,
-                                                                     self.hostname,
-                                                                     rssi)
+            dev_str = '(MAC: {}, Host Name: {}, RSSI: {} dBm)'.format(self._mac,
+                                                                      self.hostname,
+                                                                      rssi)
         else:
             dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
         if disconnect_on_end:

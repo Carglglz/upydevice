@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.3] Unreleased Github Repo [develop]
 ### Added
-- `Hostname` in repr cmd device info
+- `Host Name` in repr command device info
 ## [0.3.2] 2021-10-24
 ### Added
 - mDNS `.local`/`dhcp_hostname` compatibility, so device configuration works across networks
