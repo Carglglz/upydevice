@@ -35,7 +35,8 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] [%(threadName)s] [%(levelname)s] %(message)s",
     # format="%(asctime)s [%(name)s] [%(process)d] [%(threadName)s] [%(levelname)s]  %(message)s",
     handlers=[handler])
-formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] : %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
@@ -67,7 +68,7 @@ def test_devname(devname):
     else:
         dev = Device(dev_port, baudrate=dev_baud, autodetect=True)
 
-    extra = {'dev': dev.dev_platform.upper()}
+    extra = {'dev': devname, 'devp': dev.dev_platform.upper()}
     log = logging.LoggerAdapter(log, extra)
 
 
@@ -192,7 +193,7 @@ def test_phantom_timer():
     pbt.deinit()
     for led in range(1, 5):
         led_value = dev.cmd('pyb.LED({}).off(); False'.format(led),
-                                silent=True, rtn_resp=True)
+                            silent=True, rtn_resp=True)
     try:
         assert not led_value
         do_pass(TEST_NAME)
@@ -213,7 +214,8 @@ def test_servo():
     time.sleep(3.5)
     s2_att = dev.cmd("dir(s2)", silent=True, rtn_resp=True)
     try:
-        assert isinstance(s2_att, list), 'Expected a list, receviced : {}'.format(type(s2_att))
+        assert isinstance(
+            s2_att, list), 'Expected a list, receviced : {}'.format(type(s2_att))
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -244,7 +246,8 @@ def test_run_script():
     log.info('{} TEST: test_code.py'.format(TEST_NAME))
     dev.wr_cmd('import test_code', follow=True)
     try:
-        assert dev.cmd('test_code.RESULT', silent=False, rtn_resp=True) is True, 'Script did NOT RUN'
+        assert dev.cmd('test_code.RESULT', silent=False,
+                       rtn_resp=True) is True, 'Script did NOT RUN'
         dev.cmd("import sys,gc;del(sys.modules['test_code']);gc.collect()")
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
@@ -258,7 +261,8 @@ def test_raise_device_exception():
     TEST_NAME = 'DEVICE EXCEPTION'
     log.info('{} TEST: b = 1/0'.format(TEST_NAME))
     try:
-        assert not dev.cmd('b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
+        assert not dev.cmd(
+            'b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -296,4 +300,10 @@ def test_disconnect():
 
 
 if __name__ == '__main__':
+    unittest.main()
+
+if __name__ == '__main__':
+    unittest.main()
+if __name__ == '__main__':
+    unittest.main()
     unittest.main()

@@ -22,7 +22,8 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] [%(threadName)s] [%(levelname)s] %(message)s",
     # format="%(asctime)s [%(name)s] [%(process)d] [%(threadName)s] [%(levelname)s]  %(message)s",
     handlers=[handler])
-formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] : %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
@@ -50,7 +51,7 @@ def test_devname(devname):
     else:
         dev = Device(dev_port, baudrate=dev_baud, init=True, autodetect=True)
 
-    extra = {'dev': dev.dev_platform.upper()}
+    extra = {'dev': devname, 'devp': dev.dev_platform.upper()}
     log = logging.LoggerAdapter(log, extra)
 
 
@@ -97,7 +98,8 @@ def test_blink_led():
         dev.cmd('led.off();print("LED: OFF")')
         time.sleep(0.2)
     try:
-        assert dev.cmd('not led.value()', silent=True, rtn_resp=True), 'LED is on, should be off'
+        assert dev.cmd('not led.value()', silent=True,
+                       rtn_resp=True), 'LED is on, should be off'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -111,7 +113,8 @@ def test_run_script():
     log.info('{} TEST: test_code.py'.format(TEST_NAME))
     dev.wr_cmd('import test_code', follow=True)
     try:
-        assert dev.cmd('test_code.RESULT', silent=True, rtn_resp=True) is True, 'Script did NOT RUN'
+        assert dev.cmd('test_code.RESULT', silent=True,
+                       rtn_resp=True) is True, 'Script did NOT RUN'
         dev.cmd("import sys,gc;del(sys.modules['test_code']);gc.collect()")
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
@@ -125,7 +128,8 @@ def test_raise_device_exception():
     TEST_NAME = 'DEVICE EXCEPTION'
     log.info('{} TEST: b = 1/0'.format(TEST_NAME))
     try:
-        assert not dev.cmd('b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
+        assert not dev.cmd(
+            'b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -157,6 +161,9 @@ def test_disconnect():
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
+        do_fail(TEST_NAME)
+        print('Test Result: ', end='')
+        raise e
         do_fail(TEST_NAME)
         print('Test Result: ', end='')
         raise e

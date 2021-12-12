@@ -24,7 +24,7 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] [%(threadName)s] [%(levelname)s] %(message)s",
     # format="%(asctime)s [%(name)s] [%(process)d] [%(threadName)s] [%(levelname)s]  %(message)s",
     handlers=[handler])
-formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] : %(message)s')
+formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
@@ -71,7 +71,7 @@ def test_devname(devname):
         dev = Device(dev_ip, dev_pass, init=True, ssl=_SSL,
                      autodetect=True)
 
-    extra = {'dev': dev.dev_platform.upper()}
+    extra = {'dev': devname, 'devp': dev.dev_platform.upper()}
     log = logging.LoggerAdapter(log, extra)
 
 
