@@ -39,6 +39,19 @@ except Exception as e:
     pass
 from .exceptions import DeviceException, DeviceNotFound
 
+_REPR_CMDS_LIST = ["os.uname().sysname",
+                   "os.uname().release",
+                   "os.uname().version",
+                   "os.uname().machine",
+                   "machine.unique_id()",
+                   "sys.implementation.name"]
+_REPR_IMPORTS = ["import sys", "import os",
+                 "import machine", "import network",
+                 "nic=network.WLAN(network.STA_IF)"]
+
+REPR_IMPORTS_CMD = ';'.join(_REPR_IMPORTS)
+REPR_CMDS = f'[{",".join(_REPR_CMDS_LIST)}' + ",{}]"
+
 
 def get_ssid():
     if sys.platform == "linux" or sys.platform == "linux2":
@@ -354,6 +367,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.dev_class = 'WebSocketDevice'
         self.dev_platform = dev_platf
         self.name = name
+        self.hostname = None
         self.raw_buff = b''
         self.message = b''
         self.output_queue = multiprocessing.Queue(maxsize=1)
@@ -382,9 +396,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if not self.connected:
             disconnect_on_end = True
             self.connect()
-        repr_cmd = "import sys;import os;from machine import unique_id; import network; \
-        [os.uname().sysname, os.uname().release, os.uname().version, \
-        os.uname().machine, unique_id(), sys.implementation.name, {}]"
+        repr_cmd = ';'.join([REPR_IMPORTS_CMD, REPR_CMDS])
         if self.ip == '192.168.4.1':
             rssi = 0
             (self.dev_platform, self._release,
@@ -392,11 +404,12 @@ class WS_DEVICE(BASE_WS_DEVICE):
                                                                        silent=True,
                                                                        rtn_resp=True)
         else:
-            repr_cmd = repr_cmd.format("network.WLAN(network.STA_IF).status('rssi')")
+            repr_cmd = repr_cmd.format(
+                "nic.status('rssi'), nic.config('dhcp_hostname')")
             (self.dev_platform, self._release,
-             self._version, self._machine, uuid, imp, rssi) = self.wr_cmd(repr_cmd,
-                                                                          silent=True,
-                                                                          rtn_resp=True)
+             self._version, self._machine, uuid, imp, rssi, self.hostname) = self.wr_cmd(repr_cmd,
+                                                                                         silent=True,
+                                                                                         rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
@@ -404,7 +417,12 @@ class WS_DEVICE(BASE_WS_DEVICE):
         imp = imp.replace('p', 'P')
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
         fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
-        dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
+        if self.hostname:
+            dev_str = '(MAC: {}, Host Name: {}, RSSI: {} dBm)'.format(self._mac,
+                                                                      self.hostname,
+                                                                      rssi)
+        else:
+            dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
         if disconnect_on_end:
             self.disconnect()
         if self._ssl:
@@ -733,4 +751,5 @@ class WS_DEVICE(BASE_WS_DEVICE):
 
 class WebSocketDevice(WS_DEVICE):
     def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
         super().__init__(*args, **kargs)

@@ -26,7 +26,8 @@ logging.basicConfig(
     format="%(asctime)s [%(name)s] [%(threadName)s] [%(levelname)s] %(message)s",
     # format="%(asctime)s [%(name)s] [%(process)d] [%(threadName)s] [%(levelname)s]  %(message)s",
     handlers=[handler])
-formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] : %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
@@ -66,7 +67,7 @@ def test_devname(devname):
 
         dev = Device(dev_uuid, init=True, autodetect=True, lenbuff=20)
 
-    extra = {'dev': dev.dev_platform.upper()}
+    extra = {'dev': devname, 'devp': dev.dev_platform.upper()}
     log = logging.LoggerAdapter(log, extra)
 
 
@@ -99,7 +100,8 @@ def test_button_press():
     time.sleep(0.2)
     print('Press side button now!')
     try:
-        assert dev.cmd('button_press()', silent=True, rtn_resp=True), 'Button press failed'
+        assert dev.cmd('button_press()', silent=True,
+                       rtn_resp=True), 'Button press failed'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -113,7 +115,8 @@ def test_battery_charging():
     log.info('{} TEST: Place the watch in the charging platform and connect it to power'.format(TEST_NAME))
     print('Waiting for charging state...')
     try:
-        assert dev.cmd('battery_char()', silent=True, rtn_resp=True), 'Battery not charging'
+        assert dev.cmd('battery_char()', silent=True,
+                       rtn_resp=True), 'Battery not charging'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -170,7 +173,8 @@ def test_display_rgb_logo():
     dev.cmd("display('black')", silent=True)
     time.sleep(0.2)
     try:
-        assert dev.cmd("display('logo')", silent=True, rtn_resp=True), 'Display logo failed'
+        assert dev.cmd("display('logo')", silent=True,
+                       rtn_resp=True), 'Display logo failed'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
@@ -183,7 +187,8 @@ def test_raise_device_exception():
     TEST_NAME = 'DEVICE EXCEPTION'
     log.info('{} TEST: b = 1/0'.format(TEST_NAME))
     try:
-        assert not dev.cmd('b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
+        assert not dev.cmd(
+            'b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
