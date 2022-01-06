@@ -56,7 +56,7 @@ def main():
 
     # SerialDevice
     print("Connecting to device...")
-    mydev = Device("/dev/tty.SLAB_USBtoUART", init=True)
+    mydev = Device("/dev/cu.usbserial-016418E3", init=True)
 
     # # WebSocketDevice
     # mydev = Device('192.168.1.51', 'keyespw', init=True)
@@ -71,7 +71,7 @@ def main():
     led_widget.setWindowTitle("Upydevice Button Led Toggle")
     led_widget.show()
 
-    app.exec_()
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

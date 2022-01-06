@@ -7,7 +7,7 @@ import traceback
 from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, pyqtSignal,
                           pyqtSlot)
 import time
-
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
 ICON_RED_LED_OFF = os.path.join(os.getcwd(), "icons/xsled-red-off.png")
 ICON_RED_LED_ON = os.path.join(os.getcwd(), "icons/xsled-red-on.png")
 
@@ -200,7 +200,7 @@ def toggle_led():
     led_widget.setWindowTitle("Upydevice Button Led Toggle")
     led_widget.show()
 
-    app.exec_()
+    sys.exit(app.exec_())
 
 
 if __name__ == "__main__":

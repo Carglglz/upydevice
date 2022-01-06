@@ -3,6 +3,9 @@ from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtWidgets import QSlider, QHBoxLayout, QLabel
 from PyQt5.QtCore import Qt
 from upydevice import Device
+import os
+
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
 _SERVO_PIN = 14
 

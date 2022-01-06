@@ -203,7 +203,7 @@ class BASE_BLE_DEVICE:
         return self.rssi
     # SERVICES
 
-    def get_services(self, log=True):
+    def get_services(self, log=True, read_descriptors=False):
         for service in self.ble_client.services:
             if service.description == 'Nordic UART Service':
                 is_NUS = True
@@ -280,13 +280,25 @@ class BASE_BLE_DEVICE:
 
                 if log:
                     for descriptor in char.descriptors:
-                        print(
-                            "\t\t[Descriptor] [{0}]: {1} (Handle: {2}) ".format(
-                                descriptor.uuid,
-                                descriptor.description,
-                                descriptor.handle
+                        if not read_descriptors:
+                            print(
+                                "\t\t[Descriptor] [{0}]: {1} (Handle: {2}) ".format(
+                                    descriptor.uuid,
+                                    descriptor.description,
+                                    descriptor.handle
+                                )
                             )
-                        )
+                        else:
+                            _description = self.read_descriptor_raw(
+                                handle=descriptor.handle)
+                            print(
+                                "\t\t[Descriptor] [{0}]: {1} (Handle: {2}): {3} ".format(
+                                    descriptor.uuid,
+                                    descriptor.description,
+                                    descriptor.handle,
+                                    _description
+                                )
+                            )
         self.services_rsum = {key: [list(list(val['CHARS'].values())[i].keys())[0] for i in range(
             len(list(val['CHARS'].values())))] for key, val in self.services.items()}
     # WRITE/READ SERVICES
@@ -306,7 +318,7 @@ class BASE_BLE_DEVICE:
     async def as_read_descriptor(self, handle):
         return bytes(await self.ble_client.read_gatt_descriptor(handle))
 
-    def read_descriptor_raw(self, key=None, char=None):
+    def read_descriptor_raw(self, key=None, char=None, handle=None):
         if key is not None:
             # print(self.chars_desc_rsum[char])
             if key in list(self.chars_desc_rsum[char]):
@@ -315,14 +327,21 @@ class BASE_BLE_DEVICE:
                 return data
             else:
                 print('Descriptor not available for this characteristic')
+        else:
+            data = self.loop.run_until_complete(
+                self.as_read_descriptor(handle))
+            return data
 
-    def read_descriptor(self, key=None, char=None, data_fmt="utf8"):
+    def read_descriptor(self, key=None, char=None, data_fmt="utf8", handle=None):
         try:
             if data_fmt == 'utf8':
-                data = self.read_descriptor_raw(key=key, char=char).decode('utf8')
+                data = self.read_descriptor_raw(key=key, char=char,
+                                                handle=handle).decode('utf8')
                 return data
             else:
-                data, = struct.unpack(data_fmt, self.read_char_raw(key=key, char=char))
+                data, = struct.unpack(data_fmt, self.read_descriptor_raw(key=key,
+                                                                         char=char,
+                                                                         handle=handle))
                 return data
         except Exception as e:
             print(e)
