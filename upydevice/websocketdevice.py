@@ -752,4 +752,3 @@ class WS_DEVICE(BASE_WS_DEVICE):
 class WebSocketDevice(WS_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
-        super().__init__(*args, **kargs)
