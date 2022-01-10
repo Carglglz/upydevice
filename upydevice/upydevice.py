@@ -36,11 +36,14 @@ def check_device_type(dev_address, resolve_name=False):
     if isinstance(dev_address, str):
         if '.' in dev_address and dev_address.count('.') == 3:
             # check IP
-            try:
-                ip_address(dev_address)
-                return 'WebSocketDevice'
-            except Exception as e:
-                print(e)
+            if ':' not in dev_address:
+                try:
+                    ip_address(dev_address)
+                    return 'WebSocketDevice'
+                except Exception as e:
+                    print(e)
+            else:
+                return check_device_type(dev_address.split(':')[0], resolve_name)
         elif dev_address.endswith('.local'):
             try:
                 if resolve_name:
@@ -49,6 +52,8 @@ def check_device_type(dev_address, resolve_name=False):
                     return 'WebSocketDevice'
             except Exception as e:
                 print(e)
+        elif '.local' in dev_address and ':' in dev_address:
+            return check_device_type(dev_address.split(':')[0], resolve_name)
         elif 'COM' in dev_address or '/dev/' in dev_address:
             return 'SerialDevice'
         elif len(dev_address.split('-')) == 5:
@@ -80,6 +85,9 @@ def Device(dev_address, password=None, **kargs):
     if dev_type == 'WebSocketDevice':
         if dev_address.endswith('.local'):
             dev_address = socket.gethostbyname(dev_address)
+        elif '.local' in dev_address and ':' in dev_address:
+            hostname, port = dev_address.split(':')
+            dev_address = f"{socket.gethostbyname(hostname)}:{port}"
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
         pop_args = ['ssl', 'auth', 'capath']

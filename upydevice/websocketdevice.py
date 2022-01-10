@@ -120,7 +120,11 @@ class BASE_WS_DEVICE:
         self.ws = None
         self.ip = target
         self.pswd = password
-        self.port = 8266
+        if ':' in target:
+            self.ip, self.port = target.split(':')
+            self.port = int(self.port)
+        else:
+            self.port = 8266
         self.bytes_sent = 0
         self.buff = b''
         self.raw_buff = b''
@@ -143,7 +147,8 @@ class BASE_WS_DEVICE:
                 self.ws = wsclient.connect(
                     'ws://{}:{}'.format(self.ip, self.port), self.pswd)
             else:
-                self.port = 8833
+                if self.port == 8266:
+                    self.port = 8833
                 self._uriprotocol = 'wss'
                 self.ws = wsclient.connect(
                     'wss://{}:{}'.format(self.ip, self.port), self.pswd,
@@ -163,7 +168,8 @@ class BASE_WS_DEVICE:
                     'ws://{}:{}'.format(self.ip, self.port), self.pswd)
             else:
                 self._uriprotocol = 'wss'
-                self.port = 8833
+                if self.port == 8266:
+                    self.port = 8833
                 self.ws = wsclient.connect(
                     'wss://{}:{}'.format(self.ip, self.port),
                     self.pswd, auth=auth, capath=capath)
