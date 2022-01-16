@@ -148,4 +148,4 @@ To see more info read the DOCS at the github repo.
 
 from .upydevice import *
 name = 'upydevice'
-__version__ = '0.3.3'
+__version__ = '0.3.4'
