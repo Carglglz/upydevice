@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.4] Unreleased Github Repo [develop]
 ### Fix
 - `WebSocketDevice` double unwanted `super().__init__` bug.
+- Load time in MacOS caused by bleak/corebluetooth, only if BleDevice
 ### Added
 - Indicate websocket port in ip address as `ip:port` format
 ## [0.3.3] 2021-12-16

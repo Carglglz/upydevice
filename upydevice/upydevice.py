@@ -26,7 +26,7 @@ from .serialdevice import *
 from .websocketdevice import *
 from .devgroup import *
 from .decorators import *
-from .bledevice import *
+# from .bledevice import *
 from .exceptions import *
 from ipaddress import ip_address
 import socket
@@ -90,6 +90,7 @@ def Device(dev_address, password=None, **kargs):
             dev_address = f"{socket.gethostbyname(hostname)}:{port}"
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
+        from .bledevice import BleDevice
         pop_args = ['ssl', 'auth', 'capath']
         fkargs = {k: v for k, v in kargs.items() if k not in pop_args}
         return BleDevice(dev_address, **fkargs)
