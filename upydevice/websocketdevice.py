@@ -33,11 +33,12 @@ import nmap
 import sys
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
-try:
-    from upydev import __path__ as CA_PATH
-except Exception as e:
-    pass
 from .exceptions import DeviceException, DeviceNotFound
+try:
+    from upydev import __path__ as ca_PATH
+    CA_PATH = ca_PATH[0]
+except Exception:
+    CA_PATH = None
 
 _REPR_CMDS_LIST = ["os.uname().sysname",
                    "os.uname().release",
@@ -116,7 +117,7 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
 
 class BASE_WS_DEVICE:
     def __init__(self, target, password, init=False, ssl=False, auth=False,
-                 capath=CA_PATH[0]):
+                 capath=CA_PATH):
         self.ws = None
         self.ip = target
         self.pswd = password
@@ -125,6 +126,8 @@ class BASE_WS_DEVICE:
             self.port = int(self.port)
         else:
             self.port = 8266
+        self.hostname = None
+        self.hostname_mdns = None
         self.bytes_sent = 0
         self.buff = b''
         self.raw_buff = b''
@@ -142,43 +145,60 @@ class BASE_WS_DEVICE:
         self.repl_CONN = self.connected
         self._ssl = ssl
         if init:
+            ip_now = None
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                ip_now = socket.gethostbyname(self.hostname)
+
             if not ssl:
                 self._uriprotocol = 'ws'
                 self.ws = wsclient.connect(
-                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
+                    f'ws://{self.ip}:{self.port}', self.pswd)
             else:
                 if self.port == 8266:
                     self.port = 8833
                 self._uriprotocol = 'wss'
                 self.ws = wsclient.connect(
-                    'wss://{}:{}'.format(self.ip, self.port), self.pswd,
+                    f'wss://{self.ip}:{self.port}', self.pswd,
+                    auth=auth, capath=capath)
+            if self.ws:
+                self.connected = True
+                # resolve name, store ip in self.ip
+                # store mdns name in self.hostname
+                if ip_now:
+                    self.ip = ip_now
+                self.repl_CONN = self.connected
+            else:
+                raise DeviceNotFound(
+                    f"WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+
+    def open_wconn(self, ssl=False, auth=False, capath=CA_PATH):
+        try:
+            ip_now = None
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                ip_now = socket.gethostbyname(self.hostname)
+            if not ssl:
+                self._uriprotocol = 'ws'
+                self.ws = wsclient.connect(
+                    f'ws://{self.ip}:{self.port}', self.pswd)
+            else:
+                self._uriprotocol = 'wss'
+                if self.port == 8266:
+                    self.port = 8833
+                self.ws = wsclient.connect(
+                    f'wss://{self.ip}:{self.port}', self.pswd,
                     auth=auth, capath=capath)
             if self.ws:
                 self.connected = True
                 self.repl_CONN = self.connected
+                if ip_now:
+                    self.ip = ip_now
             else:
                 raise DeviceNotFound(
-                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
-
-    def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
-        try:
-            if not ssl:
-                self._uriprotocol = 'ws'
-                self.ws = wsclient.connect(
-                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
-            else:
-                self._uriprotocol = 'wss'
-                if self.port == 8266:
-                    self.port = 8833
-                self.ws = wsclient.connect(
-                    'wss://{}:{}'.format(self.ip, self.port),
-                    self.pswd, auth=auth, capath=capath)
-            if self.ws:
-                self.connected = True
-                self.repl_CONN = self.connected
-            else:
-                raise DeviceNotFound(
-                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+                    f"WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port} is not reachable")
         except Exception as e:
             print(e)
 
@@ -186,6 +206,7 @@ class BASE_WS_DEVICE:
         if self.ws:
             self.ws.close()
         self.connected = False
+        self.ip = self.hostname_mdns
         self.repl_CONN = self.connected
 
     def connect(self, **kargs):
@@ -366,14 +387,13 @@ class BASE_WS_DEVICE:
 
 class WS_DEVICE(BASE_WS_DEVICE):
     def __init__(self, target, password, init=False, ssl=False, auth=False,
-                 capath=CA_PATH[0], name=None, dev_platf=None,
+                 capath=CA_PATH, name=None, dev_platf=None,
                  autodetect=False):
         super().__init__(target=target, password=password, init=init, ssl=ssl,
                          auth=auth, capath=capath)
         self.dev_class = 'WebSocketDevice'
         self.dev_platform = dev_platf
         self.name = name
-        self.hostname = None
         self.raw_buff = b''
         self.message = b''
         self.output_queue = multiprocessing.Queue(maxsize=1)
@@ -413,38 +433,28 @@ class WS_DEVICE(BASE_WS_DEVICE):
             repr_cmd = repr_cmd.format(
                 "nic.status('rssi'), nic.config('dhcp_hostname')")
             (self.dev_platform, self._release,
-             self._version, self._machine, uuid, imp, rssi, self.hostname) = self.wr_cmd(repr_cmd,
-                                                                                         silent=True,
-                                                                                         rtn_resp=True)
+             self._version, self._machine, uuid, imp, rssi,
+             self.hostname) = self.wr_cmd(repr_cmd, silent=True, rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
         imp = imp[0].upper() + imp[1:]
         imp = imp.replace('p', 'P')
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
-        fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
+        fw_str = f'{imp} {self._version}; {self._machine}'
         if self.hostname:
-            dev_str = '(MAC: {}, Host Name: {}, RSSI: {} dBm)'.format(self._mac,
-                                                                      self.hostname,
-                                                                      rssi)
+            dev_str = f'(MAC: {self._mac}, Host Name: {self.hostname}, RSSI: {rssi} dBm)'
         else:
-            dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
+            dev_str = f'(MAC: {self._mac}, RSSI: {rssi} dBm)'
         if disconnect_on_end:
             self.disconnect()
-        if self._ssl:
-            return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                                                 self.port,
-                                                                                                 self.dev_platform,
-                                                                                                 self.dev_class,
-                                                                                                 fw_str,
-                                                                                                 dev_str)
-        else:
-            return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                                                self.port,
-                                                                                                self.dev_platform,
-                                                                                                self.dev_class,
-                                                                                                fw_str,
-                                                                                                dev_str)
+        if self.hostname:
+            if not self.hostname.endswith('.local'):
+                self.hostname += '.local'
+
+        return (f'WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port},'
+                f' Type: {self.dev_platform}, Class: {self.dev_class}\n'
+                f'Firmware: {fw_str}\n{dev_str}')
 
     def readline(self):
         self.ws.sock.settimeout(None)

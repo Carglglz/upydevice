@@ -35,9 +35,8 @@ import random
 import ssl
 import os
 import io
+from upydevice.wsprotocol import Websocket, urlparse, URI
 
-from upydevice.wsprotocol import Websocket, urlparse
-from upydevice.exceptions import DeviceNotFound
 
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
@@ -50,13 +49,30 @@ class WebsocketClient(Websocket):
 
 
 def load_custom_CA_data(path):
-    certificates = [cert for cert in os.listdir(path) if 'certificate' in cert and cert.endswith('.pem')]
+    certificates = [cert for cert in os.listdir(
+        path) if 'certificate' in cert and cert.endswith('.pem')]
     cert_datafile = ''
     for cert in certificates:
-        with io.open(path+'/{}'.format(cert), 'r') as certfile:
+        with io.open(os.path.join(path, cert), 'r') as certfile:
             cert_datafile += certfile.read()
             cert_datafile += '\n\n'
     return cert_datafile
+
+
+def load_cert_from_hostname(path, hostname):
+    certificates = [cert for cert in os.listdir(
+        path) if 'certificate' in cert and cert.endswith('.der')]
+    cert_datafile = b''
+    for cert in certificates:
+        with io.open(os.path.join(path, cert), 'rb') as certfile:
+            cert_datafile += certfile.read()
+            if hostname.encode() in cert_datafile:
+                key = os.path.join(path, cert.replace('.der', '.pem').replace('certificate',
+                                                                              'key'))
+                cert = os.path.join(path, cert.replace('.der', '.pem'))
+                return key, cert
+            else:
+                cert_datafile = b''
 
 
 def connect(uri, password, silent=True, auth=False, capath=None):
@@ -65,6 +81,15 @@ def connect(uri, password, silent=True, auth=False, capath=None):
     """
     hostname = uri
     uri = urlparse(uri)
+    try:
+        if '.local' in uri.hostname:
+
+            uri = URI(uri.protocol, socket.gethostbyname(uri.hostname),
+                      uri.port, uri.path)
+
+    except Exception as e:
+        print(e)
+        return
     assert uri
 
     if __debug__:
@@ -80,6 +105,10 @@ def connect(uri, password, silent=True, auth=False, capath=None):
         if auth:
             context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
             context.load_verify_locations(cadata=load_custom_CA_data(capath))
+            # load cert from hostname
+            # key, cert = load_cert_from_hostname(capath, hostname)
+            # if cert:
+            # context.load_cert_chain(cert, key)
             context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
             sock = context.wrap_socket(sock, server_hostname=hostname)
         else:
@@ -100,7 +129,6 @@ def connect(uri, password, silent=True, auth=False, capath=None):
         except socket.timeout as e:
             print(e)
             return
-
 
     def send_header(header):
         # if __debug__: LOGGER.debug(str(header), *args)

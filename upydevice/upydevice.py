@@ -83,11 +83,6 @@ def Device(dev_address, password=None, **kargs):
             baudrt = fkargs.pop('baudrate')
         return SerialDevice(dev_address, baudrate=baudrt, **fkargs)
     if dev_type == 'WebSocketDevice':
-        if dev_address.endswith('.local'):
-            dev_address = socket.gethostbyname(dev_address)
-        elif '.local' in dev_address and ':' in dev_address:
-            hostname, port = dev_address.split(':')
-            dev_address = f"{socket.gethostbyname(hostname)}:{port}"
         return WebSocketDevice(dev_address, password, **kargs)
     if dev_type == 'BleDevice':
         from .bledevice import BleDevice
