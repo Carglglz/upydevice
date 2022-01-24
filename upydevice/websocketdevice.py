@@ -626,8 +626,11 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 break
         self.paste_cmd = ''
 
-    def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2):
-        ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
+    def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2, zt=False):
+        if zt:
+            ping_cmd_str = f'ssh {zt["fwd"]} ping -c {n_tries} {zt["dev"]} -t {timeout}'
+        else:
+            ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
         ping_cmd = shlex.split(ping_cmd_str)
         timeouts = 0
         down_kw = ['Unreachable', 'down', 'timeout']
