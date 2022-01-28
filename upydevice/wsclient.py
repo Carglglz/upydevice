@@ -35,6 +35,7 @@ import random
 import ssl
 import os
 import io
+import getpass
 from upydevice.wsprotocol import Websocket, urlparse, URI
 
 
@@ -67,15 +68,15 @@ def load_cert_from_hostname(path, hostname):
         with io.open(os.path.join(path, cert), 'rb') as certfile:
             cert_datafile += certfile.read()
             if hostname.encode() in cert_datafile:
-                key = os.path.join(path, cert.replace('.der', '.pem').replace('certificate',
-                                                                              'key'))
+                _key = cert.replace('certificate', 'key').replace('.der', '.pem')
+                key = os.path.join(path, _key)
                 cert = os.path.join(path, cert.replace('.der', '.pem'))
                 return key, cert
             else:
                 cert_datafile = b''
 
 
-def connect(uri, password, silent=True, auth=False, capath=None):
+def connect(uri, password, silent=True, auth=False, capath=None, passphrase=None):
     """
     Connect a websocket.
     """
@@ -106,9 +107,24 @@ def connect(uri, password, silent=True, auth=False, capath=None):
             context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
             context.load_verify_locations(cadata=load_custom_CA_data(capath))
             # load cert from hostname
-            # key, cert = load_cert_from_hostname(capath, hostname)
+            key, cert = load_cert_from_hostname(capath, hostname)
             # if cert:
-            # context.load_cert_chain(cert, key)
+            if not passphrase:
+                while True:
+                    try:
+                        passphrase = getpass.getpass(f'Enter passphrase for '
+                                                     f'{urlparse(hostname).hostname} '
+                                                     f'key: ',
+                                                     stream=None)
+                        context.load_cert_chain(cert, key, password=passphrase)
+                        break
+                    except (OSError, ssl.SSLError):
+                        print('Invalid passhprase, try again...')
+                    except KeyboardInterrupt:
+                        print('KeyboardInterrupt')
+                        break
+            else:
+                context.load_cert_chain(cert, key, password=passphrase)
             context.set_ciphers('ECDHE-ECDSA-AES128-CCM8')
             sock = context.wrap_socket(sock, server_hostname=hostname)
         else:

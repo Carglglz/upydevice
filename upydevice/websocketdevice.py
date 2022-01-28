@@ -31,6 +31,7 @@ from array import array
 import netifaces
 import nmap
 import sys
+import ssl as sslib
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 from .exceptions import DeviceException, DeviceNotFound
@@ -39,6 +40,7 @@ try:
     CA_PATH = ca_PATH[0]
 except Exception:
     CA_PATH = None
+
 
 _REPR_CMDS_LIST = ["os.uname().sysname",
                    "os.uname().release",
@@ -117,10 +119,14 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
 
 class BASE_WS_DEVICE:
     def __init__(self, target, password, init=False, ssl=False, auth=False,
-                 capath=CA_PATH):
+                 capath=CA_PATH, passphrase=None):
         self.ws = None
         self.ip = target
-        self.pswd = password
+        if ':' in password:
+            self.pswd, self.passphrase = password.split(':')
+        else:
+            self.pswd = password
+            self.passphrase = passphrase
         if ':' in target:
             self.ip, self.port = target.split(':')
             self.port = int(self.port)
@@ -151,6 +157,10 @@ class BASE_WS_DEVICE:
                 self.hostname_mdns = self.ip
                 ip_now = socket.gethostbyname(self.hostname)
 
+            if self.passphrase:
+                auth = True
+                ssl = True
+
             if not ssl:
                 self._uriprotocol = 'ws'
                 self.ws = wsclient.connect(
@@ -161,7 +171,7 @@ class BASE_WS_DEVICE:
                 self._uriprotocol = 'wss'
                 self.ws = wsclient.connect(
                     f'wss://{self.ip}:{self.port}', self.pswd,
-                    auth=auth, capath=capath)
+                    auth=auth, capath=capath, passphrase=self.passphrase)
             if self.ws:
                 self.connected = True
                 # resolve name, store ip in self.ip
@@ -180,17 +190,24 @@ class BASE_WS_DEVICE:
                 self.hostname = self.ip
                 self.hostname_mdns = self.ip
                 ip_now = socket.gethostbyname(self.hostname)
+            if self.passphrase:
+                auth = True
+                ssl = True
             if not ssl:
                 self._uriprotocol = 'ws'
+                if self.port == 8833:
+                    self.port = 8266
                 self.ws = wsclient.connect(
                     f'ws://{self.ip}:{self.port}', self.pswd)
             else:
                 self._uriprotocol = 'wss'
                 if self.port == 8266:
                     self.port = 8833
+                if self.passphrase:
+                    auth = True
                 self.ws = wsclient.connect(
                     f'wss://{self.ip}:{self.port}', self.pswd,
-                    auth=auth, capath=capath)
+                    auth=auth, capath=capath, passphrase=self.passphrase)
             if self.ws:
                 self.connected = True
                 self.repl_CONN = self.connected
@@ -199,6 +216,8 @@ class BASE_WS_DEVICE:
             else:
                 raise DeviceNotFound(
                     f"WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+        except sslib.SSLError:
+            raise sslib.SSLError
         except Exception as e:
             print(e)
 
@@ -388,9 +407,9 @@ class BASE_WS_DEVICE:
 class WS_DEVICE(BASE_WS_DEVICE):
     def __init__(self, target, password, init=False, ssl=False, auth=False,
                  capath=CA_PATH, name=None, dev_platf=None,
-                 autodetect=False):
+                 autodetect=False, passphrase=None):
         super().__init__(target=target, password=password, init=init, ssl=ssl,
-                         auth=auth, capath=capath)
+                         auth=auth, capath=capath, passphrase=passphrase)
         self.dev_class = 'WebSocketDevice'
         self.dev_platform = dev_platf
         self.name = name
