@@ -519,7 +519,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 try:
                     self.follow_output(cmd, pipe=pipe, multiline=multiline,
                                        silent=silent_pipe)
-                except KeyboardInterrupt as e:
+                except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
                     if pipe is None:

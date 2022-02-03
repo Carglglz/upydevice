@@ -105,7 +105,8 @@ class BASE_SERIAL_DEVICE:
         self.output = None
         self.wr_cmd = self.cmd
         self.prompt = b'>>> '
-        self.dev_description, self.manufacturer, self._hwid = self._get_serial_port_data(serial_port)
+        self.dev_description, self.manufacturer, self._hwid = self._get_serial_port_data(
+            serial_port)
         self.serial = serial.Serial(serial_port, baudrate)
 
     def _get_serial_port_data(self, serialport):
@@ -141,9 +142,11 @@ class BASE_SERIAL_DEVICE:
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r\n', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if not silent:
             if self.response != '\n' and self.response != '':
                 print(self.response)
@@ -172,12 +175,12 @@ class BASE_SERIAL_DEVICE:
         if not silent:
             print('Done!')
 
-    def kbi(self, silent=True, pipe=None):
+    def kbi(self, silent=True, pipe=None, long_string=False):
         if pipe is not None:
             self.wr_cmd(self._kbi, silent=silent)
             pipe(self.response, std='stderr')
         else:
-            self.cmd(self._kbi, silent=silent)
+            self.cmd(self._kbi, silent=silent, long_string=long_string)
 
     def banner(self, pipe=None):
         self.cmd(self._banner, silent=True, long_string=True)
@@ -248,8 +251,8 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         os.uname().machine, unique_id(), sys.implementation.name]"
         (self.dev_platform, self._release,
          self._version, self._machine, uuid, imp) = self.cmd(repr_cmd,
-                                                  silent=True,
-                                                  rtn_resp=True)
+                                                             silent=True,
+                                                             rtn_resp=True)
         vals = hexlify(uuid).decode()
         imp = imp[0].upper() + imp[1:]
         imp = imp.replace('p', 'P')
@@ -325,7 +328,8 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                     self.paste_cmd = ''
                     if pipe is None:
                         print('')  # print Traceback under ^C
-                        self.kbi(pipe=pipe, silent=False)  # KBI
+                        self.kbi(pipe=pipe, silent=False,
+                                 long_string=long_string)  # KBI
                     else:
                         self.kbi(pipe=pipe)  # KBI
                     time.sleep(0.2)
@@ -335,13 +339,16 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
         cmd_filt = bytes(cmd + '\r\n', 'utf-8')
         self.buff = self.buff.replace(cmd_filt, b'', 1)
         if dlog:
-            self.data_buff = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.data_buff = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if self._traceback in self.buff:
             long_string = True
         if long_string:
-            self.response = self.buff.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         else:
-            self.response = self.buff.replace(b'\r\n', b'').replace(b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
+            self.response = self.buff.replace(b'\r\n', b'').replace(
+                b'\r\n>>> ', b'').replace(b'>>> ', b'').decode()
         if not silent:
             if self.response != '\n' and self.response != '':
                 if pipe is None:
@@ -407,7 +414,7 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                 if pipe:
                     cmd_filt = bytes(inp + '\r\n', 'utf-8')
                     self.message = self.message.replace(cmd_filt, b'', 1)
-                msg = self.message.replace(b'\r', b'').decode()
+                msg = self.message.replace(b'\r', b'').decode('utf-8', 'ignore')
                 if 'cat' in inp:
                     if msg.endswith('>>> '):
                         msg = msg.replace('>>> ', '')
@@ -427,10 +434,12 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                                         if self._traceback.decode() in pipe_out:
                                             self._is_traceback = True
                                             # catch before traceback:
-                                            pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                            pipe_stdout = pipe_out.split(
+                                                self._traceback.decode())[0]
                                             if pipe_stdout != '' and pipe_stdout != '\n':
                                                 pipe(pipe_stdout)
-                                            pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                            pipe_out = self._traceback.decode(
+                                            ) + pipe_out.split(self._traceback.decode())[1]
                                         if self._is_traceback:
                                             pipe(pipe_out, std='stderr')
                                         else:
@@ -446,10 +455,12 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                                     if self._traceback.decode() in pipe_out:
                                         self._is_traceback = True
                                         # catch before traceback:
-                                        pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                        pipe_stdout = pipe_out.split(
+                                            self._traceback.decode())[0]
                                         if pipe_stdout != '' and pipe_stdout != '\n':
                                             pipe(pipe_stdout)
-                                        pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                        pipe_out = self._traceback.decode(
+                                        ) + pipe_out.split(self._traceback.decode())[1]
                                     if self._is_traceback:
                                         pipe(pipe_out, std='stderr')
                                     else:
@@ -465,10 +476,12 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                                 if self._traceback.decode() in pipe_out:
                                     self._is_traceback = True
                                     # catch before traceback:
-                                    pipe_stdout = pipe_out.split(self._traceback.decode())[0]
+                                    pipe_stdout = pipe_out.split(
+                                        self._traceback.decode())[0]
                                     if pipe_stdout != '' and pipe_stdout != '\n':
                                         pipe(pipe_stdout)
-                                    pipe_out = self._traceback.decode() + pipe_out.split(self._traceback.decode())[1]
+                                    pipe_out = self._traceback.decode(
+                                    ) + pipe_out.split(self._traceback.decode())[1]
                                 if self._is_traceback:
                                     pipe(pipe_out, std='stderr')
                                 else:
@@ -544,7 +557,8 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                 fs = int((1/time_out)*1000)
             if fs is not None:
                 temp_dict['fs'] = fs
-                temp_dict['ts'] = [i/temp_dict['fs'] for i in range(len(temp_dict[dvars[0]]))]
+                temp_dict['ts'] = [i/temp_dict['fs']
+                                   for i in range(len(temp_dict[dvars[0]]))]
             if units is not None:
                 temp_dict['u'] = units
             self.datalog = temp_dict

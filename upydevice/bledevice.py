@@ -1186,6 +1186,34 @@ class BleDevice(BLE_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
 
+    async def as_paste_buff(self, cmd, **kargs):
+        # print('Here')
+        long_command = cmd
+        await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], b'\x05')
+        await asyncio.sleep(1)
+        # await self.dev.ble_client.write_gatt_char(self.dev.writeables['Nordic UART RX'], b'\x04')
+        # print(long_command)
+        lines = long_command.split('\n')
+        # print(lines)
+        for line in lines:
+            self.flush()
+            await asyncio.sleep(0.2)
+            data = bytes(line + '\n', 'utf-8')
+            if len(data) > self.len_buffer:
+                for i in range(0, len(data), self.len_buffer):
+                    await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+            else:
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+            if line == lines[-1]:
+                self._cmdstr = line
+
+    def paste_buff(self, cmd, **kargs):
+        try:
+            self.loop.run_until_complete(
+                self.un_paste_buff(cmd, **kargs))
+        except Exception as e:
+            print(e)
+
 
 class AsyncBleDevice(BLE_DEVICE):
     def __init__(self, *args, **kargs):
