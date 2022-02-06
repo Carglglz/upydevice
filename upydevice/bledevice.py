@@ -727,10 +727,20 @@ class BASE_BLE_DEVICE:
         if not silent:
             print('Done!')
 
-    async def as_reset(self, silent=True):
+    async def as_reset(self, silent=True, reconnect=True, hr=False):
         if not silent:
             print('Rebooting device...')
-        await self.as_write_char(self.writeables['Nordic UART RX'], bytes(self._reset, 'utf-8'))
+        if not hr:
+            await self.as_write_char(self.writeables['Nordic UART RX'],
+                                     bytes(self._reset, 'utf-8'))
+        else:
+            await self.as_write_char(self.writeables['Nordic UART RX'],
+                                     bytes(self._hreset, 'utf-8'))
+
+        self.connected = self.is_connected()
+        if reconnect:
+            time.sleep(2)
+            await self.connect_client(n_tries=10, debug=self.log)
         if not silent:
             print('Done!')
         return None
@@ -1224,10 +1234,10 @@ class AsyncBleDevice(BLE_DEVICE):
         # std="stdout"
 
     @unsync
-    async def as_connect(self, n_tries=5, show_servs=False, debug=False):
+    async def as_connect(self, n_tries=5, show_servs=True, debug=False):
         await self.connect_client(n_tries=n_tries, debug=debug)
         if self.connected:
-            self.get_services(log=True)
+            self.get_services(log=show_servs)
             if hasattr(self.ble_client._peripheral, 'name'):
                 if callable(self.ble_client._peripheral.name):
                     self.name = self.ble_client._peripheral.name()
@@ -1460,6 +1470,15 @@ class AsyncBleDevice(BLE_DEVICE):
 
     def kbi(self, **kargs):
         return self.un_kbi(**kargs).result()
+
+    @unsync
+    async def un_reset(self, **kargs):
+        await self.as_reset(**kargs)
+        while self.is_connected():
+            await asyncio.sleep(1)
+
+    def reset(self, **kargs):
+        return self.un_reset(**kargs).result()
 
     # async def as_kbi(self, silent=True, pipe=None):
     #     data = bytes(self._kbi + '\r', 'utf-8')

@@ -169,9 +169,15 @@ class BASE_SERIAL_DEVICE:
         if not hr:
             self.bytes_sent = self.serial.write(bytes(self._reset, 'utf-8'))
         else:
-            self.bytes_sent = self.serial.write(bytes(self._hreset, 'utf-8'))
+            try:
+                self.bytes_sent = self.serial.write(bytes(self._hreset, 'utf-8'))
+            except OSError:
+                pass
         time.sleep(0.5)
-        self.buff = self.serial.read_all()
+        try:
+            self.buff = self.serial.read_all()
+        except OSError:
+            pass
         if not silent:
             print('Done!')
 
@@ -409,7 +415,7 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
             if self.message == b'':
                 pass
             else:
-                if self.message.startswith(b'\n'):
+                if self.message.startswith(b'\n') and 'ls(' not in inp:
                     self.message = self.message[1:]
                 if pipe:
                     cmd_filt = bytes(inp + '\r\n', 'utf-8')
