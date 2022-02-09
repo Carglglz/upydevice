@@ -409,7 +409,11 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                     if self.prompt in self.message:
                         break
             else:
-                self.message = self.serial.read_all()
+                self.message = b''
+                while b'\r\n' not in self.message:
+                    self.message += self.serial.read(1)
+                    if self.prompt in self.message:
+                        break
             self.buff += self.message
             self.raw_buff += self.message
             if self.message == b'':
@@ -420,7 +424,7 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                 if pipe:
                     cmd_filt = bytes(inp + '\r\n', 'utf-8')
                     self.message = self.message.replace(cmd_filt, b'', 1)
-                msg = self.message.replace(b'\r', b'').decode('utf-8', 'ignore')
+                msg = self.message.replace(b'\r', b'').decode('utf-8')
                 if 'cat' in inp:
                     if msg.endswith('>>> '):
                         msg = msg.replace('>>> ', '')
