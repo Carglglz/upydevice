@@ -98,6 +98,8 @@ class Websocket:
     def __init__(self, sock):
         self.sock = sock
         self.open = True
+        # self.buff = b''
+        # self.frames = []
 
     def __enter__(self):
         return self
@@ -114,11 +116,12 @@ class Websocket:
         See https://tools.ietf.org/html/rfc6455#section-5.2 for the details.
         """
         two_bytes = b''
+        mask_bits = None
         # Frame header
         two_bytes += self.sock.recv(2)
         while len(two_bytes) < 2:
             two_bytes += self.sock.recv(1)
-
+        # self.buff += two_bytes
         if not two_bytes:
             raise NoDataException
 
@@ -133,15 +136,27 @@ class Websocket:
         length = byte2 & 0x7f
 
         if length == 126:  # Magic number, length header is 2 bytes
-            length, = struct.unpack('!H', self.sock.read(2))
+            lh = self.sock.read(2)
+            assert len(lh) == 2
+            # self.buff += lh
+            length, = struct.unpack('!H', lh)
         elif length == 127:  # Magic number, length header is 8 bytes
-            length, = struct.unpack('!Q', self.sock.read(8))
+            lh = self.sock.read(8)
+            assert len(lh) == 8
+            # self.buff += lh
+            length, = struct.unpack('!Q', lh)
 
         if mask:  # Mask is 4 bytes
             mask_bits = self.sock.recv(4)
+            # assert len(mask_bits) == 4
+            # self.buff += mask_bits
 
         try:
             data = self.sock.recv(length)
+            # self.buff += data
+            while len(data) < length:
+                data += self.sock.recv(1)
+            # self.buff += data
         except MemoryError:
             # We can't receive this many bytes, close the socket
             if __debug__:
@@ -153,6 +168,11 @@ class Websocket:
         if mask:
             data = bytes(b ^ mask_bits[i % 4]
                          for i, b in enumerate(data))
+
+        # frame = {"fin": fin, "opcode": opcode, "data": data,
+        #          "byte1": hex(byte1), "byte2": hex(byte2), "mask": mask,
+        #          "mask_bits": mask_bits, "length": length}
+        # self.frames.append(frame)
 
         return fin, opcode, data
 

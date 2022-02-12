@@ -32,6 +32,8 @@ import netifaces
 import nmap
 import sys
 import ssl as sslib
+from io import BytesIO
+from io import BufferedRandom
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 from .exceptions import DeviceException, DeviceNotFound
@@ -95,7 +97,9 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
         my_scan = nmScan.scan(
             hosts=host_range, arguments='-p {}'.format(WebREPL_port))
         hosts_list = [{'host': x, 'state': nmScan[x]['status']['state'], 'port':list(
-            nmScan[x]['tcp'].keys())[0], 'status':nmScan[x]['tcp'][WebREPL_port]['state']} for x in nmScan.all_hosts()]
+            nmScan[x]['tcp'].keys())[0],
+            'status':nmScan[x]['tcp'][WebREPL_port]['state']}
+            for x in nmScan.all_hosts()]
         devs = [host for host in hosts_list if host['status'] == 'open']
         if debug:
             print('FOUND {} device/s :'.format(len(devs)))
@@ -103,10 +107,11 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
         if debug:
             for dev in devs:
                 try:
-                    print('DEVICE {}: , IP: {} , STATE: {}, PORT: {}, STATUS: {}'.format(
-                        N, dev['host'], dev['state'], dev['port'], dev['status']))
+                    print('DEVICE {}: , IP: {} , STATE: {}, PORT: {}, '
+                          'STATUS: {}'.format(N, dev['host'], dev['state'],
+                                              dev['port'], dev['status']))
                     N += 1
-                except Exception as e:
+                except Exception:
                     pass
         if not debug_info:
             for dev in devs:
@@ -145,6 +150,7 @@ class BASE_WS_DEVICE:
         self._hreset = "import machine; machine.reset()\r"
         self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
+        self.linebuffer = BufferedRandom(BytesIO())
         self.output = None
         self.platform = None
         self.connected = False
@@ -181,7 +187,8 @@ class BASE_WS_DEVICE:
                 self.repl_CONN = self.connected
             else:
                 raise DeviceNotFound(
-                    f"WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+                    f"WebSocketDevice @ "
+                    f"{self._uriprotocol}://{self.ip}:{self.port} is not reachable")
 
     def open_wconn(self, ssl=False, auth=False, capath=CA_PATH):
         try:
@@ -215,7 +222,8 @@ class BASE_WS_DEVICE:
                     self.ip = ip_now
             else:
                 raise DeviceNotFound(
-                    f"WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+                    f"WebSocketDevice @ "
+                    f"{self._uriprotocol}://{self.ip}:{self.port} is not reachable")
         except sslib.SSLError:
             raise sslib.SSLError
         except Exception as e:
@@ -227,6 +235,7 @@ class BASE_WS_DEVICE:
         self.connected = False
         self.ip = self.hostname_mdns
         self.repl_CONN = self.connected
+        time.sleep(0.1)
 
     def connect(self, **kargs):
         self.open_wconn(**kargs)
@@ -247,23 +256,25 @@ class BASE_WS_DEVICE:
                 try:
                     fin, opcode, data = self.ws.read_frame()
                     self.raw_buff += data
-                except AttributeError as e:
+                except AttributeError:
                     pass
 
             return self.raw_buff
-        except socket.timeout as e:
+        except socket.timeout:
             return self.raw_buff
 
     def flush(self):
         self.ws.sock.settimeout(0.01)
         self._flush = b''
+        self.linebuffer.truncate(0)
+        self.linebuffer.seek(0)
         while True:
             try:
                 fin, opcode, data = self.ws.read_frame()
                 self._flush += data
-            except socket.timeout as e:
+            except socket.timeout:
                 break
-            except wsprotocol.NoDataException as e:
+            except wsprotocol.NoDataException:
                 break
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
@@ -340,7 +351,7 @@ class BASE_WS_DEVICE:
                         self.open_wconn(ssl=self._ssl, auth=True)
                         self.wr_cmd(self._banner, silent=True)
                         break
-                    except Exception as e:
+                    except Exception:
                         time.sleep(0.5)
                         self.ws._close()
                 self.cmd('')
@@ -386,12 +397,12 @@ class BASE_WS_DEVICE:
     def get_output(self):
         try:
             self.output = ast.literal_eval(self.response)
-        except Exception as e:
+        except Exception:
             if 'bytearray' in self.response:
                 try:
                     self.output = bytearray(ast.literal_eval(
                         self.response.strip().split('bytearray')[1]))
-                except Exception as e:
+                except Exception:
                     pass
             else:
                 if 'array' in self.response:
@@ -399,7 +410,7 @@ class BASE_WS_DEVICE:
                         arr = ast.literal_eval(
                             self.response.strip().split('array')[1])
                         self.output = array(arr[0], arr[1])
-                    except Exception as e:
+                    except Exception:
                         pass
             pass
 
@@ -419,6 +430,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.data_buff = ''
         self.datalog = []
         self.paste_cmd = ''
+        self.debug = False
         self.flush_conn = self.flush
         self._is_traceback = False
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
@@ -462,7 +474,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
         fw_str = f'{imp} {self._version}; {self._machine}'
         if self.hostname:
-            dev_str = f'(MAC: {self._mac}, Host Name: {self.hostname}, RSSI: {rssi} dBm)'
+            dev_str = (f'(MAC: {self._mac}, Host Name: {self.hostname}, '
+                       f'RSSI: {rssi} dBm)')
         else:
             dev_str = f'(MAC: {self._mac}, RSSI: {rssi} dBm)'
         if disconnect_on_end:
@@ -479,17 +492,36 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.ws.sock.settimeout(None)
         try:
             self.raw_buff = b''
-            while b'\r\n' not in self.raw_buff:
+            data = b''
+            # Consume frames until eol
+            while b'\r\n' not in data:
                 try:
                     fin, opcode, data = self.ws.read_frame()
-                    self.raw_buff += data
-                    if self.prompt in self.raw_buff:
+                    self.linebuffer.write(data)
+                    if not fin:
+                        if self.debug:
+                            print(f"\nFIN: {fin} | OPCODE: {opcode} | DATA: {data}\n")
+                    if self.prompt in data:
                         break
-                except AttributeError as e:
+                except AttributeError:
                     pass
 
+            self.linebuffer.seek(0)
+            while not self.raw_buff.endswith(b'\r\n'):
+                self.raw_buff += self.linebuffer.read(1)
+                if self.raw_buff.endswith(self.prompt):
+                    break
+            rest = self.linebuffer.read()
+            self.linebuffer.truncate(0)
+            self.linebuffer.seek(0)
+            self.linebuffer.write(rest)
+            if self.debug and not fin:
+                print(self.raw_buff)
             return self.raw_buff
+
         except socket.timeout as e:
+            if self.debug:
+                print(e)
             return self.raw_buff
         except KeyboardInterrupt:
             raise KeyboardInterrupt
@@ -553,7 +585,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                     try:
                         if self._traceback.decode() in self.response:
                             exception_msg = ' '.join(['Traceback',
-                                                      self.response.split('Traceback')[1]])
+                                                      self.response.split('Trac'
+                                                                          'eback')[1]])
                             raise DeviceException(exception_msg)
                         else:
                             print(self.response)
@@ -586,8 +619,10 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if any(_kw in inp for _kw in self.stream_kw):
                 self._is_first_line = False
             if self.paste_cmd != '':
-                while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode('utf-8', 'ignore'):
+                dec_buff = self.raw_buff.decode('utf-8', 'ignore')
+                while self.paste_cmd.split('\n')[-1] not in dec_buff:
                     self.raw_buff += self.readline()
+                    dec_buff = self.raw_buff.decode('utf-8', 'ignore')
         while True:
 
             self.message = self.readline()
