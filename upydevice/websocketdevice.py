@@ -32,6 +32,7 @@ import netifaces
 import nmap
 import sys
 import ssl as sslib
+import select
 from io import BytesIO
 from io import BufferedRandom
 from binascii import hexlify
@@ -151,6 +152,7 @@ class BASE_WS_DEVICE:
         self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
         self.linebuffer = BufferedRandom(BytesIO())
+        self._debug = False
         self.output = None
         self.platform = None
         self.connected = False
@@ -243,6 +245,16 @@ class BASE_WS_DEVICE:
     def disconnect(self):
         self.close_wconn()
 
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, opt):
+        assert isinstance(opt, bool)
+        self._debug = opt
+        self.ws.debug = opt
+
     def write(self, cmd):
         n_bytes = len(bytes(cmd, 'utf-8'))
         self.ws.send(cmd)
@@ -268,14 +280,32 @@ class BASE_WS_DEVICE:
         self._flush = b''
         self.linebuffer.truncate(0)
         self.linebuffer.seek(0)
-        while True:
+        self.ws.reset_buffers()
+        while self.ws_readable():
+            while True:
+                try:
+                    fin, opcode, data = self.ws.read_frame()
+                    self._flush += data
+                except socket.timeout:
+                    break
+                except wsprotocol.NoDataException:
+                    break
+        self.ws.reset_buffers()
+
+    def ws_readable(self):
+        for i in range(3):
             try:
-                fin, opcode, data = self.ws.read_frame()
-                self._flush += data
-            except socket.timeout:
-                break
-            except wsprotocol.NoDataException:
-                break
+                readable, writable, exceptional = select.select([self.ws.sock],
+                                                                [self.ws.sock],
+                                                                [self.ws.sock])
+                if readable:
+                    return True
+                else:
+                    return False
+            except Exception as e:
+                if self.debug:
+                    print(e)
+                time.sleep(0.01)
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
                long_string=False):
@@ -430,7 +460,6 @@ class WS_DEVICE(BASE_WS_DEVICE):
         self.data_buff = ''
         self.datalog = []
         self.paste_cmd = ''
-        self.debug = False
         self.flush_conn = self.flush
         self._is_traceback = False
         self.stream_kw = ['print', 'ls', 'cat', 'help', 'from', 'import',
@@ -493,24 +522,25 @@ class WS_DEVICE(BASE_WS_DEVICE):
         try:
             self.raw_buff = b''
             data = b''
+            state = 0
             # Consume frames until eol
             while b'\r\n' not in data:
-                try:
-                    fin, opcode, data = self.ws.read_frame()
-                    self.linebuffer.write(data)
-                    if not fin:
-                        if self.debug:
-                            print(f"\nFIN: {fin} | OPCODE: {opcode} | DATA: {data}\n")
-                    if self.prompt in data:
+                fin, opcode, data = self.ws.read_frame()
+                self.linebuffer.write(data)
+                if not fin:
+                    if self.debug:
+                        print(f"\nFIN: {fin} | OPCODE: {opcode} | DATA: {data}\n")
+                if self.prompt in data:
+                    if data.endswith(self.prompt):
                         break
-                except AttributeError:
-                    pass
 
             self.linebuffer.seek(0)
             while not self.raw_buff.endswith(b'\r\n'):
+                state = 1
                 self.raw_buff += self.linebuffer.read(1)
                 if self.raw_buff.endswith(self.prompt):
-                    break
+                    if not self.linebuffer.peek(1):
+                        break
             rest = self.linebuffer.read()
             self.linebuffer.truncate(0)
             self.linebuffer.seek(0)
@@ -524,6 +554,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 print(e)
             return self.raw_buff
         except KeyboardInterrupt:
+            if self.debug:
+                print(f'Interrupted in readline: state {state}; data: {data}')
+                print(self.raw_buff)
             raise KeyboardInterrupt
 
     def wr_cmd(self, cmd, silent=False, rtn=True, long_string=False,
@@ -613,7 +646,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
             return self.output
 
     def follow_output(self, inp, pipe=None, multiline=False, silent=False):
-        self.raw_buff += self.readline()
+        self.raw_buff = self.readline()
         if pipe is not None:
             self._is_first_line = True
             if any(_kw in inp for _kw in self.stream_kw):
@@ -621,15 +654,17 @@ class WS_DEVICE(BASE_WS_DEVICE):
             if self.paste_cmd != '':
                 dec_buff = self.raw_buff.decode('utf-8', 'ignore')
                 while self.paste_cmd.split('\n')[-1] not in dec_buff:
-                    self.raw_buff += self.readline()
+                    self.raw_buff = self.readline()
                     dec_buff = self.raw_buff.decode('utf-8', 'ignore')
         while True:
-
+            if self.raw_buff.endswith(self.prompt) and not self.ws_readable():
+                break
             self.message = self.readline()
             self.buff += self.message
-            self.raw_buff += self.message
+            # self.raw_buff += self.message
             if self.message == b'':
-                pass
+                if self.buff.endswith(self.prompt):
+                    break
             else:
                 if self.message.startswith(b'\n'):
                     self.message = self.message[1:]
@@ -676,8 +711,9 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 if pipe is None:
                     if not silent:
                         print(msg.replace('>>> ', ''), end='')
-            if self.buff.endswith(b'>>> '):
-                break
+            if self.buff.endswith(self.prompt):
+                if not self.ws_readable():
+                    break
         self.paste_cmd = ''
 
     def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2, zt=False):
@@ -719,14 +755,22 @@ class WS_DEVICE(BASE_WS_DEVICE):
         else:
             return True
 
-    def paste_buff(self, long_command):
+    def paste_buff(self, long_command, flush=True):
         self.paste_cmd = long_command
         self.write('\x05')
+        self.flush_conn()
+        paste_echo = ''
         lines = long_command.split('\n')
         for line in lines:
             time.sleep(0.1)
             self.write(line+'\n')
-        self.flush_conn()
+        if flush:
+            while long_command.split('\n')[-1] not in paste_echo:
+                fin, op, data = self.ws.read_frame()
+                paste_echo = data.decode('utf-8', 'ignore')
+            self.flush_conn()
+            while self.ws_readable():
+                time.sleep(0.1)
 
     def get_datalog(self, dvars=None, fs=None, time_out=None, units=None):
         self.datalog = []
