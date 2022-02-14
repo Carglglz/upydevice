@@ -1319,16 +1319,19 @@ class AsyncBleDevice(BLE_DEVICE):
             #     pass
             # else:
             if not self._cmdfiltered:
-                cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
-                cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
-                data = b'' + data
-                if cmd_filt in data:
-                    data = data.replace(cmd_filt, b'', 1)
-                    # data = data.replace(b'\r\n>>> ', b'')
-                    self._cmdfiltered = True
-                if cmd_filt_pipe in data:
-                    data = data.replace(cmd_filt_pipe, b'', 1)
-                    self._cmdfiltered = True
+                if len(self.raw_buff) < self.bytes_sent:
+                    return
+                else:
+                    cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
+                    cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
+                    # data = b'' + data
+                    if cmd_filt in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt, b'', 1)
+                        # data = data.replace(b'\r\n>>> ', b'')
+                        self._cmdfiltered = True
+                    if cmd_filt_pipe in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt_pipe, b'', 1)
+                        self._cmdfiltered = True
             else:
                 try:
                     data = b'' + data
@@ -1344,14 +1347,18 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        self.pipe(data, std=self.pipe_mode)
+                        for line in data.split('\n'):
+                            if line:
+                                self.pipe(line+'\n', std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    self.pipe(data, std=self.pipe_mode)
+                    for line in data.split('\n'):
+                        if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
