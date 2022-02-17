@@ -275,6 +275,10 @@ Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
                                         desc_str,
                                         dev_str)
 
+    @property
+    def address(self):
+        return self.serial_port
+
     def flush_conn(self):
         flushed = 0
         while flushed < 2:

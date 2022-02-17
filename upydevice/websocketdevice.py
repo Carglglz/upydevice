@@ -246,6 +246,10 @@ class BASE_WS_DEVICE:
         self.close_wconn()
 
     @property
+    def address(self):
+        return self.ip
+
+    @property
     def debug(self):
         return self._debug
 

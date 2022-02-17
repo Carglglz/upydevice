@@ -9,8 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `WebSocketDevice` double unwanted `super().__init__` bug.
 - Load time in MacOS caused by bleak/corebluetooth, only if BleDevice
 - Allow mdns `.local` name in WebSecureREPL, (ssl checkhostname / auth server.)
+- `WebSocketDevice` receive frame errors
+- `SerialDevice` follow command parsing errors
+- `BleDevice` follow command parsing errors
 ### Added
 - Indicate websocket port in ip address as `ip:port` format
+- Allow `password:passphrase` format for `WebSocketDevice` password that sets ssl/auth
+to `True` if present.
+- `address` property for all device types.
 ## [0.3.3] 2021-12-16
 ### Added
 - `Host Name` in `__repr__` command device info
