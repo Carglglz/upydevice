@@ -1348,8 +1348,8 @@ class AsyncBleDevice(BLE_DEVICE):
                         print(data, end='')
                     else:
                         for line in data.split('\n'):
-                            if line:
-                                self.pipe(line+'\n', std=self.pipe_mode)
+                            # if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')

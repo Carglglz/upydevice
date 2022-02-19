@@ -158,16 +158,27 @@ class BASE_WS_DEVICE:
         self.connected = False
         self.repl_CONN = self.connected
         self._ssl = ssl
+        self._uriprotocol = 'ws'
+        if ssl:
+            self._uriprotocol = 'wss'
         if init:
             ip_now = None
-            if self.ip.endswith('.local'):
-                self.hostname = self.ip
-                self.hostname_mdns = self.ip
-                ip_now = socket.gethostbyname(self.hostname)
-
             if self.passphrase:
                 auth = True
                 ssl = True
+                self._uriprotocol = 'wss'
+                if self.port == 8266:
+                    self.port = 8833
+
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                try:
+                    ip_now = socket.gethostbyname(self.hostname)
+                except socket.gaierror:
+                    raise DeviceNotFound(f"WebSocketDevice @ "
+                                         f"{self._uriprotocol}:"
+                                         f"//{self.ip}:{self.port} is not reachable")
 
             if not ssl:
                 self._uriprotocol = 'ws'
@@ -188,20 +199,30 @@ class BASE_WS_DEVICE:
                     self.ip = ip_now
                 self.repl_CONN = self.connected
             else:
-                raise DeviceNotFound(
-                    f"WebSocketDevice @ "
-                    f"{self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+                raise DeviceNotFound(f"WebSocketDevice @ "
+                                     f"{self._uriprotocol}:"
+                                     f"//{self.ip}:{self.port} is not reachable")
 
     def open_wconn(self, ssl=False, auth=False, capath=CA_PATH):
         try:
             ip_now = None
-            if self.ip.endswith('.local'):
-                self.hostname = self.ip
-                self.hostname_mdns = self.ip
-                ip_now = socket.gethostbyname(self.hostname)
             if self.passphrase:
                 auth = True
                 ssl = True
+                self._uriprotocol = 'wss'
+                if self.port == 8266:
+                    self.port = 8833
+
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                try:
+                    ip_now = socket.gethostbyname(self.hostname)
+                except socket.gaierror:
+                    raise DeviceNotFound(f"WebSocketDevice @ "
+                                         f"{self._uriprotocol}:"
+                                         f"//{self.ip}:{self.port} is not reachable")
+
             if not ssl:
                 self._uriprotocol = 'ws'
                 if self.port == 8833:
@@ -223,9 +244,9 @@ class BASE_WS_DEVICE:
                 if ip_now:
                     self.ip = ip_now
             else:
-                raise DeviceNotFound(
-                    f"WebSocketDevice @ "
-                    f"{self._uriprotocol}://{self.ip}:{self.port} is not reachable")
+                raise DeviceNotFound(f"WebSocketDevice @ "
+                                     f"{self._uriprotocol}:"
+                                     f"//{self.ip}:{self.port} is not reachable")
         except sslib.SSLError:
             raise sslib.SSLError
         except Exception as e:
