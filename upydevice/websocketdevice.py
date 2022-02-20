@@ -790,12 +790,15 @@ class WS_DEVICE(BASE_WS_DEVICE):
             time.sleep(0.1)
             self.write(line+'\n')
         if flush:
-            while long_command.split('\n')[-1] not in paste_echo:
-                fin, op, data = self.ws.read_frame()
-                paste_echo = data.decode('utf-8', 'ignore')
-            self.flush_conn()
-            while self.ws_readable():
-                time.sleep(0.1)
+            try:
+                while long_command.split('\n')[-1] not in paste_echo:
+                    fin, op, data = self.ws.read_frame()
+                    paste_echo = data.decode('utf-8', 'ignore')
+                self.flush_conn()
+                while self.ws_readable():
+                    time.sleep(0.1)
+            except socket.timeout:
+                pass
 
     def get_datalog(self, dvars=None, fs=None, time_out=None, units=None):
         self.datalog = []

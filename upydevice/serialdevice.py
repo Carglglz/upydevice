@@ -267,13 +267,9 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
         dev_str = '(MAC: {})'.format(self._mac)
         desc_str = '{}, Manufacturer: {}'.format(self.dev_description,
                                                  self.manufacturer)
-        return 'SerialDevice @ {}, Type: {}, \
-Class: {}\nFirmware: {}\n{}\n{}'.format(self.serial_port,
-                                        self.dev_platform,
-                                        self.dev_class,
-                                        fw_str,
-                                        desc_str,
-                                        dev_str)
+        return (f'SerialDevice @ {self.serial_port}, Type: {self.dev_platform}, '
+                f'Class: {self.dev_class}\n'
+                f'Firmware: {fw_str}\n{desc_str}\n{dev_str}')
 
     @property
     def address(self):
