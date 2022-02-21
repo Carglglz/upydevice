@@ -96,7 +96,7 @@ class BASE_BLE_DEVICE:
         self.is_notifying = False
         self.cmd_finished = True
         self.len_buffer = lenbuff
-        #
+        self.flush_conn = self.flush
         self.bytes_sent = 0
         self.buff = b''
         self.raw_buff = b''

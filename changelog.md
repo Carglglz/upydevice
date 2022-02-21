@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Allow `password:passphrase` format for `WebSocketDevice` password that sets ssl/auth
 to `True` if present.
 - `address` property for all device types.
+- `flush_conn` for `BleDevice` for compatibility
 ## [0.3.3] 2021-12-16
 ### Added
 - `Host Name` in `__repr__` command device info
