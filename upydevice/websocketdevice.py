@@ -745,10 +745,13 @@ class WS_DEVICE(BASE_WS_DEVICE):
         if zt:
             ping_cmd_str = f'ssh {zt["fwd"]} ping -c {n_tries} {zt["dev"]} -t {timeout}'
         else:
-            ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
+            if self.ip.endswith('.local'):
+                ping_cmd_str = 'ping -c {} {} '.format(n_tries, self.ip)
+            else:
+                ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
         ping_cmd = shlex.split(ping_cmd_str)
         timeouts = 0
-        down_kw = ['Unreachable', 'down', 'timeout']
+        down_kw = ['Unreachable', 'down', 'timeout', 'Unknown']
         try:
             proc = subprocess.Popen(
                 ping_cmd, stdout=subprocess.PIPE,
