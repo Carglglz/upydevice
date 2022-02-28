@@ -447,35 +447,46 @@ class BASE_BLE_DEVICE:
         try:
             cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
             self.raw_buff += data
-            if not cmd_filt in self.raw_buff:
-                pass
-            else:
-                if cmd_filt == self.raw_buff:
-                   data = b''
-                if not self._cmdfiltered:
+
+            if not self._cmdfiltered:
+                if len(self.raw_buff) < self.bytes_sent:
+                    return
+                else:
                     cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
-                    data = b'' + data
-                    if cmd_filt in data:
-                        data = data.replace(cmd_filt, b'', 1)
+                    cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
+                    # data = b'' + data
+                    if cmd_filt in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt, b'', 1)
                         # data = data.replace(b'\r\n>>> ', b'')
                         self._cmdfiltered = True
-                else:
-                    try:
-                        data = b'' + data
-                        # data = data.replace(b'\r\n>>> ', b'')
-                    except Exception as e:
-                        pass
-                # self.raw_buff += data
-                # self._line_buff += data + b'-'
-                if self.prompt in data:
-                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                        b'>>> ', b'').decode('utf-8', 'ignore')
-                    if data != '':
+                    if cmd_filt_pipe in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt_pipe, b'', 1)
+                        self._cmdfiltered = True
+            else:
+                try:
+                    data = b'' + data
+                except Exception:
+                    pass
+
+            if self.prompt in data:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if data != '':
+                    if not self.pipe:
                         print(data, end='')
-                else:
-                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                        b'>>> ', b'').decode('utf-8', 'ignore')
+                    else:
+                        for line in data.split('\n'):
+                            # if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
+            else:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if not self.pipe:
                     print(data, end='')
+                else:
+                    for line in data.split('\n'):
+                        if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -586,8 +597,11 @@ class BASE_BLE_DEVICE:
         self.response = ''
         self.raw_buff = b''
         self.buff = b''
+        self.pipe = pipe
         self._cmdstr = cmd
         # self.flush()
+        data = self.fmt_data(cmd)  # make fmt_data
+        self.bytes_sent = len(data)
         self.bytes_sent = self.send_recv_cmd(
             cmd, follow=follow, kb=kb)  # make fmt_datas
         # time.sleep(0.1)
@@ -1195,6 +1209,8 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 class BleDevice(BLE_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
+        self.pipe = None
+        self.pipe_mode = "stdout"
 
     async def as_paste_buff(self, cmd, **kargs):
         # print('Here')
