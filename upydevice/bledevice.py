@@ -96,7 +96,7 @@ class BASE_BLE_DEVICE:
         self.is_notifying = False
         self.cmd_finished = True
         self.len_buffer = lenbuff
-        #
+        self.flush_conn = self.flush
         self.bytes_sent = 0
         self.buff = b''
         self.raw_buff = b''
@@ -203,7 +203,7 @@ class BASE_BLE_DEVICE:
         return self.rssi
     # SERVICES
 
-    def get_services(self, log=True):
+    def get_services(self, log=True, read_descriptors=False):
         for service in self.ble_client.services:
             if service.description == 'Nordic UART Service':
                 is_NUS = True
@@ -280,13 +280,25 @@ class BASE_BLE_DEVICE:
 
                 if log:
                     for descriptor in char.descriptors:
-                        print(
-                            "\t\t[Descriptor] [{0}]: {1} (Handle: {2}) ".format(
-                                descriptor.uuid,
-                                descriptor.description,
-                                descriptor.handle
+                        if not read_descriptors:
+                            print(
+                                "\t\t[Descriptor] [{0}]: {1} (Handle: {2}) ".format(
+                                    descriptor.uuid,
+                                    descriptor.description,
+                                    descriptor.handle
+                                )
                             )
-                        )
+                        else:
+                            _description = self.read_descriptor_raw(
+                                handle=descriptor.handle)
+                            print(
+                                "\t\t[Descriptor] [{0}]: {1} (Handle: {2}): {3} ".format(
+                                    descriptor.uuid,
+                                    descriptor.description,
+                                    descriptor.handle,
+                                    _description
+                                )
+                            )
         self.services_rsum = {key: [list(list(val['CHARS'].values())[i].keys())[0] for i in range(
             len(list(val['CHARS'].values())))] for key, val in self.services.items()}
     # WRITE/READ SERVICES
@@ -306,7 +318,7 @@ class BASE_BLE_DEVICE:
     async def as_read_descriptor(self, handle):
         return bytes(await self.ble_client.read_gatt_descriptor(handle))
 
-    def read_descriptor_raw(self, key=None, char=None):
+    def read_descriptor_raw(self, key=None, char=None, handle=None):
         if key is not None:
             # print(self.chars_desc_rsum[char])
             if key in list(self.chars_desc_rsum[char]):
@@ -315,14 +327,21 @@ class BASE_BLE_DEVICE:
                 return data
             else:
                 print('Descriptor not available for this characteristic')
+        else:
+            data = self.loop.run_until_complete(
+                self.as_read_descriptor(handle))
+            return data
 
-    def read_descriptor(self, key=None, char=None, data_fmt="utf8"):
+    def read_descriptor(self, key=None, char=None, data_fmt="utf8", handle=None):
         try:
             if data_fmt == 'utf8':
-                data = self.read_descriptor_raw(key=key, char=char).decode('utf8')
+                data = self.read_descriptor_raw(key=key, char=char,
+                                                handle=handle).decode('utf8')
                 return data
             else:
-                data, = struct.unpack(data_fmt, self.read_char_raw(key=key, char=char))
+                data, = struct.unpack(data_fmt, self.read_descriptor_raw(key=key,
+                                                                         char=char,
+                                                                         handle=handle))
                 return data
         except Exception as e:
             print(e)
@@ -428,35 +447,46 @@ class BASE_BLE_DEVICE:
         try:
             cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
             self.raw_buff += data
-            if not cmd_filt in self.raw_buff:
-                pass
-            else:
-                if cmd_filt == self.raw_buff:
-                   data = b''
-                if not self._cmdfiltered:
+
+            if not self._cmdfiltered:
+                if len(self.raw_buff) < self.bytes_sent:
+                    return
+                else:
                     cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
-                    data = b'' + data
-                    if cmd_filt in data:
-                        data = data.replace(cmd_filt, b'', 1)
+                    cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
+                    # data = b'' + data
+                    if cmd_filt in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt, b'', 1)
                         # data = data.replace(b'\r\n>>> ', b'')
                         self._cmdfiltered = True
-                else:
-                    try:
-                        data = b'' + data
-                        # data = data.replace(b'\r\n>>> ', b'')
-                    except Exception as e:
-                        pass
-                # self.raw_buff += data
-                # self._line_buff += data + b'-'
-                if self.prompt in data:
-                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                        b'>>> ', b'').decode('utf-8', 'ignore')
-                    if data != '':
+                    if cmd_filt_pipe in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt_pipe, b'', 1)
+                        self._cmdfiltered = True
+            else:
+                try:
+                    data = b'' + data
+                except Exception:
+                    pass
+
+            if self.prompt in data:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if data != '':
+                    if not self.pipe:
                         print(data, end='')
-                else:
-                    data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
-                        b'>>> ', b'').decode('utf-8', 'ignore')
+                    else:
+                        for line in data.split('\n'):
+                            # if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
+            else:
+                data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
+                    b'>>> ', b'').decode('utf-8', 'ignore')
+                if not self.pipe:
                     print(data, end='')
+                else:
+                    for line in data.split('\n'):
+                        if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -567,8 +597,11 @@ class BASE_BLE_DEVICE:
         self.response = ''
         self.raw_buff = b''
         self.buff = b''
+        self.pipe = pipe
         self._cmdstr = cmd
         # self.flush()
+        data = self.fmt_data(cmd)  # make fmt_data
+        self.bytes_sent = len(data)
         self.bytes_sent = self.send_recv_cmd(
             cmd, follow=follow, kb=kb)  # make fmt_datas
         # time.sleep(0.1)
@@ -708,10 +741,20 @@ class BASE_BLE_DEVICE:
         if not silent:
             print('Done!')
 
-    async def as_reset(self, silent=True):
+    async def as_reset(self, silent=True, reconnect=True, hr=False):
         if not silent:
             print('Rebooting device...')
-        await self.as_write_char(self.writeables['Nordic UART RX'], bytes(self._reset, 'utf-8'))
+        if not hr:
+            await self.as_write_char(self.writeables['Nordic UART RX'],
+                                     bytes(self._reset, 'utf-8'))
+        else:
+            await self.as_write_char(self.writeables['Nordic UART RX'],
+                                     bytes(self._hreset, 'utf-8'))
+
+        self.connected = self.is_connected()
+        if reconnect:
+            time.sleep(2)
+            await self.connect_client(n_tries=10, debug=self.log)
         if not silent:
             print('Done!')
         return None
@@ -1166,6 +1209,36 @@ class BLE_DEVICE(BASE_BLE_DEVICE):
 class BleDevice(BLE_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
+        self.pipe = None
+        self.pipe_mode = "stdout"
+
+    async def as_paste_buff(self, cmd, **kargs):
+        # print('Here')
+        long_command = cmd
+        await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], b'\x05')
+        await asyncio.sleep(1)
+        # await self.dev.ble_client.write_gatt_char(self.dev.writeables['Nordic UART RX'], b'\x04')
+        # print(long_command)
+        lines = long_command.split('\n')
+        # print(lines)
+        for line in lines:
+            self.flush()
+            await asyncio.sleep(0.2)
+            data = bytes(line + '\n', 'utf-8')
+            if len(data) > self.len_buffer:
+                for i in range(0, len(data), self.len_buffer):
+                    await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data[i:i+self.len_buffer])
+            else:
+                await self.ble_client.write_gatt_char(self.writeables['Nordic UART RX'], data)
+            if line == lines[-1]:
+                self._cmdstr = line
+
+    def paste_buff(self, cmd, **kargs):
+        try:
+            self.loop.run_until_complete(
+                self.un_paste_buff(cmd, **kargs))
+        except Exception as e:
+            print(e)
 
 
 class AsyncBleDevice(BLE_DEVICE):
@@ -1177,10 +1250,10 @@ class AsyncBleDevice(BLE_DEVICE):
         # std="stdout"
 
     @unsync
-    async def as_connect(self, n_tries=5, show_servs=False, debug=False):
+    async def as_connect(self, n_tries=5, show_servs=True, debug=False):
         await self.connect_client(n_tries=n_tries, debug=debug)
         if self.connected:
-            self.get_services(log=True)
+            self.get_services(log=show_servs)
             if hasattr(self.ble_client._peripheral, 'name'):
                 if callable(self.ble_client._peripheral.name):
                     self.name = self.ble_client._peripheral.name()
@@ -1262,16 +1335,19 @@ class AsyncBleDevice(BLE_DEVICE):
             #     pass
             # else:
             if not self._cmdfiltered:
-                cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
-                cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
-                data = b'' + data
-                if cmd_filt in data:
-                    data = data.replace(cmd_filt, b'', 1)
-                    # data = data.replace(b'\r\n>>> ', b'')
-                    self._cmdfiltered = True
-                if cmd_filt_pipe in data:
-                    data = data.replace(cmd_filt_pipe, b'', 1)
-                    self._cmdfiltered = True
+                if len(self.raw_buff) < self.bytes_sent:
+                    return
+                else:
+                    cmd_filt = bytes(self._cmdstr + '\r\n', 'utf-8')
+                    cmd_filt_pipe = bytes(self._cmdstr + '\n', 'utf-8')
+                    # data = b'' + data
+                    if cmd_filt in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt, b'', 1)
+                        # data = data.replace(b'\r\n>>> ', b'')
+                        self._cmdfiltered = True
+                    if cmd_filt_pipe in self.raw_buff:
+                        data = self.raw_buff.replace(cmd_filt_pipe, b'', 1)
+                        self._cmdfiltered = True
             else:
                 try:
                     data = b'' + data
@@ -1287,14 +1363,18 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        self.pipe(data, std=self.pipe_mode)
+                        for line in data.split('\n'):
+                            # if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    self.pipe(data, std=self.pipe_mode)
+                    for line in data.split('\n'):
+                        if line:
+                            self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -1413,6 +1493,15 @@ class AsyncBleDevice(BLE_DEVICE):
 
     def kbi(self, **kargs):
         return self.un_kbi(**kargs).result()
+
+    @unsync
+    async def un_reset(self, **kargs):
+        await self.as_reset(**kargs)
+        while self.is_connected():
+            await asyncio.sleep(1)
+
+    def reset(self, **kargs):
+        return self.un_reset(**kargs).result()
 
     # async def as_kbi(self, silent=True, pipe=None):
     #     data = bytes(self._kbi + '\r', 'utf-8')

@@ -98,6 +98,12 @@ class Websocket:
     def __init__(self, sock):
         self.sock = sock
         self.open = True
+        self.debug = False
+        self.buff = b''
+        self.tmp_buff = b''
+        self.global_len = 0
+        self.frame_debug = []
+        self.last_len = 0
 
     def __enter__(self):
         return self
@@ -113,12 +119,28 @@ class Websocket:
         Read a frame from the socket.
         See https://tools.ietf.org/html/rfc6455#section-5.2 for the details.
         """
-        two_bytes = b''
+        # try:
+        #     assert self.last_len == len(self.tmp_buff)
+        # except Exception:
+        #     # print(f'MAGICAL APPEARING BYTES :^O!{self.tmp_buff}:{self.last_len}')
+        if len(self.tmp_buff) != self.last_len:
+            two_bytes = self.tmp_buff
+        else:
+            self.tmp_buff = b''
+            two_bytes = b''
+        mask_bits = None
+        # try:
+        #     assert self.global_len == len(self.buff)
+        # except Exception:
+        #     # Missing byte
+        #     print(f"Missmatch at start gl:{self.global_len}, bl:{len(self.buff)}")
+        # prevent frame header shifting
         # Frame header
-        two_bytes += self.sock.recv(2)
         while len(two_bytes) < 2:
             two_bytes += self.sock.recv(1)
-
+        self.buff += two_bytes
+        if not self.tmp_buff:
+            self.tmp_buff += two_bytes
         if not two_bytes:
             raise NoDataException
 
@@ -133,15 +155,43 @@ class Websocket:
         length = byte2 & 0x7f
 
         if length == 126:  # Magic number, length header is 2 bytes
-            length, = struct.unpack('!H', self.sock.read(2))
+            lh = self.sock.recv(2)
+            assert len(lh) == 2
+            self.buff += lh
+            self.tmp_buff += lh
+            length, = struct.unpack('!H', lh)
         elif length == 127:  # Magic number, length header is 8 bytes
-            length, = struct.unpack('!Q', self.sock.read(8))
+            lh = self.sock.recv(8)
+            assert len(lh) == 8
+            self.buff += lh
+            self.tmp_buff += lh
+            length, = struct.unpack('!Q', lh)
 
         if mask:  # Mask is 4 bytes
             mask_bits = self.sock.recv(4)
+            while len(mask_bits) < 4:
+                mask_bits += self.sock.recv(1)
+            assert len(mask_bits) == 4
+            self.buff += mask_bits
+            self.tmp_buff += mask_bits
 
         try:
             data = self.sock.recv(length)
+            while len(data) < length:
+                data += self.sock.recv(1)
+            self.buff += data
+            self.tmp_buff += data
+            assert len(data) == length
+            if self.debug:
+                try:
+                    assert self.buff[-len(self.tmp_buff):] == self.tmp_buff
+                    self.global_len += len(self.tmp_buff)
+                    assert self.global_len == len(self.buff), "Missmatch at end"
+                except Exception:
+                    if self.debug:
+                        print(f"Missmatch at end gl:{self.global_len}, "
+                              f"bl:{len(self.buff)}")
+            self.last_len = len(self.tmp_buff)
         except MemoryError:
             # We can't receive this many bytes, close the socket
             if __debug__:
@@ -153,6 +203,15 @@ class Websocket:
         if mask:
             data = bytes(b ^ mask_bits[i % 4]
                          for i, b in enumerate(data))
+
+        if self.debug:
+            idx = self.buff.index(two_bytes)
+            self.frame_debug.append(dict(tb=two_bytes, b1=byte1, b2=byte2,
+                                         fin=fin, opcode=opcode,
+                                         mask=mask, ln=length, data=data,
+                                         pf=self.buff[idx-200:idx],
+                                         tmp=self.tmp_buff,
+                                         btmp=self.buff[-len(self.tmp_buff):]))
 
         return fin, opcode, data
 
@@ -197,6 +256,13 @@ class Websocket:
                          for i, b in enumerate(data))
 
         self.sock.send(data)
+
+    def reset_buffers(self):
+        # Redo frame reading to prevent misterious frame header shifting missing
+        # first two bytes
+        self.buff = b''
+        self.tmp_buff = b''
+        self.global_len = 0
 
     def recv(self):
         """

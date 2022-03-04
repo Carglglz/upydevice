@@ -10,6 +10,9 @@ from PyQt5.QtCore import (QObject, QRunnable, QThreadPool, pyqtSignal,
 from PyQt5.QtMultimedia import QSound
 import time
 from datetime import timedelta
+import os
+
+os.environ['QT_MAC_WANTS_LAYER'] = '1'
 # ICON_RED_LED_OFF = os.path.join(os.getcwd(), "icons/xsled-red-off.png")
 # ICON_RED_LED_ON = os.path.join(os.getcwd(), "icons/xsled-red-on.png")
 TIMER_FX = os.path.join(os.getcwd(), "sounds/beep-07a.wav")

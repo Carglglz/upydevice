@@ -31,13 +31,19 @@ from array import array
 import netifaces
 import nmap
 import sys
+import ssl as sslib
+import select
+from io import BytesIO
+from io import BufferedRandom
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
-try:
-    from upydev import __path__ as CA_PATH
-except Exception as e:
-    pass
 from .exceptions import DeviceException, DeviceNotFound
+try:
+    from upydev import __path__ as ca_PATH
+    CA_PATH = ca_PATH[0]
+except Exception:
+    CA_PATH = None
+
 
 _REPR_CMDS_LIST = ["os.uname().sysname",
                    "os.uname().release",
@@ -92,7 +98,9 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
         my_scan = nmScan.scan(
             hosts=host_range, arguments='-p {}'.format(WebREPL_port))
         hosts_list = [{'host': x, 'state': nmScan[x]['status']['state'], 'port':list(
-            nmScan[x]['tcp'].keys())[0], 'status':nmScan[x]['tcp'][WebREPL_port]['state']} for x in nmScan.all_hosts()]
+            nmScan[x]['tcp'].keys())[0],
+            'status':nmScan[x]['tcp'][WebREPL_port]['state']}
+            for x in nmScan.all_hosts()]
         devs = [host for host in hosts_list if host['status'] == 'open']
         if debug:
             print('FOUND {} device/s :'.format(len(devs)))
@@ -100,10 +108,11 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
         if debug:
             for dev in devs:
                 try:
-                    print('DEVICE {}: , IP: {} , STATE: {}, PORT: {}, STATUS: {}'.format(
-                        N, dev['host'], dev['state'], dev['port'], dev['status']))
+                    print('DEVICE {}: , IP: {} , STATE: {}, PORT: {}, '
+                          'STATUS: {}'.format(N, dev['host'], dev['state'],
+                                              dev['port'], dev['status']))
                     N += 1
-                except Exception as e:
+                except Exception:
                     pass
         if not debug_info:
             for dev in devs:
@@ -116,11 +125,21 @@ def net_scan(n=None, debug=False, ssl=False, debug_info=False):
 
 class BASE_WS_DEVICE:
     def __init__(self, target, password, init=False, ssl=False, auth=False,
-                 capath=CA_PATH[0]):
+                 capath=CA_PATH, passphrase=None):
         self.ws = None
         self.ip = target
-        self.pswd = password
-        self.port = 8266
+        if ':' in password:
+            self.pswd, self.passphrase = password.split(':')
+        else:
+            self.pswd = password
+            self.passphrase = passphrase
+        if ':' in target:
+            self.ip, self.port = target.split(':')
+            self.port = int(self.port)
+        else:
+            self.port = 8266
+        self.hostname = None
+        self.hostname_mdns = None
         self.bytes_sent = 0
         self.buff = b''
         self.raw_buff = b''
@@ -132,47 +151,104 @@ class BASE_WS_DEVICE:
         self._hreset = "import machine; machine.reset()\r"
         self._traceback = b'Traceback (most recent call last):'
         self._flush = b''
+        self.linebuffer = BufferedRandom(BytesIO())
+        self._debug = False
         self.output = None
         self.platform = None
         self.connected = False
         self.repl_CONN = self.connected
         self._ssl = ssl
+        self._uriprotocol = 'ws'
+        if ssl:
+            self._uriprotocol = 'wss'
         if init:
-            if not ssl:
-                self._uriprotocol = 'ws'
-                self.ws = wsclient.connect(
-                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
-            else:
-                self.port = 8833
+            ip_now = None
+            if self.passphrase:
+                auth = True
+                ssl = True
                 self._uriprotocol = 'wss'
-                self.ws = wsclient.connect(
-                    'wss://{}:{}'.format(self.ip, self.port), self.pswd,
-                    auth=auth, capath=capath)
-            if self.ws:
-                self.connected = True
-                self.repl_CONN = self.connected
-            else:
-                raise DeviceNotFound(
-                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+                if self.port == 8266:
+                    self.port = 8833
 
-    def open_wconn(self, ssl=False, auth=False, capath=CA_PATH[0]):
-        try:
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                try:
+                    ip_now = socket.gethostbyname(self.hostname)
+                except socket.gaierror:
+                    raise DeviceNotFound(f"WebSocketDevice @ "
+                                         f"{self._uriprotocol}:"
+                                         f"//{self.ip}:{self.port} is not reachable")
+
             if not ssl:
                 self._uriprotocol = 'ws'
                 self.ws = wsclient.connect(
-                    'ws://{}:{}'.format(self.ip, self.port), self.pswd)
+                    f'ws://{self.ip}:{self.port}', self.pswd)
+            else:
+                if self.port == 8266:
+                    self.port = 8833
+                self._uriprotocol = 'wss'
+                self.ws = wsclient.connect(
+                    f'wss://{self.ip}:{self.port}', self.pswd,
+                    auth=auth, capath=capath, passphrase=self.passphrase)
+            if self.ws:
+                self.connected = True
+                # resolve name, store ip in self.ip
+                # store mdns name in self.hostname
+                if ip_now:
+                    self.ip = ip_now
+                self.repl_CONN = self.connected
+            else:
+                raise DeviceNotFound(f"WebSocketDevice @ "
+                                     f"{self._uriprotocol}:"
+                                     f"//{self.ip}:{self.port} is not reachable")
+
+    def open_wconn(self, ssl=False, auth=False, capath=CA_PATH):
+        try:
+            ip_now = None
+            if self.passphrase:
+                auth = True
+                ssl = True
+                self._uriprotocol = 'wss'
+                if self.port == 8266:
+                    self.port = 8833
+
+            if self.ip.endswith('.local'):
+                self.hostname = self.ip
+                self.hostname_mdns = self.ip
+                try:
+                    ip_now = socket.gethostbyname(self.hostname)
+                except socket.gaierror:
+                    raise DeviceNotFound(f"WebSocketDevice @ "
+                                         f"{self._uriprotocol}:"
+                                         f"//{self.ip}:{self.port} is not reachable")
+
+            if not ssl:
+                self._uriprotocol = 'ws'
+                if self.port == 8833:
+                    self.port = 8266
+                self.ws = wsclient.connect(
+                    f'ws://{self.ip}:{self.port}', self.pswd)
             else:
                 self._uriprotocol = 'wss'
-                self.port = 8833
+                if self.port == 8266:
+                    self.port = 8833
+                if self.passphrase:
+                    auth = True
                 self.ws = wsclient.connect(
-                    'wss://{}:{}'.format(self.ip, self.port),
-                    self.pswd, auth=auth, capath=capath)
+                    f'wss://{self.ip}:{self.port}', self.pswd,
+                    auth=auth, capath=capath, passphrase=self.passphrase)
             if self.ws:
                 self.connected = True
                 self.repl_CONN = self.connected
+                if ip_now:
+                    self.ip = ip_now
             else:
-                raise DeviceNotFound(
-                    "WebSocketDevice @ {}://{}:{} is not reachable".format(self._uriprotocol, self.ip, self.port))
+                raise DeviceNotFound(f"WebSocketDevice @ "
+                                     f"{self._uriprotocol}:"
+                                     f"//{self.ip}:{self.port} is not reachable")
+        except sslib.SSLError:
+            raise sslib.SSLError
         except Exception as e:
             print(e)
 
@@ -180,13 +256,29 @@ class BASE_WS_DEVICE:
         if self.ws:
             self.ws.close()
         self.connected = False
+        self.ip = self.hostname_mdns
         self.repl_CONN = self.connected
+        time.sleep(0.1)
 
     def connect(self, **kargs):
         self.open_wconn(**kargs)
 
     def disconnect(self):
         self.close_wconn()
+
+    @property
+    def address(self):
+        return self.ip
+
+    @property
+    def debug(self):
+        return self._debug
+
+    @debug.setter
+    def debug(self, opt):
+        assert isinstance(opt, bool)
+        self._debug = opt
+        self.ws.debug = opt
 
     def write(self, cmd):
         n_bytes = len(bytes(cmd, 'utf-8'))
@@ -201,24 +293,44 @@ class BASE_WS_DEVICE:
                 try:
                     fin, opcode, data = self.ws.read_frame()
                     self.raw_buff += data
-                except AttributeError as e:
+                except AttributeError:
                     pass
 
             return self.raw_buff
-        except socket.timeout as e:
+        except socket.timeout:
             return self.raw_buff
 
     def flush(self):
         self.ws.sock.settimeout(0.01)
         self._flush = b''
-        while True:
+        self.linebuffer.truncate(0)
+        self.linebuffer.seek(0)
+        self.ws.reset_buffers()
+        while self.ws_readable():
+            while True:
+                try:
+                    fin, opcode, data = self.ws.read_frame()
+                    self._flush += data
+                except socket.timeout:
+                    break
+                except wsprotocol.NoDataException:
+                    break
+        self.ws.reset_buffers()
+
+    def ws_readable(self):
+        for i in range(3):
             try:
-                fin, opcode, data = self.ws.read_frame()
-                self._flush += data
-            except socket.timeout as e:
-                break
-            except wsprotocol.NoDataException as e:
-                break
+                readable, writable, exceptional = select.select([self.ws.sock],
+                                                                [self.ws.sock],
+                                                                [self.ws.sock])
+                if readable:
+                    return True
+                else:
+                    return False
+            except Exception as e:
+                if self.debug:
+                    print(e)
+                time.sleep(0.01)
 
     def wr_cmd(self, cmd, silent=False, rtn=True, rtn_resp=False,
                long_string=False):
@@ -294,7 +406,7 @@ class BASE_WS_DEVICE:
                         self.open_wconn(ssl=self._ssl, auth=True)
                         self.wr_cmd(self._banner, silent=True)
                         break
-                    except Exception as e:
+                    except Exception:
                         time.sleep(0.5)
                         self.ws._close()
                 self.cmd('')
@@ -340,12 +452,12 @@ class BASE_WS_DEVICE:
     def get_output(self):
         try:
             self.output = ast.literal_eval(self.response)
-        except Exception as e:
+        except Exception:
             if 'bytearray' in self.response:
                 try:
                     self.output = bytearray(ast.literal_eval(
                         self.response.strip().split('bytearray')[1]))
-                except Exception as e:
+                except Exception:
                     pass
             else:
                 if 'array' in self.response:
@@ -353,21 +465,20 @@ class BASE_WS_DEVICE:
                         arr = ast.literal_eval(
                             self.response.strip().split('array')[1])
                         self.output = array(arr[0], arr[1])
-                    except Exception as e:
+                    except Exception:
                         pass
             pass
 
 
 class WS_DEVICE(BASE_WS_DEVICE):
     def __init__(self, target, password, init=False, ssl=False, auth=False,
-                 capath=CA_PATH[0], name=None, dev_platf=None,
-                 autodetect=False):
+                 capath=CA_PATH, name=None, dev_platf=None,
+                 autodetect=False, passphrase=None):
         super().__init__(target=target, password=password, init=init, ssl=ssl,
-                         auth=auth, capath=capath)
+                         auth=auth, capath=capath, passphrase=passphrase)
         self.dev_class = 'WebSocketDevice'
         self.dev_platform = dev_platf
         self.name = name
-        self.hostname = None
         self.raw_buff = b''
         self.message = b''
         self.output_queue = multiprocessing.Queue(maxsize=1)
@@ -407,56 +518,70 @@ class WS_DEVICE(BASE_WS_DEVICE):
             repr_cmd = repr_cmd.format(
                 "nic.status('rssi'), nic.config('dhcp_hostname')")
             (self.dev_platform, self._release,
-             self._version, self._machine, uuid, imp, rssi, self.hostname) = self.wr_cmd(repr_cmd,
-                                                                                         silent=True,
-                                                                                         rtn_resp=True)
+             self._version, self._machine, uuid, imp, rssi,
+             self.hostname) = self.wr_cmd(repr_cmd, silent=True, rtn_resp=True)
         # uid = self.wr_cmd("from machine import unique_id; unique_id()",
         #                   silent=True, rtn_resp=True)
         vals = hexlify(uuid).decode()
         imp = imp[0].upper() + imp[1:]
         imp = imp.replace('p', 'P')
         self._mac = ':'.join([vals[i:i+2] for i in range(0, len(vals), 2)])
-        fw_str = '{} {}; {}'.format(imp, self._version, self._machine)
+        fw_str = f'{imp} {self._version}; {self._machine}'
         if self.hostname:
-            dev_str = '(MAC: {}, Host Name: {}, RSSI: {} dBm)'.format(self._mac,
-                                                                      self.hostname,
-                                                                      rssi)
+            dev_str = (f'(MAC: {self._mac}, Host Name: {self.hostname}, '
+                       f'RSSI: {rssi} dBm)')
         else:
-            dev_str = '(MAC: {}, RSSI: {} dBm)'.format(self._mac, rssi)
+            dev_str = f'(MAC: {self._mac}, RSSI: {rssi} dBm)'
         if disconnect_on_end:
             self.disconnect()
-        if self._ssl:
-            return 'WebSocketDevice @ wss://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                                                 self.port,
-                                                                                                 self.dev_platform,
-                                                                                                 self.dev_class,
-                                                                                                 fw_str,
-                                                                                                 dev_str)
-        else:
-            return 'WebSocketDevice @ ws://{}:{}, Type: {}, Class: {}\nFirmware: {}\n{}'.format(self.ip,
-                                                                                                self.port,
-                                                                                                self.dev_platform,
-                                                                                                self.dev_class,
-                                                                                                fw_str,
-                                                                                                dev_str)
+        if self.hostname:
+            if not self.hostname.endswith('.local'):
+                self.hostname += '.local'
+
+        return (f'WebSocketDevice @ {self._uriprotocol}://{self.ip}:{self.port},'
+                f' Type: {self.dev_platform}, Class: {self.dev_class}\n'
+                f'Firmware: {fw_str}\n{dev_str}')
 
     def readline(self):
         self.ws.sock.settimeout(None)
         try:
             self.raw_buff = b''
-            while b'\r\n' not in self.raw_buff:
-                try:
-                    fin, opcode, data = self.ws.read_frame()
-                    self.raw_buff += data
-                    if self.prompt in self.raw_buff:
+            data = b''
+            state = 0
+            # Consume frames until eol
+            while b'\r\n' not in data:
+                fin, opcode, data = self.ws.read_frame()
+                self.linebuffer.write(data)
+                if not fin:
+                    if self.debug:
+                        print(f"\nFIN: {fin} | OPCODE: {opcode} | DATA: {data}\n")
+                if self.prompt in data:
+                    if data.endswith(self.prompt):
                         break
-                except AttributeError as e:
-                    pass
 
+            self.linebuffer.seek(0)
+            while not self.raw_buff.endswith(b'\r\n'):
+                state = 1
+                self.raw_buff += self.linebuffer.read(1)
+                if self.raw_buff.endswith(self.prompt):
+                    if not self.linebuffer.peek(1):
+                        break
+            rest = self.linebuffer.read()
+            self.linebuffer.truncate(0)
+            self.linebuffer.seek(0)
+            self.linebuffer.write(rest)
+            if self.debug and not fin:
+                print(self.raw_buff)
             return self.raw_buff
+
         except socket.timeout as e:
+            if self.debug:
+                print(e)
             return self.raw_buff
         except KeyboardInterrupt:
+            if self.debug:
+                print(f'Interrupted in readline: state {state}; data: {data}')
+                print(self.raw_buff)
             raise KeyboardInterrupt
 
     def wr_cmd(self, cmd, silent=False, rtn=True, long_string=False,
@@ -484,7 +609,7 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 try:
                     self.follow_output(cmd, pipe=pipe, multiline=multiline,
                                        silent=silent_pipe)
-                except KeyboardInterrupt as e:
+                except KeyboardInterrupt:
                     # time.sleep(0.2)
                     self.paste_cmd = ''
                     if pipe is None:
@@ -518,7 +643,8 @@ class WS_DEVICE(BASE_WS_DEVICE):
                     try:
                         if self._traceback.decode() in self.response:
                             exception_msg = ' '.join(['Traceback',
-                                                      self.response.split('Traceback')[1]])
+                                                      self.response.split('Trac'
+                                                                          'eback')[1]])
                             raise DeviceException(exception_msg)
                         else:
                             print(self.response)
@@ -545,21 +671,25 @@ class WS_DEVICE(BASE_WS_DEVICE):
             return self.output
 
     def follow_output(self, inp, pipe=None, multiline=False, silent=False):
-        self.raw_buff += self.readline()
+        self.raw_buff = self.readline()
         if pipe is not None:
             self._is_first_line = True
             if any(_kw in inp for _kw in self.stream_kw):
                 self._is_first_line = False
             if self.paste_cmd != '':
-                while self.paste_cmd.split('\n')[-1] not in self.raw_buff.decode('utf-8', 'ignore'):
-                    self.raw_buff += self.readline()
+                dec_buff = self.raw_buff.decode('utf-8', 'ignore')
+                while self.paste_cmd.split('\n')[-1] not in dec_buff:
+                    self.raw_buff = self.readline()
+                    dec_buff = self.raw_buff.decode('utf-8', 'ignore')
         while True:
-
+            if self.raw_buff.endswith(self.prompt) and not self.ws_readable():
+                break
             self.message = self.readline()
             self.buff += self.message
-            self.raw_buff += self.message
+            # self.raw_buff += self.message
             if self.message == b'':
-                pass
+                if self.buff.endswith(self.prompt):
+                    break
             else:
                 if self.message.startswith(b'\n'):
                     self.message = self.message[1:]
@@ -606,15 +736,22 @@ class WS_DEVICE(BASE_WS_DEVICE):
                 if pipe is None:
                     if not silent:
                         print(msg.replace('>>> ', ''), end='')
-            if self.buff.endswith(b'>>> '):
-                break
+            if self.buff.endswith(self.prompt):
+                if not self.ws_readable():
+                    break
         self.paste_cmd = ''
 
-    def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2):
-        ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
+    def is_reachable(self, n_tries=2, max_loss=1, debug=False, timeout=2, zt=False):
+        if zt:
+            ping_cmd_str = f'ssh {zt["fwd"]} ping -c {n_tries} {zt["dev"]} -t {timeout}'
+        else:
+            if self.ip.endswith('.local'):
+                ping_cmd_str = 'ping -c {} {} '.format(n_tries, self.ip)
+            else:
+                ping_cmd_str = 'ping -c {} {} -t {}'.format(n_tries, self.ip, timeout)
         ping_cmd = shlex.split(ping_cmd_str)
         timeouts = 0
-        down_kw = ['Unreachable', 'down', 'timeout']
+        down_kw = ['Unreachable', 'down', 'timeout', 'Unknown']
         try:
             proc = subprocess.Popen(
                 ping_cmd, stdout=subprocess.PIPE,
@@ -646,14 +783,25 @@ class WS_DEVICE(BASE_WS_DEVICE):
         else:
             return True
 
-    def paste_buff(self, long_command):
+    def paste_buff(self, long_command, flush=True):
         self.paste_cmd = long_command
         self.write('\x05')
+        self.flush_conn()
+        paste_echo = ''
         lines = long_command.split('\n')
         for line in lines:
             time.sleep(0.1)
             self.write(line+'\n')
-        self.flush_conn()
+        if flush:
+            try:
+                while long_command.split('\n')[-1] not in paste_echo:
+                    fin, op, data = self.ws.read_frame()
+                    paste_echo = data.decode('utf-8', 'ignore')
+                self.flush_conn()
+                while self.ws_readable():
+                    time.sleep(0.1)
+            except socket.timeout:
+                pass
 
     def get_datalog(self, dvars=None, fs=None, time_out=None, units=None):
         self.datalog = []
@@ -751,5 +899,4 @@ class WS_DEVICE(BASE_WS_DEVICE):
 
 class WebSocketDevice(WS_DEVICE):
     def __init__(self, *args, **kargs):
-        super().__init__(*args, **kargs)
         super().__init__(*args, **kargs)
