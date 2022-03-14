@@ -175,7 +175,7 @@ def upy_cmd_c_r(debug=False, rtn=True, out=False):
             else:
                 pass
             if debug:
-                dev_dict['dev'].cmd(cmd)
+                dev_dict['dev'].cmd(cmd, long_string=True)
             else:
                 dev_dict['dev'].cmd(cmd, silent=True)
             if rtn:
@@ -246,7 +246,7 @@ def upy_cmd_c_r_in_callback(debug=False, rtn=True, out=False):
     return decorator_cmd_str
 
 
-def upy_cmd_c_r_nb(debug=False, rtn=True, out=False):
+def upy_cmd_c_r_nb(debug=False, rtn=True, out=False, block=False):
     def decorator_cmd_str(func):
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
@@ -267,7 +267,7 @@ def upy_cmd_c_r_nb(debug=False, rtn=True, out=False):
             if debug:
                 dev_dict['dev'].cmd_nb(cmd, long_string=True)
             else:
-                dev_dict['dev'].cmd_nb(cmd, silent=True,)
+                dev_dict['dev'].cmd_nb(cmd, silent=True, block_dev=block)
             if rtn:
                 dev_dict['dev'].get_opt()
                 return dev_dict['dev'].output

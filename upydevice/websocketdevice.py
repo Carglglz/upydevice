@@ -256,7 +256,8 @@ class BASE_WS_DEVICE:
         if self.ws:
             self.ws.close()
         self.connected = False
-        self.ip = self.hostname_mdns
+        if self.hostname_mdns:
+            self.ip = self.hostname_mdns
         self.repl_CONN = self.connected
         time.sleep(0.1)
 
