@@ -701,7 +701,7 @@ class STREAMER:
         return self.dev_dict
 
     # SOCKETS METHODS
-    @upy_cmd_c_r_nb(debug=True)
+    @upy_cmd_c_r(debug=True)
     def connect_SOC(self, host, port):
         return self.dev_dict
 
@@ -710,8 +710,8 @@ class STREAMER:
         return self.dev_dict
 
     def start_server(self):
-        self.connect_SOC(self.soc.host, self.port)
-        self.soc.start_SOC()
+        # self.connect_SOC(self.soc.host, self.port)
+        self.soc.start_SOC(recv_sock=self.connect_SOC)
 
     def stop_server(self):
         self.disconnect_SOC()
@@ -804,7 +804,7 @@ class STREAMER:
                 sampling_callback=self.sample_send_call, timeout=timeout, on_init=on_init)
 
         if log:
-                name_file = self.lognow(self.sens_mode)
+            name_file = self.lognow(self.sens_mode)
         if test:
             t0 = time.time()
             buffer = True
@@ -888,8 +888,8 @@ class STREAMER:
             pass
 
     def continuous_chunk_stream(self, timeout=100, init=True,
-                               log=False, buffer=False, on_init=None,
-                               test=False, static=False):
+                                log=False, buffer=False, on_init=None,
+                                test=False, static=False):
         if init:
             self.fq = 1/(timeout/1000)
             self.header['fq(hz)'] = self.fq
@@ -897,7 +897,7 @@ class STREAMER:
                 sampling_callback=self.chunk_send_call, timeout=timeout, on_init=on_init)
 
         if log:
-                name_file = self.lognow(self.sens_mode)
+            name_file = self.lognow(self.sens_mode)
         if test:
             t0 = time.time()
             buffer = True
@@ -941,8 +941,8 @@ class STREAMER:
                     break
 
     def continuous_chunk_stream_json(self, timeout=100, init=True,
-                                    log=False, buffer=False, on_init=None,
-                                    test=False, static=False):
+                                     log=False, buffer=False, on_init=None,
+                                     test=False, static=False):
         if init:
             self.fq = 1/(timeout/1000)
             self.header['fq(hz)'] = self.fq
@@ -951,7 +951,7 @@ class STREAMER:
                 on_init=on_init)
 
         if log:
-                name_file = self.lognow(self.sens_mode)
+            name_file = self.lognow(self.sens_mode)
         if test:
             t0 = time.time()
             buffer = True
@@ -1362,7 +1362,8 @@ class IMU_STREAMER(STREAMER):
         self.chunk_buffer_json_size = self.get_json_chunk_size()
 
     def get_json_chunk_size(self):
-        json_size = ((self.max_dig+2)*self.chunk_buffer_size*self.n_vars)+(7*self.n_vars)
+        json_size = ((self.max_dig+2)*self.chunk_buffer_size
+                     * self.n_vars)+(7*self.n_vars)
         return json_size
 
     @upy_cmd_c_r()
@@ -1495,7 +1496,7 @@ class socket_server:
         ip_soc.close()
         return local_ip
 
-    def start_SOC(self):
+    def start_SOC(self, recv_sock=None):
         self.serv_soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serv_soc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.serv_soc.bind((self.host, self.port))
@@ -1504,6 +1505,8 @@ class socket_server:
             self.log.info('Server listening...')
         else:
             print('Server listening...')
+        if recv_sock:
+            recv_sock(self.host, self.port)
         self.conn, self.addr_client = self.serv_soc.accept()
         if self.log is not None:
             self.log.info(('Connection received from: {}:{}'.format(*self.addr_client)))
