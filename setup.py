@@ -9,7 +9,7 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.3.5',
+      version='0.3.6',
       description='Python library to interface with wireless/serial MicroPython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -39,4 +39,5 @@ setup(name='upydevice',
       scripts=[],
       include_package_data=True,
       install_requires=['pyserial', 'dill', 'unsync',
-                        'bleak>=0.12.1', 'bleak_sigspec>=0.0.4', 'netifaces~=0.11.0', 'python-nmap~=0.7.1'])
+                        'bleak>=0.12.1', 'bleak_sigspec>=0.0.4', 'netifaces~=0.11.0',
+                        'python-nmap~=0.7.1'])
