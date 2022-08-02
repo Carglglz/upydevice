@@ -43,6 +43,8 @@ import traceback
 import multiprocessing
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
+from .decorators import getsource, uparser_dec
+import functools
 from unsync import unsync
 
 
@@ -1236,9 +1238,35 @@ class BleDevice(BLE_DEVICE):
     def paste_buff(self, cmd, **kargs):
         try:
             self.loop.run_until_complete(
-                self.un_paste_buff(cmd, **kargs))
+                self.as_paste_buff(cmd, **kargs))
         except Exception as e:
             print(e)
+
+    def code(self, func):
+        str_func = uparser_dec(getsource(func)).replace('\r', '\n    ')
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            # dev_dict = func(*args, **kwargs)
+            #print(cmd_)
+            self.wr_cmd(cmd_, rtn=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def load(self, file):
+        with open(file, 'r') as upy_file:
+            upy_content = upy_file.read()
+        self.paste_buff(upy_content)
+        self.wr_cmd('\x04', follow=True)
 
 
 class AsyncBleDevice(BLE_DEVICE):

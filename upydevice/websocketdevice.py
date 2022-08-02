@@ -38,6 +38,9 @@ from io import BufferedRandom
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 from .exceptions import DeviceException, DeviceNotFound
+from .decorators import getsource, uparser_dec
+import functools
+
 try:
     from upydev import __path__ as ca_PATH
     CA_PATH = ca_PATH[0]
@@ -901,3 +904,30 @@ class WS_DEVICE(BASE_WS_DEVICE):
 class WebSocketDevice(WS_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
+
+
+    def code(self, func):
+        str_func = uparser_dec(getsource(func)).replace('\r', '\n    ')
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            # dev_dict = func(*args, **kwargs)
+            #print(cmd_)
+            self.wr_cmd(cmd_, rtn=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def load(self, file):
+        with open(file, 'r') as upy_file:
+            upy_content = upy_file.read()
+        self.paste_buff(upy_content)
+        self.wr_cmd('\x04', follow=True)
