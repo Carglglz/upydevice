@@ -487,8 +487,8 @@ class BASE_BLE_DEVICE:
                     print(data, end='')
                 else:
                     for line in data.split('\n'):
-                        if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                        # if line:
+                        self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -1246,6 +1246,7 @@ class BleDevice(BLE_DEVICE):
         str_func = uparser_dec(getsource(func)).replace('\r', '\n    ')
         self.paste_buff(str_func)
         self.cmd('\x04', silent=True)
+
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
@@ -1255,8 +1256,6 @@ class BleDevice(BLE_DEVICE):
                 v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
-            # dev_dict = func(*args, **kwargs)
-            #print(cmd_)
             self.wr_cmd(cmd_, rtn=True)
             if self.output:
                 return self.output
@@ -1391,18 +1390,18 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        for line in data.split('\n'):
-                            # if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                        # for line in data.split('\n'):
+                        # if line:
+                        self.pipe(data, std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    for line in data.split('\n'):
-                        if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                    # for line in data.split('\n'):
+                    # if line:
+                    self.pipe(data, std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
