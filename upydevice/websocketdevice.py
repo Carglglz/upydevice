@@ -905,11 +905,11 @@ class WebSocketDevice(WS_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
 
-
     def code(self, func):
         str_func = uparser_dec(getsource(func)).replace('\r', '\n    ')
         self.paste_buff(str_func)
         self.cmd('\x04', silent=True)
+
         @functools.wraps(func)
         def wrapper_cmd(*args, **kwargs):
             flags = ['>', '<', 'object', 'at', '0x']
@@ -919,8 +919,6 @@ class WebSocketDevice(WS_DEVICE):
                 v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
             signature = ", ".join(args_repr + kwargs_repr)
             cmd_ = f"{func.__name__}({signature})"
-            # dev_dict = func(*args, **kwargs)
-            #print(cmd_)
             self.wr_cmd(cmd_, rtn=True)
             if self.output:
                 return self.output

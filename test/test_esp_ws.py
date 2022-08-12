@@ -22,9 +22,9 @@ handler.setLevel(log_levels['info'])
 logging.basicConfig(
     level=log_levels['debug'],
     format="%(asctime)s [%(name)s] [%(threadName)s] [%(levelname)s] %(message)s",
-    # format="%(asctime)s [%(name)s] [%(process)d] [%(threadName)s] [%(levelname)s]  %(message)s",
     handlers=[handler])
-formatter = logging.Formatter('%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s [%(name)s] [%(dev)s] [%(devp)s] : %(message)s')
 handler.setFormatter(formatter)
 log = logging.getLogger('pytest')
 
@@ -142,7 +142,8 @@ def test_raise_device_exception():
     TEST_NAME = 'DEVICE EXCEPTION'
     log.info('{} TEST: b = 1/0'.format(TEST_NAME))
     try:
-        assert not dev.cmd('b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
+        assert not dev.cmd(
+            'b = 1/0', rtn_resp=True), 'Device Exception: ZeroDivisionError'
         do_pass(TEST_NAME)
         print('Test Result: ', end='')
     except Exception as e:
