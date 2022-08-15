@@ -599,7 +599,7 @@ class SerialDevice(SERIAL_DEVICE):
         super().__init__(*args, **kargs)
 
     def code(self, func):
-        str_func = uparser_dec(getsource(func)).replace('\r', '\n    ')
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
         self.paste_buff(str_func)
         self.cmd('\x04', silent=True)
 
@@ -616,7 +616,25 @@ class SerialDevice(SERIAL_DEVICE):
             if self.output:
                 return self.output
         return wrapper_cmd
-        # return decorator_cmd_str
+
+    def code_follow(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.wr_cmd(cmd_, rtn=True, follow=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
 
     def load(self, file):
         with open(file, 'r') as upy_file:
