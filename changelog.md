@@ -10,8 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix data feeding pipe missing blank lines in follow callback for BleDevice
 - deprecate self-signed certs in favor of ROOT CA signed certs for WebSocketDevices using SSL/TLS
 ### Added
-- @code decorator for Device classes to declare and call functions in devices
-- @code decorator examples
+- @device.code decorator for Device classes to declare and call functions in devices
+- @device.code_follow for Device classes to declare and call functions in devices whose output need to be followed.
+- @devicegroup.code for DeviceGroup class to declare and call functions in group of devices
+– @devicegroup.code_follow for Device classes to declare and call functions in a group of devices whose output need to be followed.
+- decorator examples
 ## [0.3.6] - 2022-03-25
 ### Fix
 - fixed missing dependencies in `setup.py` (@BradenM)

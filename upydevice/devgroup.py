@@ -23,6 +23,8 @@
 
 import time
 import multiprocessing
+from .decorators import getsource
+import functools
 
 # DEV GROUP
 
@@ -107,3 +109,57 @@ class DEVGROUP:
             if not group_silent:
                 print('Rebooting {}'.format(dev))
             self.devs[dev].reset(silent=silent_dev)
+
+
+class DeviceGroup(DEVGROUP):
+
+    def __init__(self, *args, **kargs):
+        super().__init__(*args, **kargs)
+
+    def code(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        for dev in self.devs.keys():
+            self.devs[dev].paste_buff(str_func)
+            self.devs[dev].cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.output = {}
+            for dev in self.devs.keys():
+                self.devs[dev].wr_cmd(cmd_, rtn=True)
+                if self.devs[dev].output:
+                    self.output[dev] = self.devs[dev].output
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def code_follow(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        for dev in self.devs.keys():
+            self.devs[dev].paste_buff(str_func)
+            self.devs[dev].cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.output = {}
+            for dev in self.devs.keys():
+                self.devs[dev].wr_cmd(cmd_, rtn=True, follow=True)
+                if self.devs[dev].output:
+                    self.output[dev] = self.devs[dev].output
+            if self.output:
+                return self.output
+        return wrapper_cmd

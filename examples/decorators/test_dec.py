@@ -16,7 +16,7 @@ def led_toggle(led):
 
 
 print('Toggling led..')
-for i in range(1,5):
+for i in range(1, 5):
     led_toggle(i)
 
 
@@ -30,7 +30,7 @@ def dothis():
 
 dothis()
 
-#espd = Device('espdev.local', "oXQdh0wQ", init=True)
+# espd = Device('espdev.local', "oXQdh0wQ", init=True)
 
 # @espd.code
 # def esp_led_toggle():
@@ -62,5 +62,5 @@ dothis()
 #
 #
 # doit()
-#res2 = espd.wr_cmd('esp_led_toggle()', rtn=True, rtn_resp=True)
-#print(res1 + 1)
+# res2 = espd.wr_cmd('esp_led_toggle()', rtn=True, rtn_resp=True)
+# print(res1 + 1)
