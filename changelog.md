@@ -4,7 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
-## [0.3.7] Unreleased Github Repo [develop]
+## [0.3.8] Unreleased Github Repo [develop]
+## [0.3.7] - 2022-08-23
+### Fix
+- paste_buff method in BleDevice
+- fix data feeding pipe missing blank lines in follow callback for BleDevice
+- deprecate self-signed certs in favor of ROOT CA signed certs for WebSocketDevices using SSL/TLS
+### Added
+- @device.code decorator for Device classes to declare and call functions in devices
+- @device.code_follow for Device classes to declare and call functions in devices whose output need to be followed.
+- @devicegroup.code for DeviceGroup class to declare and call functions in group of devices
+– @devicegroup.code_follow for Device classes to declare and call functions in a group of devices whose output need to be followed.
+- decorator examples
 ## [0.3.6] - 2022-03-25
 ### Fix
 - fixed missing dependencies in `setup.py` (@BradenM)

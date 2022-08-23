@@ -9,8 +9,8 @@ def readme():
 
 
 setup(name='upydevice',
-      version='0.3.6',
-      description='Python library to interface with wireless/serial MicroPython devices',
+      version='0.3.7',
+      description='Python library to interface with MicroPython devices',
       long_description=readme(),
       long_description_content_type='text/markdown',
       url='http://github.com/Carglglz/upydevice',

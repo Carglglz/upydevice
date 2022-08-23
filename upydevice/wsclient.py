@@ -51,6 +51,10 @@ class WebsocketClient(Websocket):
 
 def load_custom_CA_data(path):
     certificates = [cert for cert in os.listdir(
+        path) if cert.startswith('ROOT_CA_cert') and cert.endswith('.pem')]
+    certificates += [cert for cert in os.listdir(
+        path) if cert.startswith('HOST_cert') and cert.endswith('.pem')]
+    certificates += [cert for cert in os.listdir(
         path) if 'certificate' in cert and cert.endswith('.pem')]
     cert_datafile = ''
     for cert in certificates:
@@ -61,19 +65,14 @@ def load_custom_CA_data(path):
 
 
 def load_cert_from_hostname(path, hostname):
+    # use host key,cert
     certificates = [cert for cert in os.listdir(
-        path) if 'certificate' in cert and cert.endswith('.der')]
-    cert_datafile = b''
+        path) if cert.startswith('HOST_cert') and cert.endswith('.pem')]
     for cert in certificates:
-        with io.open(os.path.join(path, cert), 'rb') as certfile:
-            cert_datafile += certfile.read()
-            if hostname.encode() in cert_datafile:
-                _key = cert.replace('certificate', 'key').replace('.der', '.pem')
-                key = os.path.join(path, _key)
-                cert = os.path.join(path, cert.replace('.der', '.pem'))
-                return key, cert
-            else:
-                cert_datafile = b''
+        _key = cert.replace('cert', 'key')
+        key = os.path.join(path, _key)
+        cert = os.path.join(path, cert)
+        return key, cert
 
 
 def connect(uri, password, silent=True, auth=False, capath=None, passphrase=None):

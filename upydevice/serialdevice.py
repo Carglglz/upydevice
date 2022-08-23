@@ -31,6 +31,8 @@ import glob
 from binascii import hexlify
 import sys
 from .exceptions import DeviceException, DeviceNotFound
+from .decorators import getsource, uparser_dec
+import functools
 
 
 # https://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
@@ -595,3 +597,47 @@ class SERIAL_DEVICE(BASE_SERIAL_DEVICE):
 class SerialDevice(SERIAL_DEVICE):
     def __init__(self, *args, **kargs):
         super().__init__(*args, **kargs)
+
+    def code(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.wr_cmd(cmd_, rtn=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def code_follow(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.wr_cmd(cmd_, rtn=True, follow=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def load(self, file):
+        with open(file, 'r') as upy_file:
+            upy_content = upy_file.read()
+        self.paste_buff(upy_content)
+        self.wr_cmd('\x04', follow=True)

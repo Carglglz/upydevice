@@ -43,6 +43,8 @@ import traceback
 import multiprocessing
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
+from .decorators import getsource, uparser_dec
+import functools
 from unsync import unsync
 
 
@@ -485,8 +487,8 @@ class BASE_BLE_DEVICE:
                     print(data, end='')
                 else:
                     for line in data.split('\n'):
-                        if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                        # if line:
+                        self.pipe(line+'\n', std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
@@ -1236,9 +1238,53 @@ class BleDevice(BLE_DEVICE):
     def paste_buff(self, cmd, **kargs):
         try:
             self.loop.run_until_complete(
-                self.un_paste_buff(cmd, **kargs))
+                self.as_paste_buff(cmd, **kargs))
         except Exception as e:
             print(e)
+
+    def code(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.wr_cmd(cmd_, rtn=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def code_follow(self, func):
+        str_func = '\n'.join(getsource(func).split('\n')[1:])
+        self.paste_buff(str_func)
+        self.cmd('\x04', silent=True)
+
+        @functools.wraps(func)
+        def wrapper_cmd(*args, **kwargs):
+            flags = ['>', '<', 'object', 'at', '0x']
+            args_repr = [repr(a) for a in args if any(
+                f not in repr(a) for f in flags)]
+            kwargs_repr = [f"{k}={v!r}" if not callable(
+                v) else f"{k}={v.__name__}" for k, v in kwargs.items()]
+            signature = ", ".join(args_repr + kwargs_repr)
+            cmd_ = f"{func.__name__}({signature})"
+            self.wr_cmd(cmd_, rtn=True, follow=True)
+            if self.output:
+                return self.output
+        return wrapper_cmd
+
+    def load(self, file):
+        with open(file, 'r') as upy_file:
+            upy_content = upy_file.read()
+        self.paste_buff(upy_content)
+        self.wr_cmd('\x04', follow=True)
 
 
 class AsyncBleDevice(BLE_DEVICE):
@@ -1363,18 +1409,18 @@ class AsyncBleDevice(BLE_DEVICE):
                     if not self.pipe:
                         print(data, end='')
                     else:
-                        for line in data.split('\n'):
-                            # if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                        # for line in data.split('\n'):
+                        # if line:
+                        self.pipe(data, std=self.pipe_mode)
             else:
                 data = data.replace(b'\r', b'').replace(b'\r\n>>> ', b'').replace(
                     b'>>> ', b'').decode('utf-8', 'ignore')
                 if not self.pipe:
                     print(data, end='')
                 else:
-                    for line in data.split('\n'):
-                        if line:
-                            self.pipe(line+'\n', std=self.pipe_mode)
+                    # for line in data.split('\n'):
+                    # if line:
+                    self.pipe(data, std=self.pipe_mode)
         except KeyboardInterrupt:
             print('CALLBACK_KBI')
             pass
