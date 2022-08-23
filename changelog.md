@@ -4,7 +4,8 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
-## [0.3.7] Unreleased Github Repo [develop]
+## [0.3.8] Unreleased Github Repo [develop]
+## [0.3.7] - 2022-08-23
 ### Fix
 - paste_buff method in BleDevice
 - fix data feeding pipe missing blank lines in follow callback for BleDevice
