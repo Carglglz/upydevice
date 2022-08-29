@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # MIT License
 #
-# Copyright (c) 2020 Carlos Gil Gonzalez
+# Copyright (c) 2020 - 2022 Carlos Gil Gonzalez
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -38,8 +38,9 @@ from io import BufferedRandom
 from binascii import hexlify
 from upydevice import wsclient, wsprotocol
 from .exceptions import DeviceException, DeviceNotFound
-from .decorators import getsource, uparser_dec
+from .decorators import getsource
 import functools
+import re
 
 try:
     from upydev import __path__ as ca_PATH
@@ -948,3 +949,9 @@ class WebSocketDevice(WS_DEVICE):
             upy_content = upy_file.read()
         self.paste_buff(upy_content)
         self.wr_cmd('\x04', follow=True)
+
+    def raise_traceback(self):
+        if self._traceback.decode() in self.response:
+            dev_traceback = re.search(r'\b(Traceback)\b', self.response)
+            tr_index = dev_traceback.start()
+            raise DeviceException(self.response[tr_index:])

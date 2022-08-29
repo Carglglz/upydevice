@@ -2,7 +2,7 @@
 
 # MIT License
 #
-# Copyright (c) 2020 Carlos Gil Gonzalez
+# Copyright (c) 2020 - 2022 Carlos Gil Gonzalez
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -40,12 +40,12 @@ import ast
 from array import array
 import sys
 import traceback
-import multiprocessing
 from binascii import hexlify
 from .exceptions import DeviceException, DeviceNotFound
-from .decorators import getsource, uparser_dec
+from .decorators import getsource
 import functools
 from unsync import unsync
+import re
 
 
 _WASPDEVS = ['P8', 'PineTime', 'Pixl.js']
@@ -1285,6 +1285,12 @@ class BleDevice(BLE_DEVICE):
             upy_content = upy_file.read()
         self.paste_buff(upy_content)
         self.wr_cmd('\x04', follow=True)
+
+    def raise_traceback(self):
+        if self._traceback.decode() in self.response:
+            dev_traceback = re.search(r'\b(Traceback)\b', self.response)
+            tr_index = dev_traceback.start()
+            raise DeviceException(self.response[tr_index:])
 
 
 class AsyncBleDevice(BLE_DEVICE):
