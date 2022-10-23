@@ -52,10 +52,10 @@ class WebsocketClient(Websocket):
 def load_custom_CA_data(path):
     certificates = [cert for cert in os.listdir(
         path) if cert.startswith('ROOT_CA_cert') and cert.endswith('.pem')]
-    certificates += [cert for cert in os.listdir(
-        path) if cert.startswith('HOST_cert') and cert.endswith('.pem')]
-    certificates += [cert for cert in os.listdir(
-        path) if 'certificate' in cert and cert.endswith('.pem')]
+  #  certificates += [cert for cert in os.listdir(
+  #      path) if cert.startswith('HOST_cert') and cert.endswith('.pem')]
+   # certificates += [cert for cert in os.listdir(
+   #     path) if 'certificate' in cert and cert.endswith('.pem')]
     cert_datafile = ''
     for cert in certificates:
         with io.open(os.path.join(path, cert), 'r') as certfile:
